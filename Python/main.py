@@ -120,10 +120,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
 		btn_rem.clicked.connect(self.rem_col)
 		grid.addWidget(btn_rem, 3, 4, 1, 1)
 		#Display Fit Results Button
-		btn_results = QtWidgets.QPushButton('Display Fit Results', self)
+		btn_results = QtWidgets.QPushButton('Display Fit Results', self) #not yet implemented
 		btn_results.resize(btn_results.sizeHint())   
-		btn_results.clicked.connect(self.rem_col)
-		grid.addWidget(btn_results, 5, 3, 1, 1)
+		btn_results.clicked.connect(self.exportResults)
+		grid.addWidget(btn_results, 3, 5, 1, 1)
 		# Export results Button
 		btn_exp = QtWidgets.QPushButton('Export', self)
 		btn_exp.resize(btn_exp.sizeHint())   
@@ -163,14 +163,14 @@ class PrettyWidget(QtWidgets.QMainWindow):
 		
 		# set Fit Table
 		list_col = ['peak_1']
-		list_row = ['model', 'center', 'sigma', 'gamma', 'amp', 'frac', 'skew', 'q', 'amp_ref', 'ratio', 'ctr_ref', 'ctr_diff', 'ctr_min', 'ctr_max', 'sig_min', 'sig_max', 'gam_min', 'gam_max', 'amp_min', 'amp_max', 'frac_min', 'frac_max', 'skew_min', 'skew_max', 'q_min', 'q_max', 'soc','height_ratio',"gaussian_sigma"]
+		list_row = ['model', 'center', 'sigma', 'gamma', 'amp', 'frac', 'skew', 'q','kt','soc','height_ratio','gaussian_sigma', 'center_ref', 'ctr_diff', 'amp_ref', 'ratio', 'soc_ref','soc_ratio','height_r_ref','ratio','g_s_ref', 'gaussian_ratio', 'ctr_min', 'ctr_max', 'sig_min', 'sig_max', 'gam_min', 'gam_max', 'amp_min', 'amp_max', 'frac_min', 'frac_max', 'skew_min', 'skew_max', 'q_min', 'q_max'] #[feature] include limits for soc, gaussian etc
 		self.fitp1 = QtWidgets.QTableWidget(len(list_row),len(list_col)*2)
 		list_colh = ['', 'peak_1']
 		self.fitp1.setHorizontalHeaderLabels(list_colh)
 		self.fitp1.setVerticalHeaderLabels(list_row)
 		
 		#self.list_shape = ['g', 'l', 'v', 'p']
-		self.list_shape = ['g: Gaussian', 'l: Lorentzian', 'v: Voigt', 'p: PseudoVoigt', 'e: ExponentialGaussian', 's: SkewedGaussian', 'a: SkewedVoigt', 'b: BreitWigner', 'n: Lognormal', 'd: Doniach', 'gd: Convolution Gaussian/Doniach']
+		self.list_shape = ['g: Gaussian', 'l: Lorentzian', 'v: Voigt', 'p: PseudoVoigt', 'e: ExponentialGaussian', 's: SkewedGaussian', 'a: SkewedVoigt', 'b: BreitWigner', 'n: Lognormal', 'd: Doniach', 'gdd: Convolution Gaussian/Doniach-Dublett', 'gds: Convolution Gaussian/Doniach-Singlett', 'fe:Convolution FermiDirac/Gaussian']
 		self.list_peak = ['', '1']
 		
 		# set DropDown peak model
@@ -179,36 +179,54 @@ class PrettyWidget(QtWidgets.QMainWindow):
 			comboBox.addItems(self.list_shape)
 			#comboBox.setMaximumWidth(55)
 			self.fitp1.setCellWidget(0, 2*col+1, comboBox)
-
-		# set DropDown amp_ref peak section
-		for col in range(len(list_col)):
-			comboBox = QtWidgets.QComboBox()
-			comboBox.addItems(self.list_peak)
-			comboBox.setMaximumWidth(55)
-			self.fitp1.setCellWidget(8, 2*col+1, comboBox)
-
 		# set DropDown ctr_ref peak selection
 		for col in range(len(list_col)):
 			comboBox = QtWidgets.QComboBox()
 			comboBox.addItems(self.list_peak)
 			comboBox.setMaximumWidth(55)
-			self.fitp1.setCellWidget(10, 2*col+1, comboBox)
+			self.fitp1.setCellWidget(12, 2*col+1, comboBox)
+		# set DropDown amp_ref peak selection
+		for col in range(len(list_col)):
+			comboBox = QtWidgets.QComboBox()
+			comboBox.addItems(self.list_peak)
+			comboBox.setMaximumWidth(55)
+			self.fitp1.setCellWidget(14, 2*col+1, comboBox)
+		# set DropDown soc_ref peak selection
+		for col in range(len(list_col)):
+			comboBox = QtWidgets.QComboBox()
+			comboBox.addItems(self.list_peak)
+			comboBox.setMaximumWidth(55)
+			self.fitp1.setCellWidget(16, 2*col+1, comboBox)
+		# set DropDown height_ratio_ref peak selection
+		for col in range(len(list_col)):
+			comboBox = QtWidgets.QComboBox()
+			comboBox.addItems(self.list_peak)
+			comboBox.setMaximumWidth(55)
+			self.fitp1.setCellWidget(18, 2*col+1, comboBox)
+		# set DropDown gaussian_sigma_ref peak selection
+		for col in range(len(list_col)):
+			comboBox = QtWidgets.QComboBox()
+			comboBox.addItems(self.list_peak)
+			comboBox.setMaximumWidth(55)
+			self.fitp1.setCellWidget(20, 2*col+1, comboBox)
 
 		# set checkbox in fit table
 		for row in range(len(list_row)-1):
 			for col in range(len(list_col)):
 				item = QtWidgets.QTableWidgetItem()
 				item.setFlags(QtCore.Qt.ItemIsUserCheckable |	QtCore.Qt.ItemIsEnabled)
-				if row < 7:
+				if row < 11:
 					item.setCheckState(QtCore.Qt.Checked)
 					self.fitp1.setItem(row+1, col*2, item)
-				if row > 10:
+				if row > 20:
 					item.setCheckState(QtCore.Qt.Unchecked)
 					self.fitp1.setItem(row+1, col*2, item)
-	
+				if row > 11 and row <=20 and row % 2==0: # checkboxes for ref-parameters, need to be included into fit later [feature]
+					item.setCheckState(QtCore.Qt.Unchecked)
+					self.fitp1.setItem(row+1, col*2, item)
 		# load default preset
 		#pre_pk = [[0,0],[2,0],[2,0],[2,0],[2,0],[2,0],[2,0],[2,0]]
-		pre_pk = [[0,0],[2,284.6],[2,0.85],[2,0.85],[0,20000],[2,0.5],[2,0],[2,0]]
+		pre_pk = [[0,0],[2,284.6],[2,0.85],[2,0.85],[0,20000],[2,0.5],[2,0],[2,0],[2,0.026],[2,0.0],[2,0.5],[2,0.5]]
 		self.setPreset(0, [], pre_pk)
 
 		self.fitp1.resizeColumnsToContents()
@@ -242,7 +260,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 					item = QtWidgets.QTableWidgetItem(str(format(float(self.fitp1.item(row+1, colPosition-1).text()) + add_fac, self.floating)))
 					self.fitp1.setItem(row+1, colPosition+1, item)
 		
-		# add DropDown peak selection for amp_ref and ctr_ref and keep values as it is
+		# add DropDown peak selection for amp_ref and ctr_ref and keep values as it is #change indizes in the following sec, due to changed table [bug]
 		self.list_peak.append(str(int(1+colPosition/2)))
 		
 		for col in range(int(colPosition/2)+1):
@@ -251,7 +269,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 			comboBox= QtWidgets.QComboBox()
 			comboBox.addItems(self.list_peak)
 			comboBox.setMaximumWidth(55)
-			self.fitp1.setCellWidget(8, 2*col+1, comboBox)
+			self.fitp1.setCellWidget(12, 2*col+1, comboBox)
 			if index > 0 and col < int(colPosition/2):
 				comboBox.setCurrentIndex(index)
 
@@ -261,10 +279,36 @@ class PrettyWidget(QtWidgets.QMainWindow):
 			comboBox = QtWidgets.QComboBox()
 			comboBox.addItems(self.list_peak)
 			comboBox.setMaximumWidth(55)
-			self.fitp1.setCellWidget(10, 2*col+1, comboBox)
+			self.fitp1.setCellWidget(14, 2*col+1, comboBox)
 			if index > 0 and col < int(colPosition/2):
 				comboBox.setCurrentIndex(index)
-
+		for col in range(int(colPosition/2)+1):
+			if col < int(colPosition/2):
+				index = self.fitp1.cellWidget(8, 2*col+1).currentIndex()
+			comboBox= QtWidgets.QComboBox()
+			comboBox.addItems(self.list_peak)
+			comboBox.setMaximumWidth(55)
+			self.fitp1.setCellWidget(16, 2*col+1, comboBox)
+			if index > 0 and col < int(colPosition/2):
+				comboBox.setCurrentIndex(index)
+		for col in range(int(colPosition/2)+1):
+			if col < int(colPosition/2):
+				index = self.fitp1.cellWidget(8, 2*col+1).currentIndex()
+			comboBox= QtWidgets.QComboBox()
+			comboBox.addItems(self.list_peak)
+			comboBox.setMaximumWidth(55)
+			self.fitp1.setCellWidget(18, 2*col+1, comboBox)
+			if index > 0 and col < int(colPosition/2):
+				comboBox.setCurrentIndex(index)
+		for col in range(int(colPosition/2)+1):
+			if col < int(colPosition/2):
+				index = self.fitp1.cellWidget(8, 2*col+1).currentIndex()
+			comboBox= QtWidgets.QComboBox()
+			comboBox.addItems(self.list_peak)
+			comboBox.setMaximumWidth(55)
+			self.fitp1.setCellWidget(20, 2*col+1, comboBox)
+			if index > 0 and col < int(colPosition/2):
+				comboBox.setCurrentIndex(index)
 		# add checkbox
 		for row in range(rowPosition-1):
 			item = QtWidgets.QTableWidgetItem()
@@ -304,7 +348,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 					index = self.fitp1.cellWidget(8, 2*col+1).currentIndex()
 				comboBox = QtWidgets.QComboBox()
 				comboBox.addItems(self.list_peak)
-				self.fitp1.setCellWidget(8, 2*col+1, comboBox)
+				self.fitp1.setCellWidget(12, 2*col+1, comboBox)
 				if index > 0:
 					comboBox.setCurrentIndex(index)
 	
@@ -313,9 +357,34 @@ class PrettyWidget(QtWidgets.QMainWindow):
 					index = self.fitp1.cellWidget(10, 2*col+1).currentIndex()
 				comboBox = QtWidgets.QComboBox()
 				comboBox.addItems(self.list_peak)
-				self.fitp1.setCellWidget(10, 2*col+1, comboBox)
+				self.fitp1.setCellWidget(14, 2*col+1, comboBox)
 				if index > 0:
 					comboBox.setCurrentIndex(index)
+			for col in range(int(colPosition/2)):
+				if col < int(colPosition/2)-1:
+					index = self.fitp1.cellWidget(10, 2*col+1).currentIndex()
+				comboBox = QtWidgets.QComboBox()
+				comboBox.addItems(self.list_peak)
+				self.fitp1.setCellWidget(16, 2*col+1, comboBox)
+				if index > 0:
+					comboBox.setCurrentIndex(index)
+			for col in range(int(colPosition/2)):
+				if col < int(colPosition/2)-1:
+					index = self.fitp1.cellWidget(10, 2*col+1).currentIndex()
+				comboBox = QtWidgets.QComboBox()
+				comboBox.addItems(self.list_peak)
+				self.fitp1.setCellWidget(18, 2*col+1, comboBox)
+				if index > 0:
+					comboBox.setCurrentIndex(index)
+			for col in range(int(colPosition/2)):
+				if col < int(colPosition/2)-1:
+					index = self.fitp1.cellWidget(10, 2*col+1).currentIndex()
+				comboBox = QtWidgets.QComboBox()
+				comboBox.addItems(self.list_peak)
+				self.fitp1.setCellWidget(20, 2*col+1, comboBox)
+				if index > 0:
+					comboBox.setCurrentIndex(index)
+
 
 	def preset(self):
 		index = self.comboBox_pres.currentIndex()
@@ -417,7 +486,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 		for  row in range(len(list_pre_pk)):
 			for col in range(len(list_pre_pk[0])):
 				if (col % 2) != 0:
-					if row == 0 or row == 8 or row == 10:
+					if row == 0 or row == 12 or row == 14 or row == 16 or row == 18 or row == 20:
 						comboBox = QtWidgets.QComboBox()
 						if row == 0:
 							comboBox.addItems(self.list_shape)
@@ -442,7 +511,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 						else:
 							self.fitp1.setItem(row, col + colPosition*2, item)
 				else:
-					if row != 0 and row != 8 and row != 9 and row != 10 and row != 11:
+					if row != 0 and row != 12 and row != 14 and row != 16 and row != 18 and row !=20:
 						item = QtWidgets.QTableWidgetItem()
 						if list_pre_pk[row][col] == 2:
 							item.setCheckState(QtCore.Qt.Checked)
@@ -527,7 +596,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 			new = []
 			for col in range(colPosition):
 				if (col % 2) != 0:
-					if row == 0 or row == 8 or row == 10:
+					if row == 0 or row == 12 or row == 14 or row == 16 or row == 18 or row == 20:
 						new.append(self.fitp1.cellWidget(row, col).currentIndex())
 					else:
 						if self.fitp1.item(row, col) == None  or len(self.fitp1.item(row, col).text()) == 0:
@@ -535,7 +604,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 						else:
 							new.append(float(self.fitp1.item(row, col).text()))
 				else:
-					if row != 0 and row != 8 and row != 9 and row != 10 and row != 11:
+					if row != 0 and row != 12 and row != 14 and row != 16 and row != 18 and row != 20: 
 						if self.fitp1.item(row, col).checkState() == 2:
 							new.append(2)
 						else:
@@ -1076,7 +1145,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
 				pk_mod = DoniachModel(prefix=strind + str(index_pk+1) + '_')
 			if index == 10:
 				pk_mod = ConvGaussianDoniachDublett(prefix=strind + str(index_pk+1) + '_')
-
+			if index == 11:
+				pk_mod = ConvGaussianDoniachSinglett(prefix=strind + str(index_pk+1) + '_')
+			if index == 12:
+				pk_mod = FermiEdgeModel(prefix=strind + str(index_pk+1) + '_')
 			pars.update(pk_mod.make_params())
 
 			# fit parameters from table
@@ -1088,7 +1160,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 				if len(self.fitp1.item(2, 2*index_pk+1).text()) > 0:
 					pars[strind + str(index_pk+1) + '_sigma'].value = float(self.fitp1.item(2, 2*index_pk+1).text())
 
-			if index == 2 or index == 4 or index == 5 or index == 6 or index == 9:
+			if index == 2 or index == 4 or index == 5 or index == 6 or index == 9 or index == 10 or index == 11:
 				if self.fitp1.item(3, 2*index_pk+1) != None:
 					if len(self.fitp1.item(3, 2*index_pk+1).text()) > 0:
 						pars[strind + str(index_pk+1) +	'_gamma'].value = float(self.fitp1.item(3, 2*index_pk+1).text())
@@ -1117,11 +1189,14 @@ class PrettyWidget(QtWidgets.QMainWindow):
 				if self.fitp1.item(27, 2*index_pk+1) != None:
 					if len(self.fitp1.item(27, 2*index_pk+1).text()) > 0:
 						pars[strind + str(index_pk+1) +	'_height_ratio'].value = float(self.fitp1.item(27, 2*index_pk+1).text())
-			if index == 10:
+			if index == 10 or index == 11:
 				if self.fitp1.item(28, 2*index_pk+1) != None:
 					if len(self.fitp1.item(28, 2*index_pk+1).text()) > 0:
 						pars[strind + str(index_pk+1) +	'_gaussian_sigma'].value = float(self.fitp1.item(28, 2*index_pk+1).text())
-
+			if index == 12:
+				if self.fitp1.item(27, 2*index_pk+1) != None:
+					if len(self.fitp1.item(27, 2*index_pk+1).text()) > 0:
+						pars[strind + str(index_pk+1) +	'_kt'].value = float(self.fitp1.item(27, 2*index_pk+1).text())
 			 # sum of models
 			mod += pk_mod
 
@@ -1152,7 +1227,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 				pars[strind + str(index_pk+1) + '_center'].vary = False
 				pars[strind + str(index_pk+1) + '_sigma'].vary = False
 	
-				if index == 2 or index == 4 or index == 5 or index == 6 or index == 9:
+				if index == 2 or index == 4 or index == 5 or index == 6 or index == 9 or index == 10 or index == 11:
 					pars[strind + str(index_pk+1) +	'_gamma'].vary = False
 	
 				pars[strind + str(index_pk+1) + '_amplitude'].vary = False
@@ -1167,8 +1242,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
 					pars[strind + str(index_pk+1) + '_soc'].vary = False
 				if index == 10:
 					pars[strind + str(index_pk+1) + '_height_ratio'].vary = False
-				if index == 10:
+				if index == 10 or index == 11:
 					pars[strind + str(index_pk+1) + '_gaussian_sigma'].vary = False
+				if index == 12:
+					pars[strind + str(index_pk+1) + '_kt'].vary = False
 		else:
 			# constraints of BG parameters (checkbox to hold)
 			for index in range(4):
@@ -1227,7 +1304,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 					if len(self.fitp1.item(2, 2*index_pk+1).text()) > 0:
 						pars[strind + str(index_pk+1) + '_sigma'].vary = False
 	
-				if index == 2 or index == 4 or index == 5 or index == 6 or index == 9:
+				if index == 2 or index == 4 or index == 5 or index == 6 or index == 9 or index == 10 or index == 11:
 					if self.fitp1.item(3, 2*index_pk).checkState() == 2:
 						if len(self.fitp1.item(3, 2*index_pk+1).text()) > 0:
 							pars[strind + str(index_pk+1) +	'_gamma'].vary = False
@@ -1248,22 +1325,28 @@ class PrettyWidget(QtWidgets.QMainWindow):
 					if self.fitp1.item(7, 2*index_pk).checkState() == 2:
 						if len(self.fitp1.item(7, 2*index_pk+1).text()) > 0:
 							pars[strind + str(index_pk+1) + '_q'].vary = False
+				if index == 12:
+					if self.fitp1.item(8, 2*index_pk).checkState() == 2:
+						if len(self.fitp1.item(8, 2*index_pk+1).text()) > 0:
+							pars[strind + str(index_pk+1) + '_kt'].vary = False
 				if index == 10:
-					if self.fitp1.item(26, 2*index_pk).checkState() == 2:
-						if len(self.fitp1.item(26, 2*index_pk+1).text()) > 0:
+					if self.fitp1.item(9, 2*index_pk).checkState() == 2:
+						if len(self.fitp1.item(9, 2*index_pk+1).text()) > 0:
 							pars[strind + str(index_pk+1) + '_soc'].vary = False
-				if index == 10:
-					if self.fitp1.item(27, 2*index_pk).checkState() == 2:
-						if len(self.fitp1.item(27, 2*index_pk+1).text()) > 0:
+					if self.fitp1.item(10, 2*index_pk).checkState() == 2:
+						if len(self.fitp1.item(10, 2*index_pk+1).text()) > 0:
 							pars[strind + str(index_pk+1) + '_height_ratio'].vary = False
-				if index == 10:
-					if self.fitp1.item(28, 2*index_pk).checkState() == 2:
-						if len(self.fitp1.item(28, 2*index_pk+1).text()) > 0:
+				if index == 10 or index == 11:
+					if self.fitp1.item(11, 2*index_pk).checkState() == 2:
+						if len(self.fitp1.item(11, 2*index_pk+1).text()) > 0:
 							pars[strind + str(index_pk+1) + '_gaussian_sigma'].vary = False
-
+				if index == 12:
+					if self.fitp1.item(8, 2*index_pk).checkState() == 2:
+						if len(self.fitp1.item(8, 2*index_pk+1).text()) > 0:
+							pars[strind + str(index_pk+1) + '_kt'].vary = False
 				# additional peak min and max bounds (checkbox to activate)
-				#list_para = ['center', 'sigma', 'gamma', 'amplitude', 'fraction', 'skew', 'q']
-				if index == 0 or index == 1 or index == 8:
+				#list_para = ['center', 'sigma', 'gamma', 'amplitude', 'fraction', 'skew', 'q'] # add max and min for soc, gaussian etc. [feature]
+				if index == 0 or index == 1 or index == 8 or index == 12:
 					list_para = ['center', 'sigma', '', 'amplitude', '', '', '']
 				if index == 2 or index == 4 or index == 5 or index == 9:
 					list_para = ['center', 'sigma', 'gamma', 'amplitude', '', '', '']
@@ -1273,40 +1356,65 @@ class PrettyWidget(QtWidgets.QMainWindow):
 					list_para = ['center', 'sigma', 'gamma', 'amplitude', '', 'skew', '']
 				if index == 7:
 					list_para = ['center', 'sigma', '', 'amplitude', '', '', 'q']
-				if index==10:
+				if index==10 or index ==11 :
 					list_para=['center', 'sigma', 'gamma', 'amplitude', '','','']
-				
 				for para in range(len(list_para)):
-					if len(list_para[para]) != 0 and self.fitp1.item(12 + 2*para, 2*index_pk).checkState() == 2 and self.fitp1.item(12 + 2*para, 2*index_pk+1) != None:
-						if len(self.fitp1.item(12 + 2*para, 2*index_pk+1).text()) > 0:
-							pars[strind + str(index_pk+1) + '_' + list_para[para]].min = float(self.fitp1.item(12 + 2*para, 2*index_pk+1).text())
-					if len(list_para[para]) != 0 and self.fitp1.item(12 + 2*para + 1, 2*index_pk).checkState() == 2 and self.fitp1.item(12 + 2*para+1, 2*index_pk+1) != None:
-						if len(self.fitp1.item(12 + 2*para + 1, 2*index_pk+1).text()) > 0:
-							pars[strind + str(index_pk+1) + '_' + list_para[para]].max = float(self.fitp1.item(12 + 2*para + 1, 2*index_pk+1).text())
+					if len(list_para[para]) != 0 and self.fitp1.item(21 + 2*para, 2*index_pk).checkState() == 2 and self.fitp1.item(21 + 2*para, 2*index_pk+1) != None:
+						if len(self.fitp1.item(21 + 2*para, 2*index_pk+1).text()) > 0:
+							pars[strind + str(index_pk+1) + '_' + list_para[para]].min = float(self.fitp1.item(21 + 2*para, 2*index_pk+1).text())
+					if len(list_para[para]) != 0 and self.fitp1.item(21 + 2*para + 1, 2*index_pk).checkState() == 2 and self.fitp1.item(21 + 2*para+1, 2*index_pk+1) != None:
+						if len(self.fitp1.item(21 + 2*para + 1, 2*index_pk+1).text()) > 0:
+							pars[strind + str(index_pk+1) + '_' + list_para[para]].max = float(self.fitp1.item(21 + 2*para + 1, 2*index_pk+1).text())
 	
 				# amp ratio setup
-				if self.fitp1.cellWidget(8, 2*index_pk+1).currentIndex() > 0:
-					pktar = self.fitp1.cellWidget(8, 2*index_pk+1).currentIndex()
+				if self.fitp1.cellWidget(14, 2*index_pk+1).currentIndex() > 0:
+					pktar = self.fitp1.cellWidget(15, 2*index_pk+1).currentIndex()
 					strtar = self.fitp1.cellWidget(0, 2*pktar-1).currentText()
 					strtar = strtar[0]
-					if self.fitp1.item(9, 2*index_pk+1) != None:
-						if len(self.fitp1.item(9, 2*index_pk+1).text()) > 0:
-							rtotar = float(self.fitp1.item(9, 2*index_pk+1).text())
+					if self.fitp1.item(15, 2*index_pk+1) != None:
+						if len(self.fitp1.item(15, 2*index_pk+1).text()) > 0:
+							rtotar = float(self.fitp1.item(15, 2*index_pk+1).text())
 							pars[strind + str(index_pk+1) + '_amplitude'].expr = strtar + str(pktar) + '_amplitude * ' + str(rtotar)
 	
 				# BE diff setup
-				if self.fitp1.cellWidget(10, 2*index_pk+1).currentIndex() > 0:
-					pktar = self.fitp1.cellWidget(10, 2*index_pk+1).currentIndex()
+				if self.fitp1.cellWidget(12, 2*index_pk+1).currentIndex() > 0:
+					pktar = self.fitp1.cellWidget(13, 2*index_pk+1).currentIndex()
 					strtar = self.fitp1.cellWidget(0, 2*pktar-1).currentText()
 					strtar = strtar[0]
-					if self.fitp1.item(11, 2*index_pk+1) != None:
-						if len(self.fitp1.item(11, 2*index_pk+1).text()) > 0:
-							diftar = float(self.fitp1.item(11, 2*index_pk+1).text())
+					if self.fitp1.item(13, 2*index_pk+1) != None:
+						if len(self.fitp1.item(13, 2*index_pk+1).text()) > 0:
+							diftar = float(self.fitp1.item(13, 2*index_pk+1).text())
 							pars[strind + str(index_pk+1) + '_center'].expr = strtar + str(pktar) + '_center + ' + str(diftar)
-
+				# soc ref setup
+				if self.fitp1.cellWidget(16, 2*index_pk+1).currentIndex() > 0:
+					pktar = self.fitp1.cellWidget(16, 2*index_pk+1).currentIndex()
+					strtar = self.fitp1.cellWidget(0, 2*pktar-1).currentText()
+					strtar = strtar[0]
+					if self.fitp1.item(17, 2*index_pk+1) != None:
+						if len(self.fitp1.item(17, 2*index_pk+1).text()) > 0:
+							diftar = float(self.fitp1.item(17, 2*index_pk+1).text())
+							pars[strind + str(index_pk+1) + '_soc'].expr = strtar + str(pktar) + '_soc + ' + str(diftar)
+				# height ratio ref setup
+				if self.fitp1.cellWidget(18, 2*index_pk+1).currentIndex() > 0:
+					pktar = self.fitp1.cellWidget(18, 2*index_pk+1).currentIndex()
+					strtar = self.fitp1.cellWidget(0, 2*pktar-1).currentText()
+					strtar = strtar[0]
+					if self.fitp1.item(19, 2*index_pk+1) != None:
+						if len(self.fitp1.item(19, 2*index_pk+1).text()) > 0:
+							diftar = float(self.fitp1.item(19, 2*index_pk+1).text())
+							pars[strind + str(index_pk+1) + '_height_ratio'].expr = strtar + str(pktar) + '_height_ratio + ' + str(diftar)
+				# gaussian sigma ref setup
+				if self.fitp1.cellWidget(20, 2*index_pk+1).currentIndex() > 0:
+					pktar = self.fitp1.cellWidget(20, 2*index_pk+1).currentIndex()
+					strtar = self.fitp1.cellWidget(0, 2*pktar-1).currentText()
+					strtar = strtar[0]
+					if self.fitp1.item(21, 2*index_pk+1) != None:
+						if len(self.fitp1.item(21, 2*index_pk+1).text()) > 0:
+							diftar = float(self.fitp1.item(21, 2*index_pk+1).text())
+							pars[strind + str(index_pk+1) + '_gaussian_sigma'].expr = strtar + str(pktar) + '_gaussian_sigma + ' + str(diftar)
 		# evaluate model and optimize parameters for fitting in lmfit
 		init = mod.eval(pars, x=x)
-		out = mod.fit(y, pars, x=x)
+		out = mod.fit(y, pars, x=x)# [feature],weights=1/np.sqrt(y)) weighted the residuum, so that it only variates between [1,-1] if there is a perfect agreement between fit and data, besides a normal distributed noise
 		comps = out.eval_components(x=x)
 
 		# fit results to be checked
@@ -1362,7 +1470,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 			item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_sigma'].value, self.floating)))
 			self.fitp1.setItem(2, 2*index_pk+1, item)
 
-			if index == 2 or index == 4 or index == 5 or index == 6 or index == 9:
+			if index == 2 or index == 4 or index == 5 or index == 6 or index == 9 or index == 10 or index == 11:
 				item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_gamma'].value, self.floating)))
 				self.fitp1.setItem(3, 2*index_pk+1, item)
 
@@ -1380,14 +1488,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
 				self.fitp1.setItem(7, 2*index_pk+1, item)
 			if index == 10:
 				item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_soc'].value, self.floating)))
-				self.fitp1.setItem(26, 2*index_pk+1, item)
-			if index == 10:
+				self.fitp1.setItem(9, 2*index_pk+1, item)
 				item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_height_ratio'].value, self.floating)))
-				self.fitp1.setItem(27, 2*index_pk+1, item)
-			if index == 10:
+				self.fitp1.setItem(10, 2*index_pk+1, item)
+			if index == 10 or index == 11:
 				item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_gaussian_sigma'].value, self.floating)))
-				self.fitp1.setItem(28, 2*index_pk+1, item)
-
+				self.fitp1.setItem(11, 2*index_pk+1, item)
+			if index == 12:
+				item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_height_ratio'].value, self.floating)))
+				self.fitp1.setItem(8, 2*index_pk+1, item)
 		if mode == 'eva':
 			#ax.plot(x, init+bg_mod, 'b--', lw =2, label='initial')
 			self.ax.plot(x, out.best_fit+bg_mod, 'k-', lw=2, label='initial')
