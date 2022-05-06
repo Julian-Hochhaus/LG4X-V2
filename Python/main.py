@@ -17,6 +17,7 @@ from periodictable import PeriodicTable
 from periodictableui import Ui_PeriodicTable
 from elements import Transition
 from elementdata import ElementData
+from usrmodel import ConvGaussianDoniachDublett, ConvGaussianDoniachSinglett, FermiEdgeModel
 
 #style.use('ggplot')
 style.use('seaborn-pastel')
@@ -29,11 +30,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
 	def initUI(self):
 		self.version = 'LG4X: lmfit gui for xps curve fitting ver. 0.082'
-		self.floating = '.2f'
-		self.setGeometry(600,300, 1200, 700)
+		self.floating = '.3f'
+		self.setGeometry(700,500, 1600, 900)
 		self.center()
 		self.setWindowTitle(self.version)     
-		self.statusBar().showMessage('Copyright (C) 2021, Hideki NAKAJIMA, Synchrotron Light Research Institute, Nakhon Ratchasima, Thailand')
+		self.statusBar().showMessage('Copyright (C) 2021, Hideki NAKAJIMA Hideki NAKAJIMA, Synchrotron Light Research Institute, Nakhon Ratchasima, Thailand: adapted by Julian Hochhaus, TU Dortmund University')
 		self.pt = PeriodicTable()
 		self.pt.setWindowTitle('Periodic Table')
 		self.pt.elementEmitted.connect(self.handleElementClicked)
@@ -111,14 +112,18 @@ class PrettyWidget(QtWidgets.QMainWindow):
 		btn_add = QtWidgets.QPushButton('add peak', self)
 		btn_add.resize(btn_add.sizeHint())   
 		btn_add.clicked.connect(self.add_col)
-		grid.addWidget(btn_add, 3, 3, 1, 2)
+		grid.addWidget(btn_add, 3, 3, 1, 1)
 		
 		# Remove Button
 		btn_rem = QtWidgets.QPushButton('rem peak', self)
 		btn_rem.resize(btn_rem.sizeHint())   
 		btn_rem.clicked.connect(self.rem_col)
-		grid.addWidget(btn_rem, 3, 5, 1, 2)
-		
+		grid.addWidget(btn_rem, 3, 4, 1, 1)
+		#Display Fit Results Button
+		btn_results = QtWidgets.QPushButton('Display Fit Results', self)
+		btn_results.resize(btn_results.sizeHint())   
+		btn_results.clicked.connect(self.rem_col)
+		grid.addWidget(btn_results, 5, 3, 1, 1)
 		# Export results Button
 		btn_exp = QtWidgets.QPushButton('Export', self)
 		btn_exp.resize(btn_exp.sizeHint())   
@@ -158,14 +163,14 @@ class PrettyWidget(QtWidgets.QMainWindow):
 		
 		# set Fit Table
 		list_col = ['peak_1']
-		list_row = ['model', 'center', 'sigma', 'gamma', 'amp', 'frac', 'skew', 'q', 'amp_ref', 'ratio', 'ctr_ref', 'ctr_diff', 'ctr_min', 'ctr_max', 'sig_min', 'sig_max', 'gam_min', 'gam_max', 'amp_min', 'amp_max', 'frac_min', 'frac_max', 'skew_min', 'skew_max', 'q_min', 'q_max']
+		list_row = ['model', 'center', 'sigma', 'gamma', 'amp', 'frac', 'skew', 'q', 'amp_ref', 'ratio', 'ctr_ref', 'ctr_diff', 'ctr_min', 'ctr_max', 'sig_min', 'sig_max', 'gam_min', 'gam_max', 'amp_min', 'amp_max', 'frac_min', 'frac_max', 'skew_min', 'skew_max', 'q_min', 'q_max', 'soc','height_ratio',"gaussian_sigma"]
 		self.fitp1 = QtWidgets.QTableWidget(len(list_row),len(list_col)*2)
 		list_colh = ['', 'peak_1']
 		self.fitp1.setHorizontalHeaderLabels(list_colh)
 		self.fitp1.setVerticalHeaderLabels(list_row)
 		
 		#self.list_shape = ['g', 'l', 'v', 'p']
-		self.list_shape = ['g: Gaussian', 'l: Lorentzian', 'v: Voigt', 'p: PseudoVoigt', 'e: ExponentialGaussian', 's: SkewedGaussian', 'a: SkewedVoigt', 'b: BreitWigner', 'n: Lognormal', 'd: Doniach']
+		self.list_shape = ['g: Gaussian', 'l: Lorentzian', 'v: Voigt', 'p: PseudoVoigt', 'e: ExponentialGaussian', 's: SkewedGaussian', 'a: SkewedVoigt', 'b: BreitWigner', 'n: Lognormal', 'd: Doniach', 'gd: Convolution Gaussian/Doniach']
 		self.list_peak = ['', '1']
 		
 		# set DropDown peak model
@@ -1069,6 +1074,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
 				pk_mod = LognormalModel(prefix=strind + str(index_pk+1) + '_')
 			if index == 9:
 				pk_mod = DoniachModel(prefix=strind + str(index_pk+1) + '_')
+			if index == 10:
+				pk_mod = ConvGaussianDoniachDublett(prefix=strind + str(index_pk+1) + '_')
 
 			pars.update(pk_mod.make_params())
 
@@ -1102,6 +1109,18 @@ class PrettyWidget(QtWidgets.QMainWindow):
 				if self.fitp1.item(7, 2*index_pk+1) != None:
 					if len(self.fitp1.item(7, 2*index_pk+1).text()) > 0:
 						pars[strind + str(index_pk+1) +	'_q'].value = float(self.fitp1.item(7, 2*index_pk+1).text())
+			if index == 10:
+				if self.fitp1.item(26, 2*index_pk+1) != None:
+					if len(self.fitp1.item(26, 2*index_pk+1).text()) > 0:
+						pars[strind + str(index_pk+1) +	'_soc'].value = float(self.fitp1.item(26, 2*index_pk+1).text())
+			if index == 10:
+				if self.fitp1.item(27, 2*index_pk+1) != None:
+					if len(self.fitp1.item(27, 2*index_pk+1).text()) > 0:
+						pars[strind + str(index_pk+1) +	'_height_ratio'].value = float(self.fitp1.item(27, 2*index_pk+1).text())
+			if index == 10:
+				if self.fitp1.item(28, 2*index_pk+1) != None:
+					if len(self.fitp1.item(28, 2*index_pk+1).text()) > 0:
+						pars[strind + str(index_pk+1) +	'_gaussian_sigma'].value = float(self.fitp1.item(28, 2*index_pk+1).text())
 
 			 # sum of models
 			mod += pk_mod
@@ -1144,6 +1163,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
 					pars[strind + str(index_pk+1) + '_skew'].vary = False
 				if index == 7:
 					pars[strind + str(index_pk+1) + '_q'].vary = False
+				if index == 10:
+					pars[strind + str(index_pk+1) + '_soc'].vary = False
+				if index == 10:
+					pars[strind + str(index_pk+1) + '_height_ratio'].vary = False
+				if index == 10:
+					pars[strind + str(index_pk+1) + '_gaussian_sigma'].vary = False
 		else:
 			# constraints of BG parameters (checkbox to hold)
 			for index in range(4):
@@ -1223,6 +1248,18 @@ class PrettyWidget(QtWidgets.QMainWindow):
 					if self.fitp1.item(7, 2*index_pk).checkState() == 2:
 						if len(self.fitp1.item(7, 2*index_pk+1).text()) > 0:
 							pars[strind + str(index_pk+1) + '_q'].vary = False
+				if index == 10:
+					if self.fitp1.item(26, 2*index_pk).checkState() == 2:
+						if len(self.fitp1.item(26, 2*index_pk+1).text()) > 0:
+							pars[strind + str(index_pk+1) + '_soc'].vary = False
+				if index == 10:
+					if self.fitp1.item(27, 2*index_pk).checkState() == 2:
+						if len(self.fitp1.item(27, 2*index_pk+1).text()) > 0:
+							pars[strind + str(index_pk+1) + '_height_ratio'].vary = False
+				if index == 10:
+					if self.fitp1.item(28, 2*index_pk).checkState() == 2:
+						if len(self.fitp1.item(28, 2*index_pk+1).text()) > 0:
+							pars[strind + str(index_pk+1) + '_gaussian_sigma'].vary = False
 
 				# additional peak min and max bounds (checkbox to activate)
 				#list_para = ['center', 'sigma', 'gamma', 'amplitude', 'fraction', 'skew', 'q']
@@ -1236,6 +1273,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
 					list_para = ['center', 'sigma', 'gamma', 'amplitude', '', 'skew', '']
 				if index == 7:
 					list_para = ['center', 'sigma', '', 'amplitude', '', '', 'q']
+				if index==10:
+					list_para=['center', 'sigma', 'gamma', 'amplitude', '','','']
 				
 				for para in range(len(list_para)):
 					if len(list_para[para]) != 0 and self.fitp1.item(12 + 2*para, 2*index_pk).checkState() == 2 and self.fitp1.item(12 + 2*para, 2*index_pk+1) != None:
@@ -1339,6 +1378,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
 			if index == 7:
 				item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_q'].value, self.floating)))
 				self.fitp1.setItem(7, 2*index_pk+1, item)
+			if index == 10:
+				item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_soc'].value, self.floating)))
+				self.fitp1.setItem(26, 2*index_pk+1, item)
+			if index == 10:
+				item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_height_ratio'].value, self.floating)))
+				self.fitp1.setItem(27, 2*index_pk+1, item)
+			if index == 10:
+				item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_gaussian_sigma'].value, self.floating)))
+				self.fitp1.setItem(28, 2*index_pk+1, item)
 
 		if mode == 'eva':
 			#ax.plot(x, init+bg_mod, 'b--', lw =2, label='initial')
