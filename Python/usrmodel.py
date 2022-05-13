@@ -4,7 +4,7 @@ from lmfit.lineshapes import doniach, gaussian, thermal_distribution
 import lmfit
 from lmfit import  Model
 from lmfit.models import guess_from_peak
-def dublett(x, amplitude,sigma,gamma, gaussian_sigma, center , soc, height_ratio):
+def dublett(x, amplitude,sigma,gamma, gaussian_sigma, center , soc, height_ratio, factor_sigma_doniach):
     """
     Calculates the convolution of a Doniach-Sunjic Dublett with a Gaussian. Thereby, the Gaussian acts as the convolution kernel.
     
@@ -26,13 +26,14 @@ def dublett(x, amplitude,sigma,gamma, gaussian_sigma, center , soc, height_ratio
         distance of the second-highest peak (higher-binded-orbital) of the spectrum in relation to the maximum of the spectrum (the lower-binded orbital)
     height_ratio: float
         height ratio of the second-highest peak (higher-binded-orbital) of the spectrum in relation to the maximum of the spectrum (the lower-binded orbital)
-        
+    factor_sigma_doniach: float
+        ratio of the lorentzian-sigma of the second-highest peak (higher-binded-orbital) of the spectrum in relation to the maximum of the spectrum (the lower-binded orbital)   
     Returns
     ---------
     array-type
         convolution of a doniach dublett and a gaussian profile
     """
-    return convolve(doniach(x, amplitude, center, sigma, gamma)+doniach(x, height_ratio*amplitude, center-soc, sigma, gamma),gaussian(x,amplitude=1,center=np.mean(x),sigma=gaussian_sigma))
+    return convolve(doniach(x, amplitude, center, sigma, gamma)+doniach(x, height_ratio*amplitude, center-soc, factor_sigma_doniach*sigma, gamma),gaussian(x,amplitude=1,center=np.mean(x),sigma=gaussian_sigma))
 
 
 def singlett(x,amplitude, sigma, gamma, gaussian_sigma, center):
