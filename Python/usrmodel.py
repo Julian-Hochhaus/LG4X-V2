@@ -115,6 +115,37 @@ def convolve(data, kernel):
     n_start_data = int((len(out) - min_num_pts) / 2)
     return (out[n_start_data:])[:min_num_pts]
 
+def fft_convolve(data, kernel):
+    """
+    Calculates the convolution of an data array with a kernel by using the convolution theorem and thereby transforming the time consuming convolution operation into a multiplication of FFTs.
+    For the FFT and inverse FFT, numpy's implementation (which is basically the implementation used in scipy) of fft and ifft is used.
+    To surpress edge effects and generate a valid convolution on the full data range, the input dataset is extended at the edges.
+    
+    Parameters
+    ----------
+    data: array:
+        1D-array containing the data to convolve
+    kernel: array
+        1D-array which defines the kernel used for convolution
+    
+    Returns
+    ---------
+    array-type
+        convolution of a data array with a kernel array
+    
+    See Also
+    ---------
+    numpy.fft.fft()
+    numpy.fft.ifft()
+    scipy.fft
+    """
+    min_num_pts = min(len(data), len(kernel))
+    padding = np.ones(min_num_pts)
+    padded_data = np.concatenate((padding*data[0], data, padding*data[-1]))
+    fft_kernel, fft_padded_data=np.fft.fft(kernel), np.fft.fft(padded_data)
+    res=np.fft.ifft(fft_kernel*np.fft.fft(data))
+    n_start_data = int((len(res) - min_num_pts) / 2)
+    return (res[n_start_data:])[:min_num_pts]
 
     
 class ConvGaussianDoniachSinglett(lmfit.model.Model):
