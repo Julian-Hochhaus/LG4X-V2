@@ -34,7 +34,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 		self.setGeometry(700,500, 1600, 900)
 		self.center()
 		self.setWindowTitle(self.version)     
-		self.statusBar().showMessage('Copyright (C) 2021, Hideki NAKAJIMA Hideki NAKAJIMA, Synchrotron Light Research Institute, Nakhon Ratchasima, Thailand: adapted by Julian Hochhaus, TU Dortmund University')
+		self.statusBar().showMessage('Copyright (C) 2022, Julian Hochhaus, TU Dortmund University adapted from Hideki NAKAJIMA Hideki NAKAJIMA, Synchrotron Light Research Institute, Nakhon Ratchasima, Thailand ')
 		self.pt = PeriodicTable()
 		self.pt.setWindowTitle('Periodic Table')
 		self.pt.elementEmitted.connect(self.handleElementClicked)
