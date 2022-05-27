@@ -152,20 +152,15 @@ def fft_convolve(data, kernel):
     
 class ConvGaussianDoniachSinglett(lmfit.model.Model):
     __doc__ = "Model of a Doniach dublett profile convoluted with a gaussian. See also lmfit->lineshape.gaussian and lmfit->lineshape.doniach." + lmfit.models.COMMON_INIT_DOC
-    
     def __init__(self, *args, **kwargs):
         super().__init__(singlett, *args, **kwargs)
-        #limit several input parameters to positive values
-        self.set_param_hint('amplitude', min=0)
-        self.set_param_hint('sigma', min=0)
-        self.set_param_hint('gaussian_sigma', min=0)
-        self.set_param_hint('gamma', min=0) 
         self._set_paramhints_prefix()
     def _set_paramhints_prefix(self):
-        self.set_param_hint('amplitude', value=100)
-        self.set_param_hint('sigma', value=0.2)
-        self.set_param_hint('gaussian_sigma', value=0.2)
-        self.set_param_hint('gamma', value=0.02) 
+        self.set_param_hint('amplitude', value=100, min=0)
+        self.set_param_hint('sigma', value=0.2, min=0)
+        self.set_param_hint('gamma', value=0.02, min=0) 
+        self.set_param_hint('gaussian_sigma', value=0.2, min=0)
+        self.set_param_hint('center', value=100, min=0) 
     def guess(self, data, x=None, **kwargs):
         if x is None:
             return
@@ -175,27 +170,22 @@ class ConvGaussianDoniachSinglett(lmfit.model.Model):
         gaussian_sigma=(doniach_pars["sigma"].value+x[1]-x[0])/2 #gaussian lies between sigma and the experimental res. why not?
         doniach_ampl=doniach_pars["amplitude"].value*np.sqrt(np.sum(gaussian(x=x,amplitude=1,center=np.mean(x), sigma=gaussian_sigma)))/(2*np.sqrt(np.sum(x))) #gives good initial guesses
         params = self.make_params(amplitude=doniach_ampl, sigma=doniach_pars["sigma"].value, gamma=doniach_pars["gamma"].value, gaussian_sigma=gaussian_sigma, center=doniach_pars["center"].value)
-        return lmfit.models.update_param_vals(params, self.prefix, **kwargs)
-    
+        return lmfit.models.update_param_vals(params, self.prefix, **kwargs) 
 class ConvGaussianDoniachDublett(lmfit.model.Model):
     __doc__ = "Model of a Doniach profile convoluted with a gaussian. See also lmfit->lineshape.gaussian and lmfit->lineshape.doniach." + lmfit.models.COMMON_INIT_DOC
-    
     def __init__(self, *args, **kwargs):
         super().__init__(dublett, *args, **kwargs)
-        #limit several input parameters to positive values
-        self.set_param_hint('amplitude', min=0)
-        self.set_param_hint('sigma', min=0)
-        self.set_param_hint('gaussian_sigma', min=0)
-        self.set_param_hint('gamma', min=0) 
-        self.set_param_hint('height_ratio', min=0)
         self._set_paramhints_prefix()
     def _set_paramhints_prefix(self):
-        self.set_param_hint('amplitude', value=100)
-        self.set_param_hint('sigma', value=0.2)
-        self.set_param_hint('gaussian_sigma', value=0.2)
-        self.set_param_hint('gamma', value=0.02) 
-        self.set_param_hint('height_ratio', value=0.75)
-        self.set_param_hint('soc', value=2)
+        self.set_param_hint('amplitude', value=100, min=0)
+        self.set_param_hint('sigma', value=0.2, min=0)
+        self.set_param_hint('gamma', value=0.02, min=0) 
+        self.set_param_hint('gaussian_sigma', value=0.2, min=0)
+        self.set_param_hint('center', value=285)
+        self.set_param_hint('soc', value=2.0)
+        self.set_param_hint('height_ratio', value=0.75, min=0)
+        self.set_param_hint('factor_sigma_doniach', value=1, min=0)
+
     def guess(self, data, x=None, **kwargs):
         if x is None:
             return
@@ -212,13 +202,12 @@ class FermiEdgeModel(lmfit.model.Model):
     def __init__(self, *args, **kwargs):
         super().__init__(fermi_edge, *args, **kwargs)
         #limit several input parameters to positive values
-        self.set_param_hint('amplitude', min=0)
-        self.set_param_hint('kt', min=0)
-        self.set_param_hint('sigma', min=0)
         self._set_paramhints_prefix()
     def _set_paramhints_prefix(self):
-        self.set_param_hint('kt', value=0.02585)#initial value is room temperature
-        self.set_param_hint('sigma', value=0.2)
+        self.set_param_hint('kt', value=0.02585, min=0)#initial value is room temperature
+        self.set_param_hint('sigma', value=0.2, min=0)
+        self.set_param_hint('center',value=100, min=0)
+        self._set_paramhint('amplitude', value=100, min=0)
     def guess(self, data, x=None, **kwargs):
         if x is None:
             return
