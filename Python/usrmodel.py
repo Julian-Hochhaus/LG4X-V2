@@ -4,7 +4,8 @@ from lmfit.lineshapes import doniach, gaussian, thermal_distribution
 import lmfit
 from lmfit import  Model
 from lmfit.models import guess_from_peak
-def dublett(x, amplitude,sigma,gamma, gaussian_sigma, center , soc, height_ratio, factor_sigma_doniach):
+from scipy.signal import convolve as sc_convolve
+def dublett(x, amplitude,sigma,gamma, gaussian_sigma, center, soc, height_ratio,factor_sigma_doniach):
     """
     Calculates the convolution of a Doniach-Sunjic Dublett with a Gaussian. Thereby, the Gaussian acts as the convolution kernel.
     
@@ -33,8 +34,8 @@ def dublett(x, amplitude,sigma,gamma, gaussian_sigma, center , soc, height_ratio
     array-type
         convolution of a doniach dublett and a gaussian profile
     """
-    return convolve(doniach(x, amplitude, center, sigma, gamma)+doniach(x, height_ratio*amplitude, center-soc, factor_sigma_doniach*sigma, gamma),gaussian(x,amplitude=1,center=np.mean(x),sigma=gaussian_sigma))
-
+    conv_temp=fft_convolve(doniach(x, amplitude=1, center=center, sigma=sigma, gamma=gamma)+doniach(x, height_ratio, center-soc, factor_sigma_doniach*sigma, gamma),1/(np.sqrt(2*np.pi)*gaussian_sigma)*gaussian(x,amplitude=1,center=np.mean(x),sigma=gaussian_sigma))
+    return amplitude*conv_temp/max(conv_temp)
 
 def singlett(x,amplitude, sigma, gamma, gaussian_sigma, center):
     """
@@ -60,7 +61,8 @@ def singlett(x,amplitude, sigma, gamma, gaussian_sigma, center):
     array-type
         convolution of a doniach profile and a gaussian profile
     """
-    return convolve(doniach(x, amplitude, center, sigma, gamma),gaussian(x,amplitude=1,center=np.mean(x),sigma=gaussian_sigma))
+    conv_temp = fft_convolve(doniach(x, amplitude=1, center=center, sigma=sigma, gamma=gamma),1/(np.sqrt(2*np.pi)*gaussian_sigma)*gaussian(x,amplitude=1,center=np.mean(x),sigma=gaussian_sigma))
+    return amplitude*conv_temp/max(conv_temp)
 kb = 8.6173e-5 # Boltzmann k in eV/K
 def fermi_edge(x, amplitude,center,kt,sigma):
     """
@@ -86,7 +88,8 @@ def fermi_edge(x, amplitude,center,kt,sigma):
     array-type
         convolution of a fermi direac distribution and a gaussian profile
     """
-    return convolve(thermal_distribution(x,amplitude=1,center=center,kt=kt,form='fermi'),gaussian(x,amplitude=amplitude,center=np.mean(x),sigma=sigma))
+    conv_temp=fft_convolve(thermal_distribution(x,amplitude=1,center=center,kt=kt,form='fermi'),1/(np.sqrt(2*np.pi)*sigma)*gaussian(x,amplitude=1,center=np.mean(x),sigma=sigma))
+    return amplitude*conv_temp/max(conv_temp)
 def convolve(data, kernel):
     """
     Calculates the convolution of an data array with a kernel by using numpy's convolve funtion. 
@@ -142,10 +145,9 @@ def fft_convolve(data, kernel):
     min_num_pts = min(len(data), len(kernel))
     padding = np.ones(min_num_pts)
     padded_data = np.concatenate((padding*data[0], data, padding*data[-1]))
-    fft_kernel, fft_padded_data=np.fft.fft(kernel), np.fft.fft(padded_data)
-    res=np.fft.ifft(fft_kernel*np.fft.fft(data))
-    n_start_data = int((len(res) - min_num_pts) / 2)
-    return (res[n_start_data:])[:min_num_pts]
+    out = sc_convolve(padded_data, kernel, mode='valid', method="fft")
+    n_start_data = int((len(out) - min_num_pts) / 2)
+    return (out[n_start_data:])[:min_num_pts]
 
     
 class ConvGaussianDoniachSinglett(lmfit.model.Model):
