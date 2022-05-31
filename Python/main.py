@@ -60,7 +60,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.toolbar.setMaximumHeight(20)
         self.toolbar.setMinimumHeight(15)
         self.toolbar.setStyleSheet("QToolBar { border: 0px }")
-        grid.addWidget(self.canvas, 4,0,1,3)
+        grid.addWidget(self.canvas, 4,0,4,3)
         grid.addWidget(self.toolbar, 3,0,1,3)
         
         # data template
@@ -111,13 +111,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_add = QtWidgets.QPushButton('add peak', self)
         btn_add.resize(btn_add.sizeHint())   
         btn_add.clicked.connect(self.add_col)
-        grid.addWidget(btn_add, 3, 3, 1, 1)
+        grid.addWidget(btn_add, 3, 4, 1, 1)
         
         # Remove Button
         btn_rem = QtWidgets.QPushButton('rem peak', self)
         btn_rem.resize(btn_rem.sizeHint())   
         btn_rem.clicked.connect(self.rem_col)
-        grid.addWidget(btn_rem, 3, 4, 1, 1)
+        grid.addWidget(btn_rem, 3, 5, 1, 1)
         # Export results Button
         btn_exp = QtWidgets.QPushButton('Export', self)
         btn_exp.resize(btn_exp.sizeHint())   
@@ -153,7 +153,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         self.fitp0.resizeColumnsToContents()
         self.fitp0.resizeRowsToContents()	
-        grid.addWidget(self.fitp0, 0, 3, 3,3)
+        grid.addWidget(self.fitp0, 0, 3, 3,5)
         
         # set Fit Table
         list_col = ['peak_1']
@@ -230,14 +230,34 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         self.fitp1.resizeColumnsToContents()
         self.fitp1.resizeRowsToContents()
-        grid.addWidget(self.fitp1, 4, 3, 1, 3)
+        grid.addWidget(self.fitp1, 4, 3, 4, 3)
         list_res_row = ['gaussian_fwhm', 'lorentzian_fwhm_p1', 'lorentzian_fwhm_p2', 'fwhm_p1', 'fwhm_p2','height_p1', 'height_p2','area_p1','area_p2']
         self.res_tab = QtWidgets.QTableWidget(len(list_res_row),len(list_col))
         self.res_tab.setHorizontalHeaderLabels(list_col)
         self.res_tab.setVerticalHeaderLabels(list_res_row)
         self.res_tab.resizeColumnsToContents()
         self.res_tab.resizeRowsToContents()	
-        grid.addWidget(self.res_tab, 0, 6, 5,2)
+        grid.addWidget(self.res_tab,7, 6, 1,2)
+        list_stats_row = ['success?', 'message', 'nfev', 'nvary', 'ndata','nfree', 'chisqr','redchi','aic', 'bic']
+        list_stats_col= ['Fit stats']
+        self.stats_tab = QtWidgets.QTableWidget(len(list_stats_row),1)
+        self.stats_tab.setHorizontalHeaderLabels(list_stats_col)
+        self.stats_tab.setVerticalHeaderLabels(list_stats_row)
+        self.stats_tab.resizeColumnsToContents()
+        self.stats_tab.resizeRowsToContents()	
+        grid.addWidget(self.stats_tab,5, 6, 1,2)
+        self.stats_label=QtWidgets.QLabel()
+        self.stats_label.setText("Fit statistics:")
+        self.stats_label.setStyleSheet("font-weight: bold; font-size:12pt")
+        grid.addWidget(self.stats_label, 4, 6,1,1)
+        self.pars_label=QtWidgets.QLabel()
+        self.pars_label.setText("Peak parameters:")
+        self.pars_label.setStyleSheet("font-weight: bold; font-size:12pt")
+        grid.addWidget(self.pars_label, 3, 3,1,1)
+        self.res_label=QtWidgets.QLabel()
+        self.res_label.setText("Fit results:")
+        self.res_label.setStyleSheet("font-weight: bold; font-size:12pt")
+        grid.addWidget(self.res_label, 6, 6,1,1)
         self.show()
 
     def add_col(self):
@@ -1614,9 +1634,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.fitp0.setItem(index_bg+1, 7, item)
             item = QtWidgets.QTableWidgetItem(str(format(out.params['bg_d4'].value, self.floating)))
             self.fitp0.setItem(index_bg+1, 9, item)
-
+        self.fitp0.resizeColumnsToContents()
+        self.fitp0.resizeRowsToContents()
         # Peak results into table
         for index_pk in range(npeak):
+            print(out.aic)
             index = self.fitp1.cellWidget(0, 2*index_pk+1).currentIndex()
             strind = self.fitp1.cellWidget(0, 2*index_pk+1).currentText()
             strind = strind.split(":",1)[0]
