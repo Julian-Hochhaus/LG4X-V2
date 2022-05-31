@@ -247,7 +247,7 @@ class FermiEdgeModel(lmfit.model.Model):
         self.set_param_hint('kt', value=0.02585, min=0)#initial value is room temperature
         self.set_param_hint('sigma', value=0.2, min=0)
         self.set_param_hint('center',value=100, min=0)
-        self._set_paramhint('amplitude', value=100, min=0)
+        self.set_param_hint('amplitude', value=100, min=0)
     def guess(self, data, x=None, **kwargs):
         if x is None:
             return
