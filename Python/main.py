@@ -118,11 +118,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_rem.resize(btn_rem.sizeHint())   
         btn_rem.clicked.connect(self.rem_col)
         grid.addWidget(btn_rem, 3, 4, 1, 1)
-        #Display Fit Results Button
-        btn_results = QtWidgets.QPushButton('Display Fit Results', self) #not yet implemented
-        btn_results.resize(btn_results.sizeHint())   
-        btn_results.clicked.connect(self.exportResults)
-        grid.addWidget(btn_results, 3, 6, 1, 1)
         # Export results Button
         btn_exp = QtWidgets.QPushButton('Export', self)
         btn_exp.resize(btn_exp.sizeHint())   
@@ -235,24 +230,23 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         self.fitp1.resizeColumnsToContents()
         self.fitp1.resizeRowsToContents()
-        grid.addWidget(self.fitp1, 4, 3, 1, 2)
+        grid.addWidget(self.fitp1, 4, 3, 1, 3)
         list_res_row = ['gaussian_fwhm', 'lorentzian_fwhm_p1', 'lorentzian_fwhm_p2', 'fwhm_p1', 'fwhm_p2','height_p1', 'height_p2','area_p1','area_p2']
-        self.res_tab  = QtWidgets.QTableWidget(len(list_res_row),len(list_col))
+        self.res_tab = QtWidgets.QTableWidget(len(list_res_row),len(list_col))
         self.res_tab.setHorizontalHeaderLabels(list_col)
         self.res_tab.setVerticalHeaderLabels(list_res_row)
         self.res_tab.resizeColumnsToContents()
         self.res_tab.resizeRowsToContents()	
-        grid.addWidget(self.res_tab, 4, 5, 1,2)
+        grid.addWidget(self.res_tab, 0, 6, 5,2)
         self.show()
 
     def add_col(self):
         rowPosition = self.fitp1.rowCount()
         colPosition = self.fitp1.columnCount()
-        colPosition_res = self.res_tab.columnCount()
-        
+        colPosition_res=self.res_tab.columnCount()
+        self.res_tab.insertColumn(colPosition_res)
         self.fitp1.insertColumn(colPosition)
         self.fitp1.insertColumn(colPosition+1)
-        self.res_tab.insertColumn(colPosition_res)
         # add DropDown peak model
         comboBox = QtWidgets.QComboBox()
         comboBox.addItems(self.list_shape)
@@ -360,15 +354,17 @@ class PrettyWidget(QtWidgets.QMainWindow):
         item = QtWidgets.QTableWidgetItem('peak_' + str(int(1+colPosition/2)))
         self.fitp1.setHorizontalHeaderItem(colPosition+1, item)
         self.fitp1.resizeColumnsToContents()
+        item = QtWidgets.QTableWidgetItem('peak_' + str(int(1+colPosition_res)))
         self.res_tab.setHorizontalHeaderItem(colPosition_res, item)
         self.res_tab.resizeColumnsToContents()
+        self.res_tab.resizeRowsToContents()
         #self.fitp1.setColumnWidth(1, 55)
 
     def rem_col(self):
         colPosition = self.fitp1.columnCount()
         colPosition_res=self.res_tab.columnCount()
-        if colPosition_res> 1:
-            print("test")
+        if colPosition_res >1 :
+            self.res_tab.removeColumn(colPosition_res-1)
         if colPosition > 2:
             self.fitp1.removeColumn(colPosition-1)
             self.fitp1.removeColumn(colPosition-2)
@@ -423,7 +419,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.fitp1.setCellWidget(23, 2*col+1, comboBox)
                 if index > 0:
                     comboBox.setCurrentIndex(index)
-
 
     def preset(self):
         index = self.comboBox_pres.currentIndex()
@@ -1569,6 +1564,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             if len(self.fitp1.item(24, 2*index_pk+1).text()) > 0:
                                 pars[strind + str(index_pk+1) + '_sigma'].expr = strtar + str(pktar) + '_sigma * ' + str(strind + str(index_pk+1) + '_lorentzian_ratio')
         # evaluate model and optimize parameters for fitting in lmfit
+        if mode == 'eva':
+            strmode = 'Evalution'
+        else:
+            strmode = 'Fitting'
+        self.statusBar().showMessage(strmode + 'running.')
         init = mod.eval(pars, x=x)
         if mode== 'eva':
             out = mod.fit(y, pars, x=x)
@@ -1581,10 +1581,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             print(key, "=", out.params[key].value)
         
         # fit results print
-        if mode == 'eva':
-            strmode = 'Evalution'
-        else:
-            strmode = 'Fitting'
+        
         results = strmode + ' done: ' + out.method + ', # data: ' + str(out.ndata) + ', # func evals: ' + str(out.nfev) + ', # varys: ' + str(out.nvarys) + ', r chi-sqr: ' + str(format(out.redchi, self.floating)) + ', Akaike info crit: ' + str(format(out.aic, self.floating))
         self.statusBar().showMessage(results)
 
@@ -1632,6 +1629,47 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.fitp1.setItem(16, 2*index_pk+1, item)
             item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_sigma'].value, self.floating)))
             self.fitp1.setItem(2, 2*index_pk+1, item)
+            if index == 0:
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_fwhm'].value, self.floating)))
+                self.res_tab.setItem(0,index_pk, item)
+                item = QtWidgets.QTableWidgetItem('')
+                self.res_tab.setItem(1,index_pk, item)
+            if index == 1:
+                item = QtWidgets.QTableWidgetItem('')
+                self.res_tab.setItem(0,index_pk, item)
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_fwhm'].value, self.floating)))
+                self.res_tab.setItem(1,index_pk, item)
+            if index == 0 or index == 1 or index == 2 or index == 3 or index == 11:
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_fwhm'].value, self.floating)))
+                self.res_tab.setItem(3,index_pk, item)
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_height'].value, self.floating)))
+                self.res_tab.setItem(5,index_pk, item)
+                area=str(format(out.params[strind + str(index_pk+1) + '_height'].value*out.params[strind + str(index_pk+1) + '_fwhm'].value, self.floating))
+                item=QtWidgets.QTableWidgetItem(area)
+                self.res_tab.setItem(7,index_pk,item)
+                item = QtWidgets.QTableWidgetItem('')
+                self.res_tab.setItem(2,index_pk, item)
+                item = QtWidgets.QTableWidgetItem('')
+                self.res_tab.setItem(4,index_pk, item)
+                item = QtWidgets.QTableWidgetItem('')
+                self.res_tab.setItem(6,index_pk, item)
+                item = QtWidgets.QTableWidgetItem('')
+                self.res_tab.setItem(8,index_pk, item)
+            if index == 4 or index == 5 or index == 6 or index == 7 or index == 8 or index == 9 or index == 12:
+                rows= self.res_tab.rowCount()
+                for row in range(rows):
+                    item = QtWidgets.QTableWidgetItem('')
+                    self.res_tab.setItem(row,index_pk, item)
+            if index == 2:
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_sigma'].value, self.floating)))
+                self.res_tab.setItem(0,index_pk, item)
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_gamma'].value, self.floating)))
+                self.res_tab.setItem(1,index_pk, item)
+            if index == 3:
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_sigma'].value, self.floating)))
+                self.res_tab.setItem(0,index_pk, item)
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_sigma'].value, self.floating)))
+                self.res_tab.setItem(1,index_pk, item)
             if index == 2 or index == 4 or index == 5 or index == 6 or index == 9 or index == 10 or index == 11:
                 item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_gamma'].value, self.floating)))
                 self.fitp1.setItem(3, 2*index_pk+1, item)
@@ -1697,6 +1735,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if index == 12:
                 item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_kt'].value, self.floating)))
                 self.fitp1.setItem(8, 2*index_pk+1, item)
+            self.res_tab.resizeColumnsToContents()
+            self.res_tab.resizeRowsToContents()
+            self.fitp1.resizeColumnsToContents()
+            self.fitp1.resizeRowsToContents()
         if mode == 'eva':
             #ax.plot(x, init+bg_mod, 'b--', lw =2, label='initial')
             self.ax.plot(x, out.best_fit+bg_mod, 'k-', lw=2, label='initial')
