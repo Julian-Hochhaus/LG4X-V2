@@ -5,7 +5,17 @@ import lmfit
 from lmfit import  Model
 from lmfit.models import guess_from_peak
 from scipy.signal import convolve as sc_convolve
-def dublett(x, amplitude,sigma,gamma, gaussian_sigma, center, soc, height_ratio,factor_sigma_doniach):
+
+#Taken from lmfit/models.py (https://github.com/lmfit/lmfit-py/blob/b930ddef320d93f984181db19fec8e9c9a41be8f/lmfit/models.py)
+tiny = 1.0e-15
+def fwhm_expr(model):
+    """Return constraint expression for fwhm."""
+    fmt = "{factor:.7f}*{prefix:s}sigma"
+    return fmt.format(factor=model.fwhm_factor, prefix=model.prefix)
+
+
+
+def dublett(x, amplitude,sigma,gamma, gaussian_sigma, center, soc, height_ratio,coster_kronig_factor):
     """
     Calculates the convolution of a Doniach-Sunjic Dublett with a Gaussian. Thereby, the Gaussian acts as the convolution kernel.
     
@@ -27,14 +37,14 @@ def dublett(x, amplitude,sigma,gamma, gaussian_sigma, center, soc, height_ratio,
         distance of the second-highest peak (higher-binded-orbital) of the spectrum in relation to the maximum of the spectrum (the lower-binded orbital)
     height_ratio: float
         height ratio of the second-highest peak (higher-binded-orbital) of the spectrum in relation to the maximum of the spectrum (the lower-binded orbital)
-    factor_sigma_doniach: float
+    coster_kronig_factor: float
         ratio of the lorentzian-sigma of the second-highest peak (higher-binded-orbital) of the spectrum in relation to the maximum of the spectrum (the lower-binded orbital)   
     Returns
     ---------
     array-type
         convolution of a doniach dublett and a gaussian profile
     """
-    conv_temp=fft_convolve(doniach(x, amplitude=1, center=center, sigma=sigma, gamma=gamma)+doniach(x, height_ratio, center-soc, factor_sigma_doniach*sigma, gamma),1/(np.sqrt(2*np.pi)*gaussian_sigma)*gaussian(x,amplitude=1,center=np.mean(x),sigma=gaussian_sigma))
+    conv_temp=fft_convolve(doniach(x, amplitude=1, center=center, sigma=sigma, gamma=gamma)+doniach(x, height_ratio, center-soc, coster_kronig_factor*sigma, gamma),1/(np.sqrt(2*np.pi)*gaussian_sigma)*gaussian(x,amplitude=1,center=np.mean(x),sigma=gaussian_sigma))
     return amplitude*conv_temp/max(conv_temp)
 
 def singlett(x,amplitude, sigma, gamma, gaussian_sigma, center):
@@ -86,7 +96,7 @@ def fermi_edge(x, amplitude,center,kt,sigma):
     Returns
     ---------
     array-type
-        convolution of a fermi direac distribution and a gaussian profile
+        convolution of a fermi dirac distribution and a gaussian profile
     """
     conv_temp=fft_convolve(thermal_distribution(x,amplitude=1,center=center,kt=kt,form='fermi'),1/(np.sqrt(2*np.pi)*sigma)*gaussian(x,amplitude=1,center=np.mean(x),sigma=sigma))
     return amplitude*conv_temp/max(conv_temp)
@@ -161,6 +171,17 @@ class ConvGaussianDoniachSinglett(lmfit.model.Model):
         self.set_param_hint('gamma', value=0.02, min=0) 
         self.set_param_hint('gaussian_sigma', value=0.2, min=0)
         self.set_param_hint('center', value=100, min=0) 
+        g_fwhm_expr=('2*{pre:s}gaussian_sigma*1.1774')
+        self.set_param_hint('gaussian_fwhm', expr=g_fwhm_expr.format(pre=self.prefix))
+        l_fwhm_expr=('2*{pre:s}sigma')
+        self.set_param_hint('lorentzian_fwhm', expr=l_fwhm_expr.format(pre=self.prefix))
+        fwhm_expr = ("0.5346*{pre:s}lorentzian_fwhm+" +
+                 "sqrt(0.2166*{pre:s}lorentzian_fwhm**2+{pre:s}gaussian_fwhm**2)")
+        self.set_param_hint('fwhm', expr=fwhm_expr.format(pre=self.prefix))
+        h_expr = ("{pre:s}amplitude")
+        self.set_param_hint('height', expr=h_expr.format(pre=self.prefix))
+        area_expr = ("{pre:s}fwhm*{pre:s}height")
+        self.set_param_hint('area', expr=area_expr.format(pre=self.prefix))
     def guess(self, data, x=None, **kwargs):
         if x is None:
             return
@@ -184,8 +205,27 @@ class ConvGaussianDoniachDublett(lmfit.model.Model):
         self.set_param_hint('center', value=285)
         self.set_param_hint('soc', value=2.0)
         self.set_param_hint('height_ratio', value=0.75, min=0)
-        self.set_param_hint('factor_sigma_doniach', value=1, min=0)
-
+        self.set_param_hint('coster_kronig_factor', value=1, min=0)
+        g_fwhm_expr=('2*{pre:s}gaussian_sigma*1.1774')
+        self.set_param_hint('gaussian_fwhm', expr=g_fwhm_expr.format(pre=self.prefix))
+        l_p1_fwhm_expr=('2*{pre:s}sigma')
+        l_p2_fwhm_expr=('2*{pre:s}sigma*{pre:s}coster_kronig_factor')
+        self.set_param_hint('lorentzian_fwhm_p1', expr=l_p1_fwhm_expr.format(pre=self.prefix))
+        self.set_param_hint('lorentzian_fwhm_p2', expr=l_p2_fwhm_expr.format(pre=self.prefix))
+        fwhm_p1_expr = ("0.5346*{pre:s}lorentzian_fwhm_p1+" +
+                 "sqrt(0.2166*{pre:s}lorentzian_fwhm_p1**2+{pre:s}gaussian_fwhm**2)")
+        self.set_param_hint('fwhm_p1', expr=fwhm_p1_expr.format(pre=self.prefix))
+        fwhm_p2_expr = ("0.5346*{pre:s}lorentzian_fwhm_p2+" +
+                 "sqrt(0.2166*{pre:s}lorentzian_fwhm_p2**2+{pre:s}gaussian_fwhm**2)")
+        self.set_param_hint('fwhm_p2', expr=fwhm_p2_expr.format(pre=self.prefix))
+        h_p1_expr = ("{pre:s}amplitude")
+        h_p2_expr = ("{pre:s}amplitude*{pre:s}height_ratio")
+        self.set_param_hint('height_p1', expr=h_p1_expr.format(pre=self.prefix))
+        self.set_param_hint('height_p2', expr=h_p2_expr.format(pre=self.prefix))
+        area_p1_expr = ("{pre:s}fwhm_p1*{pre:s}height_p1")
+        self.set_param_hint('area_p1', expr=area_p1_expr.format(pre=self.prefix))
+        area_p2_expr = ("{pre:s}fwhm_p2*{pre:s}height_p2")
+        self.set_param_hint('area_p2', expr=area_p2_expr.format(pre=self.prefix))
     def guess(self, data, x=None, **kwargs):
         if x is None:
             return

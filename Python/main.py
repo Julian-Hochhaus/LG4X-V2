@@ -28,12 +28,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.initUI()
 
     def initUI(self):
-        self.version = 'LG4X: lmfit gui for xps curve fitting ver. 0.082'
+        self.version = 'LG4X: LMFit GUI for XPS curve fitting V2 0.01'
         self.floating = '.3f'
         self.setGeometry(700,500, 1600, 900)
         self.center()
         self.setWindowTitle(self.version)     
-        self.statusBar().showMessage('Copyright (C) 2022, Julian Hochhaus, TU Dortmund University adapted from Hideki NAKAJIMA Hideki NAKAJIMA, Synchrotron Light Research Institute, Nakhon Ratchasima, Thailand ')
+        self.statusBar().showMessage('Copyright (C) 2022, Julian Hochhaus, TU Dortmund University; adapted from Hideki NAKAJIMA Hideki NAKAJIMA, Synchrotron Light Research Institute, Nakhon Ratchasima, Thailand ')
         self.pt = PeriodicTable()
         self.pt.setWindowTitle('Periodic Table')
         self.pt.elementEmitted.connect(self.handleElementClicked)
@@ -122,7 +122,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_results = QtWidgets.QPushButton('Display Fit Results', self) #not yet implemented
         btn_results.resize(btn_results.sizeHint())   
         btn_results.clicked.connect(self.exportResults)
-        grid.addWidget(btn_results, 3, 7, 1, 1)
+        grid.addWidget(btn_results, 3, 6, 1, 1)
         # Export results Button
         btn_exp = QtWidgets.QPushButton('Export', self)
         btn_exp.resize(btn_exp.sizeHint())   
@@ -158,11 +158,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         self.fitp0.resizeColumnsToContents()
         self.fitp0.resizeRowsToContents()	
-        grid.addWidget(self.fitp0, 0, 3, 3, 4)
+        grid.addWidget(self.fitp0, 0, 3, 3,3)
         
         # set Fit Table
         list_col = ['peak_1']
-        list_row = ['model', 'center', 'sigma', 'gamma', 'amp', 'frac', 'skew', 'q','kt','soc','height_ratio','gaussian_sigma', 'fct_lrtzn-sigma', 'center_ref', 'ctr_diff', 'amp_ref', 'ratio', 'soc_ref','soc_ratio','height_r_ref','ratio','g_s_ref', 'gaussian_ratio', 'lrtzn_s_ref','lrtzn_ratio', 'ctr_min', 'ctr_max', 'sig_min', 'sig_max', 'gam_min', 'gam_max', 'amp_min', 'amp_max', 'frac_min', 'frac_max', 'skew_min', 'skew_max', 'q_min', 'q_max', 'ctr_diff_min', 'ctr_diff_max', 'height_rtio_min', 'height_rtio_max', 'gaussian_s_min', 'gaussian_s_max'] #[feature] include limits for soc, gaussian etc
+        list_row = ['model', 'center', 'sigma', 'gamma', 'amp', 'frac', 'skew', 'q','kt','soc','height_ratio','gaussian_sigma', 'fct_coster_kronig', 'center_ref', 'ctr_diff', 'amp_ref', 'ratio', 'soc_ref','soc_ratio','height_r_ref','ratio','g_s_ref', 'gaussian_ratio', 'lrtzn_s_ref','lrtzn_ratio', 'ctr_min', 'ctr_max', 'sig_min', 'sig_max', 'gam_min', 'gam_max', 'amp_min', 'amp_max', 'frac_min', 'frac_max', 'skew_min', 'skew_max', 'q_min', 'q_max', 'ctr_diff_min', 'ctr_diff_max', 'height_rtio_min', 'height_rtio_max', 'gaussian_s_min', 'gaussian_s_max'] #[feature] include limits for soc, gaussian etc
         self.fitp1 = QtWidgets.QTableWidget(len(list_row),len(list_col)*2)
         list_colh = ['', 'peak_1']
         self.fitp1.setHorizontalHeaderLabels(list_colh)
@@ -225,7 +225,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if row > 23:
                     item.setCheckState(QtCore.Qt.Unchecked)
                     self.fitp1.setItem(row+1, col*2, item)
-                if row >= 12 and row <=23 and row % 2==1: # checkboxes for ref-parameters, need to be included into fit later [feature]
+                if row >= 12 and row <=23 and row % 2==1: 
                     item.setCheckState(QtCore.Qt.Unchecked)
                     self.fitp1.setItem(row+1, col*2, item)
         # load default preset
@@ -235,21 +235,24 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         self.fitp1.resizeColumnsToContents()
         self.fitp1.resizeRowsToContents()
-        grid.addWidget(self.fitp1, 4, 3, 1, 4)
-  
-        self.res_tab = QtWidgets.QTableWidget(2,4)
-
+        grid.addWidget(self.fitp1, 4, 3, 1, 2)
+        list_res_row = ['gaussian_fwhm', 'lorentzian_fwhm_p1', 'lorentzian_fwhm_p2', 'fwhm_p1', 'fwhm_p2','height_p1', 'height_p2','area_p1','area_p2']
+        self.res_tab  = QtWidgets.QTableWidget(len(list_res_row),len(list_col))
+        self.res_tab.setHorizontalHeaderLabels(list_col)
+        self.res_tab.setVerticalHeaderLabels(list_res_row)
         self.res_tab.resizeColumnsToContents()
         self.res_tab.resizeRowsToContents()	
-        grid.addWidget(self.res_tab, 4, 7, 2, 3)
+        grid.addWidget(self.res_tab, 4, 5, 1,2)
         self.show()
 
     def add_col(self):
         rowPosition = self.fitp1.rowCount()
         colPosition = self.fitp1.columnCount()
+        colPosition_res = self.res_tab.columnCount()
+        
         self.fitp1.insertColumn(colPosition)
         self.fitp1.insertColumn(colPosition+1)
-        
+        self.res_tab.insertColumn(colPosition_res)
         # add DropDown peak model
         comboBox = QtWidgets.QComboBox()
         comboBox.addItems(self.list_shape)
@@ -357,10 +360,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
         item = QtWidgets.QTableWidgetItem('peak_' + str(int(1+colPosition/2)))
         self.fitp1.setHorizontalHeaderItem(colPosition+1, item)
         self.fitp1.resizeColumnsToContents()
+        self.res_tab.setHorizontalHeaderItem(colPosition_res, item)
+        self.res_tab.resizeColumnsToContents()
         #self.fitp1.setColumnWidth(1, 55)
 
     def rem_col(self):
         colPosition = self.fitp1.columnCount()
+        colPosition_res=self.res_tab.columnCount()
+        if colPosition_res> 1:
+            print("test")
         if colPosition > 2:
             self.fitp1.removeColumn(colPosition-1)
             self.fitp1.removeColumn(colPosition-2)
@@ -1150,9 +1158,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         npeak = int(npeak/2)
         
         for index_pk in range(npeak):
-            print("index_pk, l1153",index_pk)
             index = self.fitp1.cellWidget(0, 2*index_pk+1).currentIndex()
-            print("index", index)
             strind = self.fitp1.cellWidget(0, 2*index_pk+1).currentText()
             strind = strind.split(":",1)[0]
             if index == 0:
@@ -1182,31 +1188,16 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if index == 12:
                 pk_mod = FermiEdgeModel(prefix=strind + str(index_pk+1) + '_')
             # add variable params for diff/ratio params [bug] add only needed params for each model
-            if self.fitp1.item(1, 2*index_pk+1) != None:
-                if len(self.fitp1.item(14, 2*index_pk+1).text()) > 0:
-                    pars.add(strind + str(index_pk+1) +"_center_diff", value=float(self.fitp1.item(14, 2*index_pk+1).text()))
-            if self.fitp1.item(1, 2*index_pk+1) != None:
-                if len(self.fitp1.item(16, 2*index_pk+1).text()) > 0:
-                    pars.add(strind + str(index_pk+1) +"_amp_ratio", value=float(self.fitp1.item(16, 2*index_pk+1).text()))
-            if index == 10: 
-                if self.fitp1.item(1, 2*index_pk+1) != None:
-                    if len(self.fitp1.item(18, 2*index_pk+1).text()) > 0:
-                        pars.add(strind + str(index_pk+1) +"_soc_ratio", value=float(self.fitp1.item(18, 2*index_pk+1).text()))
-                if self.fitp1.item(1, 2*index_pk+1) != None:
-                    if len(self.fitp1.item(20, 2*index_pk+1).text()) > 0:
-                        pars.add(strind + str(index_pk+1) +"_height_r_ratio", value=float(self.fitp1.item(20, 2*index_pk+1).text()))
-                if self.fitp1.item(1, 2*index_pk+1) != None:
-                    if len(self.fitp1.item(24, 2*index_pk+1).text()) > 0:
-                        pars.add(strind + str(index_pk+1) +"_lorentzian_ratio", value=float(self.fitp1.item(24, 2*index_pk+1).text()))
-            if index == 10 or index == 11:
-                if self.fitp1.item(1, 2*index_pk+1) != None:
-                    if len(self.fitp1.item(22, 2*index_pk+1).text()) > 0:
-                        pars.add(strind + str(index_pk+1) +"_gaussian_ratio", value=float(self.fitp1.item(22, 2*index_pk+1).text()))
             pars.update(pk_mod.make_params())
             # fit parameters from table
             if self.fitp1.item(1, 2*index_pk+1) != None:
                 if len(self.fitp1.item(1, 2*index_pk+1).text()) > 0:     
                     pars[strind + str(index_pk+1) + '_center'].value = float(self.fitp1.item(1, 2*index_pk+1).text())
+                if len(self.fitp1.item(14, 2*index_pk+1).text()) > 0:
+                    pars.add(strind + str(index_pk+1) +"_center_diff", value=float(self.fitp1.item(14, 2*index_pk+1).text()))
+                if len(self.fitp1.item(16, 2*index_pk+1).text()) > 0:
+                    pars.add(strind + str(index_pk+1) +"_amp_ratio", value=float(self.fitp1.item(16, 2*index_pk+1).text()))
+                    
             if self.fitp1.item(2, 2*index_pk+1) != None:
                 if len(self.fitp1.item(2, 2*index_pk+1).text()) > 0:
                     pars[strind + str(index_pk+1) + '_sigma'].value = float(self.fitp1.item(2, 2*index_pk+1).text())
@@ -1224,14 +1215,17 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if self.fitp1.item(5, 2*index_pk+1) != None:
                     if len(self.fitp1.item(5, 2*index_pk+1).text()) > 0:
                         pars[strind + str(index_pk+1) +	'_fraction'].value = float(self.fitp1.item(5, 2*index_pk+1).text())
+                        
             if index == 6:
                 if self.fitp1.item(6, 2*index_pk+1) != None:
                     if len(self.fitp1.item(6, 2*index_pk+1).text()) > 0:
                         pars[strind + str(index_pk+1) +	'_skew'].value = float(self.fitp1.item(6, 2*index_pk+1).text())
+                        
             if index == 7:
                 if self.fitp1.item(7, 2*index_pk+1) != None:
                     if len(self.fitp1.item(7, 2*index_pk+1).text()) > 0:
                         pars[strind + str(index_pk+1) +	'_q'].value = float(self.fitp1.item(7, 2*index_pk+1).text())
+                        
             if index == 10:
                 if self.fitp1.item(9, 2*index_pk+1) != None:
                     if len(self.fitp1.item(9, 2*index_pk+1).text()) > 0:
@@ -1241,12 +1235,25 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         pars[strind + str(index_pk+1) +	'_height_ratio'].value = float(self.fitp1.item(10, 2*index_pk+1).text())
                 if self.fitp1.item(12, 2*index_pk+1) != None:
                     if len(self.fitp1.item(12, 2*index_pk+1).text()) > 0:
-                        pars[strind + str(index_pk+1) +	'_factor_sigma_doniach'].value = float(self.fitp1.item(12, 2*index_pk+1).text())
-                
+                        pars[strind + str(index_pk+1) +	'_coster_kronig_factor'].value = float(self.fitp1.item(12, 2*index_pk+1).text())
+                if self.fitp1.item(18, 2*index_pk+1) != None:
+                    if len(self.fitp1.item(18, 2*index_pk+1).text()) > 0:
+                        pars.add(strind + str(index_pk+1) +"_soc_ratio", value=float(self.fitp1.item(18, 2*index_pk+1).text()))
+                if self.fitp1.item(20, 2*index_pk+1) != None:
+                    if len(self.fitp1.item(20, 2*index_pk+1).text()) > 0:
+                        pars.add(strind + str(index_pk+1) +"_height_r_ratio", value=float(self.fitp1.item(20, 2*index_pk+1).text()))
+                           
             if index == 10 or index == 11:
                 if self.fitp1.item(11, 2*index_pk+1) != None:
                     if len(self.fitp1.item(11, 2*index_pk+1).text()) > 0:
                         pars[strind + str(index_pk+1) +	'_gaussian_sigma'].value = float(self.fitp1.item(11, 2*index_pk+1).text())
+                if self.fitp1.item(22, 2*index_pk+1) != None:
+                    if len(self.fitp1.item(22, 2*index_pk+1).text()) > 0:
+                        pars.add(strind + str(index_pk+1) +"_gaussian_ratio", value=float(self.fitp1.item(22, 2*index_pk+1).text()))
+                if self.fitp1.item(24, 2*index_pk+1) != None:
+                    if len(self.fitp1.item(24, 2*index_pk+1).text()) > 0:
+                        pars.add(strind + str(index_pk+1) +"_lorentzian_ratio", value=float(self.fitp1.item(24, 2*index_pk+1).text()))
+                        
             if index == 12:
                 if self.fitp1.item(8, 2*index_pk+1) != None:
                     if len(self.fitp1.item(8, 2*index_pk+1).text()) > 0:
@@ -1275,7 +1282,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 pars['bg_d4'].vary = False
 
             # constraints of peak parameters (checkbox to hold)
-            for index_pk in range(npeak):# [bug] check, if func works as intended
+            for index_pk in range(npeak):
                 index = self.fitp1.cellWidget(0, 2*index_pk+1).currentIndex()
                 strind = self.fitp1.cellWidget(0, 2*index_pk+1).currentText()
                 strind = strind.split(":",1)[0]
@@ -1283,29 +1290,84 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 pars[strind + str(index_pk+1) + '_sigma'].vary = False
                 pars[strind + str(index_pk+1) + '_center_diff'].vary = False
                 pars[strind + str(index_pk+1) + '_amp_ratio'].vary = False
-                pars[strind + str(index_pk+1) + '_soc_ratio'].vary = False
-                pars[strind + str(index_pk+1) + '_height_r_ratio'].vary = False
-                pars[strind + str(index_pk+1) + '_gaussian_ratio'].vary = False
-                pars[strind + str(index_pk+1) + '_lorentzian_ratio'].vary = False
+                pars[strind + str(index_pk+1) + '_amplitude'].vary = False
+                
+                # amp ratio setup
+                if self.fitp1.cellWidget(15, 2*index_pk+1).currentIndex() > 0:
+                    pktar = self.fitp1.cellWidget(15, 2*index_pk+1).currentIndex()
+                    strtar = self.fitp1.cellWidget(0, 2*pktar-1).currentText()
+                    strtar = strtar.split(":",1)[0]
+                    if self.fitp1.item(16, 2*index_pk+1) != None:
+                        if len(self.fitp1.item(16, 2*index_pk+1).text()) > 0:
+                            pars[strind + str(index_pk+1) + '_amplitude'].expr = strtar + str(pktar) + '_amplitude * ' + str(strind + str(index_pk+1) + '_amp_ratio')
+                
+                # BE diff setup
+                if self.fitp1.cellWidget(13, 2*index_pk+1).currentIndex() > 0:
+                    pktar = self.fitp1.cellWidget(13, 2*index_pk+1).currentIndex()
+                    strtar = self.fitp1.cellWidget(0, 2*pktar-1).currentText()
+                    strtar = strtar.split(":",1)[0]
+                    if self.fitp1.item(14, 2*index_pk+1) != None:
+                        if len(self.fitp1.item(14, 2*index_pk+1).text()) > 0:
+                            pars[strind + str(index_pk+1) + '_center'].expr = strtar + str(pktar) + '_center + ' + str(strind + str(index_pk+1) + '_center_diff')
+                
                 if index == 2 or index == 4 or index == 5 or index == 6 or index == 9 or index == 10 or index == 11:
                     pars[strind + str(index_pk+1) +	'_gamma'].vary = False
-    
-                pars[strind + str(index_pk+1) + '_amplitude'].vary = False
                 
                 if index == 3:
                     pars[strind + str(index_pk+1) + '_fraction'].vary = False
+                    
                 if index == 6:
                     pars[strind + str(index_pk+1) + '_skew'].vary = False
+                    
                 if index == 7:
                     pars[strind + str(index_pk+1) + '_q'].vary = False
+                    
                 if index == 10:
                     pars[strind + str(index_pk+1) + '_soc'].vary = False
                     pars[strind + str(index_pk+1) + '_height_ratio'].vary = False
-                    pars[strind + str(index_pk+1) + '_factor_sigma_doniach'].vary = False
+                    pars[strind + str(index_pk+1) + '_coster_kronig_factor'].vary = False
+                    pars[strind + str(index_pk+1) + '_soc_ratio'].vary = False
+                    pars[strind + str(index_pk+1) + '_height_r_ratio'].vary = False
+                     # soc ref setup
+                    if self.fitp1.cellWidget(17, 2*index_pk+1).currentIndex() > 0:
+                        pktar = self.fitp1.cellWidget(17, 2*index_pk+1).currentIndex()
+                        strtar = self.fitp1.cellWidget(0, 2*pktar-1).currentText()
+                        strtar = strtar.split(":",1)[0]
+                        if self.fitp1.item(18, 2*index_pk+1) != None:
+                            if len(self.fitp1.item(18, 2*index_pk+1).text()) > 0:
+                                pars[strind + str(index_pk+1) + '_soc'].expr = strtar + str(pktar) + '_soc * ' + str(strind + str(index_pk+1) + '_soc_ratio')
+                    # height ratio ref setup
+                    if self.fitp1.cellWidget(19, 2*index_pk+1).currentIndex() > 0:
+                        pktar = self.fitp1.cellWidget(19, 2*index_pk+1).currentIndex()
+                        strtar = self.fitp1.cellWidget(0, 2*pktar-1).currentText()
+                        strtar = strtar.split(":",1)[0]
+                        if self.fitp1.item(20, 2*index_pk+1) != None:
+                            if len(self.fitp1.item(20, 2*index_pk+1).text()) > 0:
+                                pars[strind + str(index_pk+1) + '_height_ratio'].expr = strtar + str(pktar) + '_height_ratio * ' + str(strind + str(index_pk+1) + '_height_r_ratio')
+
                 if index == 10 or index == 11:
                     pars[strind + str(index_pk+1) + '_gaussian_sigma'].vary = False
+                    pars[strind + str(index_pk+1) + '_gaussian_ratio'].vary = False
+                    pars[strind + str(index_pk+1) + '_lorentzian_ratio'].vary = False
+                    # gaussian sigma ref setup
+                    if self.fitp1.cellWidget(21, 2*index_pk+1).currentIndex() > 0:
+                        pktar = self.fitp1.cellWidget(21, 2*index_pk+1).currentIndex()
+                        strtar = self.fitp1.cellWidget(0, 2*pktar-1).currentText()
+                        strtar = strtar.split(":",1)[0]
+                        if self.fitp1.item(22, 2*index_pk+1) != None:
+                            if len(self.fitp1.item(22, 2*index_pk+1).text()) > 0:
+                                pars[strind + str(index_pk+1) + '_gaussian_sigma'].expr = strtar + str(pktar) + '_gaussian_sigma * ' + str(strind + str(index_pk+1) + '_gaussian_ratio')
+                    # lorentzian sigma ref setup
+                    if self.fitp1.cellWidget(23, 2*index_pk+1).currentIndex() > 0:
+                        pktar = self.fitp1.cellWidget(23, 2*index_pk+1).currentIndex()
+                        strtar = self.fitp1.cellWidget(0, 2*pktar-1).currentText()
+                        strtar = strtar.split(":",1)[0]
+                        if self.fitp1.item(24, 2*index_pk+1) != None:
+                            if len(self.fitp1.item(24, 2*index_pk+1).text()) > 0:
+                                pars[strind + str(index_pk+1) + '_sigma'].expr = strtar + str(pktar) + '_sigma * ' + str(strind + str(index_pk+1) + '_lorentzian_ratio')
                 if index == 12:
                     pars[strind + str(index_pk+1) + '_kt'].vary = False
+
         else:
             # constraints of BG parameters (checkbox to hold)
             for index in range(4):
@@ -1363,13 +1425,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if self.fitp1.item(2, 2*index_pk).checkState() == 2:
                     if len(self.fitp1.item(2, 2*index_pk+1).text()) > 0:
                         pars[strind + str(index_pk+1) + '_sigma'].vary = False
-                #[bug] only check, if params needed/used in model
+                        
                 if self.fitp1.item(14, 2*index_pk).checkState() == 2:
                     if len(self.fitp1.item(14, 2*index_pk+1).text()) > 0:
                         pars[strind + str(index_pk+1) + '_center_diff'].vary = False
+                        
                 if self.fitp1.item(16, 2*index_pk).checkState() == 2:
                     if len(self.fitp1.item(16, 2*index_pk+1).text()) > 0:
                         pars[strind + str(index_pk+1) + '_amp_ratio'].vary = False
+                        
                 if index == 2 or index == 4 or index == 5 or index == 6 or index == 9 or index == 10 or index == 11:
                     if self.fitp1.item(3, 2*index_pk).checkState() == 2:
                         if len(self.fitp1.item(3, 2*index_pk+1).text()) > 0:
@@ -1383,18 +1447,22 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     if self.fitp1.item(5, 2*index_pk).checkState() == 2:
                         if len(self.fitp1.item(5, 2*index_pk+1).text()) > 0:
                             pars[strind + str(index_pk+1) + '_fraction'].vary = False
+                            
                 if index == 6:
                     if self.fitp1.item(6, 2*index_pk).checkState() == 2:
                         if len(self.fitp1.item(6, 2*index_pk+1).text()) > 0:
                             pars[strind + str(index_pk+1) + '_skew'].vary = False
+                            
                 if index == 7:
                     if self.fitp1.item(7, 2*index_pk).checkState() == 2:
                         if len(self.fitp1.item(7, 2*index_pk+1).text()) > 0:
                             pars[strind + str(index_pk+1) + '_q'].vary = False
+                            
                 if index == 12:
                     if self.fitp1.item(8, 2*index_pk).checkState() == 2:
                         if len(self.fitp1.item(8, 2*index_pk+1).text()) > 0:
                             pars[strind + str(index_pk+1) + '_kt'].vary = False
+                            
                 if index == 10:
                     if self.fitp1.item(9, 2*index_pk).checkState() == 2:
                         if len(self.fitp1.item(9, 2*index_pk+1).text()) > 0:
@@ -1405,16 +1473,14 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             pars[strind + str(index_pk+1) + '_height_ratio'].vary = False
                     if self.fitp1.item(12, 2*index_pk).checkState() == 2:
                         if len(self.fitp1.item(12, 2*index_pk+1).text()) > 0:
-                            pars[strind + str(index_pk+1) + '_factor_sigma_doniach'].vary = False
+                            pars[strind + str(index_pk+1) + '_coster_kronig_factor'].vary = False
                     if self.fitp1.item(18, 2*index_pk).checkState() == 2:
                         if len(self.fitp1.item(18, 2*index_pk+1).text()) > 0:
                             pars[strind + str(index_pk+1) + '_soc_ratio'].vary = False
                     if self.fitp1.item(20, 2*index_pk).checkState() == 2:
                         if len(self.fitp1.item(20, 2*index_pk+1).text()) > 0:
                             pars[strind + str(index_pk+1) + '_height_r_ratio'].vary = False
-                    if self.fitp1.item(24, 2*index_pk).checkState() == 2:
-                        if len(self.fitp1.item(24, 2*index_pk+1).text()) > 0:
-                            pars[strind + str(index_pk+1) + '_lorentzian_ratio'].vary = False
+                            
                 if index == 10 or index == 11:
                     if self.fitp1.item(11, 2*index_pk).checkState() == 2:
                         if len(self.fitp1.item(11, 2*index_pk+1).text()) > 0:
@@ -1422,8 +1488,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     if self.fitp1.item(22, 2*index_pk).checkState() == 2:
                         if len(self.fitp1.item(22, 2*index_pk+1).text()) > 0:
                             pars[strind + str(index_pk+1) + '_gaussian_ratio'].vary = False
+                    if self.fitp1.item(24, 2*index_pk).checkState() == 2:
+                        if len(self.fitp1.item(24, 2*index_pk+1).text()) > 0:
+                            pars[strind + str(index_pk+1) + '_lorentzian_ratio'].vary = False
+                            
                 # additional peak min and max bounds (checkbox to activate)
-                #list_para = ['center', 'sigma', 'gamma', 'amplitude', 'fraction', 'skew', 'q'] # add max and min for soc, gaussian etc. [feature], [bug] correct indizes
+                #list_para = ['center', 'sigma', 'gamma', 'amplitude', 'fraction', 'skew', 'q'] 
                 if index == 0 or index == 1 or index == 8 or index == 12:
                     list_para = ['center', 'sigma', '', 'amplitude', '', '', '']
                 if index == 2 or index == 4 or index == 5 or index == 9:
@@ -1445,7 +1515,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             pars[strind + str(index_pk+1) + '_' + list_para[para]].max = float(self.fitp1.item(25 + 2*para + 1, 2*index_pk+1).text())
                 
                 pars.update(pars) # update pars before using expr, to prevent missing pars
-                print(pars)
                 # amp ratio setup
                 if self.fitp1.cellWidget(15, 2*index_pk+1).currentIndex() > 0:
                     pktar = self.fitp1.cellWidget(15, 2*index_pk+1).currentIndex()
@@ -1481,14 +1550,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         if self.fitp1.item(20, 2*index_pk+1) != None:
                             if len(self.fitp1.item(20, 2*index_pk+1).text()) > 0:
                                 pars[strind + str(index_pk+1) + '_height_ratio'].expr = strtar + str(pktar) + '_height_ratio * ' + str(strind + str(index_pk+1) + '_height_r_ratio')
-                     # lorentzian sigma ref setup
-                    if self.fitp1.cellWidget(23, 2*index_pk+1).currentIndex() > 0:
-                        pktar = self.fitp1.cellWidget(23, 2*index_pk+1).currentIndex()
-                        strtar = self.fitp1.cellWidget(0, 2*pktar-1).currentText()
-                        strtar = strtar.split(":",1)[0]
-                        if self.fitp1.item(24, 2*index_pk+1) != None:
-                            if len(self.fitp1.item(24, 2*index_pk+1).text()) > 0:
-                                pars[strind + str(index_pk+1) + '_factor_sigma_doniach'].expr = strtar + str(pktar) + '_factor_sigma_doniach * ' + str(strind + str(index_pk+1) + '_lorentzian_ratio')
+
                 if index == 10 or index == 11: 
                     # gaussian sigma ref setup
                     if self.fitp1.cellWidget(21, 2*index_pk+1).currentIndex() > 0:
@@ -1498,10 +1560,20 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         if self.fitp1.item(22, 2*index_pk+1) != None:
                             if len(self.fitp1.item(22, 2*index_pk+1).text()) > 0:
                                 pars[strind + str(index_pk+1) + '_gaussian_sigma'].expr = strtar + str(pktar) + '_gaussian_sigma * ' + str(strind + str(index_pk+1) + '_gaussian_ratio')
+                    # lorentzian sigma ref setup
+                    if self.fitp1.cellWidget(23, 2*index_pk+1).currentIndex() > 0:
+                        pktar = self.fitp1.cellWidget(23, 2*index_pk+1).currentIndex()
+                        strtar = self.fitp1.cellWidget(0, 2*pktar-1).currentText()
+                        strtar = strtar.split(":",1)[0]
+                        if self.fitp1.item(24, 2*index_pk+1) != None:
+                            if len(self.fitp1.item(24, 2*index_pk+1).text()) > 0:
+                                pars[strind + str(index_pk+1) + '_sigma'].expr = strtar + str(pktar) + '_sigma * ' + str(strind + str(index_pk+1) + '_lorentzian_ratio')
         # evaluate model and optimize parameters for fitting in lmfit
         init = mod.eval(pars, x=x)
-
-        out = mod.fit(y, pars, x=x, weights=1/np.sqrt(raw_y))
+        if mode== 'eva':
+            out = mod.fit(y, pars, x=x)
+        else:
+            out = mod.fit(y, pars, x=x, weights=1/np.sqrt(raw_y))
         comps = out.eval_components(x=x)
 
         # fit results to be checked
@@ -1560,7 +1632,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.fitp1.setItem(16, 2*index_pk+1, item)
             item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_sigma'].value, self.floating)))
             self.fitp1.setItem(2, 2*index_pk+1, item)
-
             if index == 2 or index == 4 or index == 5 or index == 6 or index == 9 or index == 10 or index == 11:
                 item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_gamma'].value, self.floating)))
                 self.fitp1.setItem(3, 2*index_pk+1, item)
@@ -1582,19 +1653,47 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.fitp1.setItem(9, 2*index_pk+1, item)
                 item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_height_ratio'].value, self.floating)))
                 self.fitp1.setItem(10, 2*index_pk+1, item)
-                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_factor_sigma_doniach'].value, self.floating)))
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_coster_kronig_factor'].value, self.floating)))
                 self.fitp1.setItem(12, 2*index_pk+1, item)
                 item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_soc_ratio'].value, self.floating)))
                 self.fitp1.setItem(18, 2*index_pk+1, item)
                 item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_height_r_ratio'].value, self.floating)))
                 self.fitp1.setItem(20, 2*index_pk+1, item)
-                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_lorentzian_ratio'].value, self.floating)))
-                self.fitp1.setItem(24, 2*index_pk+1, item)
             if index == 10 or index == 11:
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_gaussian_fwhm'].value, self.floating)))
+                self.res_tab.setItem(0,index_pk, item)
                 item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_gaussian_sigma'].value, self.floating)))
                 self.fitp1.setItem(11, 2*index_pk+1, item)
                 item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_gaussian_ratio'].value, self.floating)))
                 self.fitp1.setItem(22, 2*index_pk+1, item)
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_lorentzian_ratio'].value, self.floating)))
+                self.fitp1.setItem(24, 2*index_pk+1, item)
+            if index == 11:
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_lorentzian_fwhm'].value, self.floating)))
+                self.res_tab.setItem(1,index_pk, item)
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_fwhm'].value, self.floating)))
+                self.res_tab.setItem(3,index_pk, item)
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_height'].value, self.floating)))
+                self.res_tab.setItem(5,index_pk, item)
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_area'].value, self.floating)))
+                self.res_tab.setItem(7,index_pk, item)
+            if index == 10:
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_lorentzian_fwhm_p1'].value, self.floating)))
+                self.res_tab.setItem(1,index_pk, item)
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_lorentzian_fwhm_p2'].value, self.floating)))
+                self.res_tab.setItem(2,index_pk, item)
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_fwhm_p1'].value, self.floating)))
+                self.res_tab.setItem(3,index_pk, item)
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_fwhm_p2'].value, self.floating)))
+                self.res_tab.setItem(4,index_pk, item)
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_height_p1'].value, self.floating)))
+                self.res_tab.setItem(5,index_pk, item)
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_height_p2'].value, self.floating)))
+                self.res_tab.setItem(6,index_pk, item)
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_area_p1'].value, self.floating)))
+                self.res_tab.setItem(7,index_pk, item)
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_area_p2'].value, self.floating)))
+                self.res_tab.setItem(8,index_pk, item)
             if index == 12:
                 item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk+1) + '_kt'].value, self.floating)))
                 self.fitp1.setItem(8, 2*index_pk+1, item)
