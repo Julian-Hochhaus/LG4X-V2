@@ -195,12 +195,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         # set BG table default
         pre_bg = [[0, 300, 0, 270, 'pt', 101, 'hn', 1486.6, 'wf', 4], ['cv', 1e-06, 'it', 10, '', '', '', '', '', ''],
-                  ['B', 2866, 'C', 1643, 'C*', 1.0, 'D', 1.0, '', ''], [2, 0, 2, 0, 2, 0, 2, 0, '', '']]
+                  ['B', 2866.0, 'C', 1643.0, 'C*', 1.0, 'D', 1.0, 'Keep fixed?', 0], [2, 0, 2, 0, 2, 0, 2, 0, '', '']]
         self.setPreset(0, pre_bg, [])
 
         self.fitp0.resizeColumnsToContents()
         self.fitp0.resizeRowsToContents()
-        grid.addWidget(self.fitp0, 0, 3, 3, 5)
+        grid.addWidget(self.fitp0, 0, 3, 3, 4)
 
         # set Fit Table
         list_col = ['peak_1']
@@ -208,9 +208,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     'gaussian_sigma', 'fct_coster_kronig', 'center_ref', 'ctr_diff', 'amp_ref', 'ratio', 'soc_ref',
                     'soc_ratio', 'height_r_ref', 'ratio', 'g_s_ref', 'gaussian_ratio', 'lrtzn_s_ref', 'lrtzn_ratio',
                     'ctr_min', 'ctr_max', 'sig_min', 'sig_max', 'gam_min', 'gam_max', 'amp_min', 'amp_max', 'frac_min',
-                    'frac_max', 'skew_min', 'skew_max', 'q_min', 'q_max', 'ctr_diff_min', 'ctr_diff_max',
-                    'height_rtio_min', 'height_rtio_max', 'gaussian_s_min',
-                    'gaussian_s_max']  # [feature] include limits for soc, gaussian etc
+                    'frac_max', 'skew_min', 'skew_max', 'q_min', 'q_max', 'kt_min','kt_max','soc_min', 'soc_max',
+                    'height_rtio_min', 'height_rtio_max', 'gaussian_s_min','gaussian_s_max', "coster-kronig_min",
+                    "coster-kronig_max", 'ctr_diff_min', 'ctr_diff_max', 'amp_ratio_min', 'amp_ratio_max',
+                    'soc_ratio_min', 'soc_ratio_max', 'height_ref_min', 'height_ref_max', 'gaussian_ratio_min',
+                    'gaussian_ratio_max', 'lorentz_ratio_min', 'lorentz_ratio_max']
         self.fitp1 = QtWidgets.QTableWidget(len(list_row), len(list_col) * 2)
         list_colh = ['', 'peak_1']
         self.fitp1.setHorizontalHeaderLabels(list_colh)
@@ -296,7 +298,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.res_tab.setVerticalHeaderLabels(list_res_row)
         self.res_tab.resizeColumnsToContents()
         self.res_tab.resizeRowsToContents()
-        grid.addWidget(self.res_tab, 7, 6, 1, 2)
+        grid.addWidget(self.res_tab, 7, 6, 1, 3)
         list_stats_row = ['success?', 'message', 'nfev', 'nvary', 'ndata', 'nfree', 'chisqr', 'redchi', 'aic', 'bic']
         list_stats_col = ['Fit stats']
         self.stats_tab = QtWidgets.QTableWidget(len(list_stats_row), 1)
@@ -304,7 +306,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.stats_tab.setVerticalHeaderLabels(list_stats_row)
         self.stats_tab.resizeColumnsToContents()
         self.stats_tab.resizeRowsToContents()
-        grid.addWidget(self.stats_tab, 5, 6, 1, 2)
+        grid.addWidget(self.stats_tab, 5, 6, 1, 3)
         self.stats_label = QtWidgets.QLabel()
         self.stats_label.setText("Fit statistics:")
         self.stats_label.setStyleSheet("font-weight: bold; font-size:12pt")
@@ -317,6 +319,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.res_label.setText("Fit results:")
         self.res_label.setStyleSheet("font-weight: bold; font-size:12pt")
         grid.addWidget(self.res_label, 6, 6, 1, 1)
+        self.plottitle=QtWidgets.QLineEdit()
+        grid.addWidget(self.plottitle,0,7,1,2)
         self.show()
 
     def add_col(self):
@@ -536,7 +540,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if index == 5:
             # load C1s peak preset
             pre_bg = [[2, 295, 2, 275, '', '', '', '', '', ''], ['cv', 1e-06, 'it', 10, '', '', '', '', '', ''],
-                      ['B', 2866, 'C', 1643, 'C*', 1.0, 'D', 1.0, '', ''], [2, 0, 2, 0, 2, 0, 2, 0, '', '']]
+                      ['B', 2866.0, 'C', 1643.0, 'C*', 1.0, 'D', 1.0, 'Keep fixed?', 0], [2, 0, 2, 0, 2, 0, 2, 0, '', '']]
             if self.comboBox_file.currentIndex() > 0:
                 # self.df = np.loadtxt(str(self.comboBox_file.currentText()),	delimiter=',', skiprows=1)
                 # x0 = self.df[:, 0]
@@ -555,7 +559,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if index == 6:
             # load C K edge preset
             pre_bg = [[2, 270.7, 2, 320.7, '', '', '', '', '', ''], ['cv', 1e-06, 'it', 10.0, '', '', '', '', '', ''],
-                      ['B', 2866.0, 'C', 1643.0, 'C*', 1.0, 'D', 1.0, '', ''],
+                      ['B', 2866.0, 'C', 1643.0, 'C*', 1.0, 'D', 1.0, 'Keep fixed?', 0],
                       [2, 0.07, 2, 0.0, 2, 0.0, 2, 0.0, '', ''], [2, 12.05, 2, 43.36, 2, 0.05, 0, '', '', ''],
                       [2, 0.27, 2, 291.82, 2, 0.72, 0, '', '', ''], [0, '', 0, '', 0, '', 0, '', '', '']]
 
@@ -609,7 +613,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                 item.setCheckState(QtCore.Qt.Unchecked)
                         else:
                             item = QtWidgets.QTableWidgetItem(str(list_pre_bg[row][col]))
-
+                    if row == 2 and col == 9:
+                        item = QtWidgets.QTableWidgetItem()
+                        if list_pre_bg[row][col] == 2:
+                            item.setCheckState(QtCore.Qt.Checked)
+                        else:
+                            item.setCheckState(QtCore.Qt.Unchecked)
                     self.fitp0.setItem(row, col, item)
 
         # load preset for peaks
@@ -708,7 +717,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         else:
             self.pre = [[], [], []]
 
-    def savePreset(self):  # [bug] fix index!
+    def savePreset(self):
         rowPosition = self.fitp0.rowCount()
         colPosition = self.fitp0.columnCount()
         list_pre_bg = []
@@ -738,7 +747,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         colPosition = self.fitp1.columnCount()
         list_pre_pk = []
         # save preset for peaks
-        for row in range(rowPosition):  # [bug] indizes
+        for row in range(rowPosition):
             new = []
             for col in range(colPosition):
                 if (col % 2) != 0:
@@ -985,6 +994,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # print('new', len(self.ax.texts))
 
     def plot(self):
+        plottitle=self.plottitle.displayText()
         # when file list is selected
         if self.comboBox_file.currentIndex() == 1:
             self.comboBox_file.clear()
@@ -1031,7 +1041,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
             plt.xlim(x0[0], x0[-1])
             self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
             self.ax.grid(True)
-            self.ar.set_title(self.comboBox_file.currentText(), fontsize=11)
+            if plottitle == '':
+                self.ar.set_title(self.comboBox_file.currentText(), fontsize=11)
+            else:
+                self.ar.set_title(r"{}".format(plottitle), fontsize=11)
             self.ax.legend(loc=0)
             self.canvas.draw()
 
@@ -1073,6 +1086,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.ana('fit')
 
     def ana(self, mode):
+        plottitle=self.plottitle.displayText()
         # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
         x0 = self.df[:, 0]
         y0 = self.df[:, 1]
@@ -1102,13 +1116,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
         plt.xlim(x0[0], x0[-1])
         self.ax.grid(True)
         self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
+        if plottitle == "":
 
-        if self.comboBox_file.currentIndex() == 0:
-            # simulation mode
-            self.ar.set_title('Simulation', fontsize=11)
+            if self.comboBox_file.currentIndex() == 0:
+                # simulation mode
+                self.ar.set_title('Simulation', fontsize=11)
+            else:
+                self.ar.set_title(self.comboBox_file.currentText(), fontsize=11)
         else:
-            self.ar.set_title(self.comboBox_file.currentText(), fontsize=11)
-
+            self.ar.set_title(r"{}".format(plottitle), fontsize=11)
         # if no range is specified, fill it from data
         if self.fitp0.item(0, 1) is None or len(self.fitp0.item(0, 1).text()) == 0:
             item = QtWidgets.QTableWidgetItem(str(x0[0]))
@@ -1152,10 +1168,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
             toCd = float(self.fitp0.item(index_bg + 1, 5).text())
             toD = float(self.fitp0.item(index_bg + 1, 7).text())
             if mode == 'fit':
-                toM = float(self.fitp0.item(1, 3).text())
+                if self.fitp0.item(index_bg + 1, 9).checkState() == 2:
+                    [bg_mod, bg_toB] = xpy.tougaard(x, y, toB, toC, toCd, toD)
+                else:
+                    toM = float(self.fitp0.item(1, 3).text())
+                    [bg_mod, bg_toB] = xpy.tougaard_calculate(x, y, toB, toC, toCd, toD, toM)
             else:
                 toM = 1
-            [bg_mod, bg_toB] = xpy.tougaard_calculate(x, y, toB, toC, toCd, toD, toM)
+                [bg_mod, bg_toB] = xpy.tougaard_calculate(x, y, toB, toC, toCd, toD, toM)
+
             item = QtWidgets.QTableWidgetItem(str(format(bg_toB, self.floating)))
             self.fitp0.setItem(index_bg + 1, 1, item)
             y = y - bg_mod
@@ -1329,7 +1350,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 pk_mod = ConvGaussianDoniachSinglett(prefix=strind + str(index_pk + 1) + '_')
             if index == 12:
                 pk_mod = FermiEdgeModel(prefix=strind + str(index_pk + 1) + '_')
-            # add variable params for diff/ratio params [bug] add only needed params for each model
             pars.update(pk_mod.make_params())
             # fit parameters from table
             if self.fitp1.item(1, 2 * index_pk + 1) is not None:
@@ -1633,7 +1653,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     if self.fitp1.item(9, 2 * index_pk).checkState() == 2:
                         if len(self.fitp1.item(9, 2 * index_pk + 1).text()) > 0:
                             pars[strind + str(index_pk + 1) + '_soc'].vary = False
-                            print("soc", pars)
                     if self.fitp1.item(10, 2 * index_pk).checkState() == 2:
                         if len(self.fitp1.item(10, 2 * index_pk + 1).text()) > 0:
                             pars[strind + str(index_pk + 1) + '_height_ratio'].vary = False
@@ -1659,7 +1678,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             pars[strind + str(index_pk + 1) + '_lorentzian_ratio'].vary = False
 
                 # additional peak min and max bounds (checkbox to activate)
-                # list_para = ['center', 'sigma', 'gamma', 'amplitude', 'fraction', 'skew', 'q']
+                # list_para = ['center', 'sigma', 'gamma', 'amplitude', 'fraction', 'skew', 'q', 'kt', 'soc',
+                # 'height_ratio', 'gaussian_sigma', 'fct_coster_kronig', 'ctr_diff', 'amp_ratio', 'soc_ratio',
+                # 'height_reference_ratio', 'gaussian_ratio', 'lorentz_ratio'] #[feature] add min max for all models
                 if index == 0 or index == 1 or index == 8 or index == 12:
                     list_para = ['center', 'sigma', '', 'amplitude', '', '', '']
                 if index == 2 or index == 4 or index == 5 or index == 9:
@@ -1705,7 +1726,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         if len(self.fitp1.item(14, 2 * index_pk + 1).text()) > 0:
                             pars[strind + str(index_pk + 1) + '_center'].expr = strtar + str(
                                 pktar) + '_center + ' + str(strind + str(index_pk + 1) + '_center_diff')
-                # [bug] only for dublett!
                 if index == 10:
                     # soc ref setup
                     if self.fitp1.cellWidget(17, 2 * index_pk + 1).currentIndex() > 0:
@@ -1747,7 +1767,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                     pktar) + '_sigma * ' + str(strind + str(index_pk + 1) + '_lorentzian_ratio')
         # evaluate model and optimize parameters for fitting in lmfit
         if mode == 'eva':
-            strmode = 'Evalution'
+            strmode = 'Evaluation'
         else:
             strmode = 'Fitting'
         self.statusBar().showMessage(strmode + 'running.')
@@ -2005,7 +2025,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.stats_tab.resizeColumnsToContents()
         self.stats_tab.resizeRowsToContents()
         if mode == 'eva':
+            plottitle=self.plottitle.displayText()
             # ax.plot(x, init+bg_mod, 'b--', lw =2, label='initial')
+            if plottitle != '':
+                self.ar.set_title(r"{}".format(plottitle), fontsize=11)
             self.ax.plot(x, out.best_fit + bg_mod, 'k-', lw=2, label='initial')
 
             for index_pk in range(npeak):
@@ -2024,7 +2047,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
         else:
             # ax.plot(x, init+bg_mod, 'k:', label='initial')
             self.ax.plot(x, out.best_fit + bg_mod, 'r-', lw=2, label='fit')
-
+            plottitle = self.plottitle.displayText()
+            if plottitle != '':
+                self.ar.set_title(r"{}".format(plottitle), fontsize=11)
             for index_pk in range(npeak):
                 strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
                 strind = strind.split(":", 1)[0]
@@ -2038,7 +2063,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
                                          comps['bg_'] + comps['pg_'], label='peak_' + str(index_pk + 1))
 
-            self.ar.plot(x, out.residual, 'g.', label='residual')  # modify residual and red chi-squared [bug]
+            self.ar.plot(x, out.residual, 'g.', label='residual')  # modify residual and red chi-squared [feature]
         self.ax.legend(loc=0)
         self.ar.legend(loc=0)
         self.canvas.draw()
