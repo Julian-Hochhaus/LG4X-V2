@@ -1285,6 +1285,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     pars = mod.make_params()
                     for index in range(4):
                         pars['pg_c' + str(index)].value = float(self.fitp0.item(3, 2 * index + 1).text())
+                    pars['pg_c0'].min=0
             if index_bg == 2:
                 bg_mod = 0
         else:

@@ -1,5 +1,7 @@
 # from numpy import amax, amin
 # make x and y lists (arrays) in the range between xmin and xmax
+import numpy as np
+
 
 def fit_range(x, y, xmin, xmax):
     # print(xmin, xmax)
@@ -194,14 +196,17 @@ def tougaard_calculate(x, y, tb=2866, tc=1643, tcd=1, td=1, maxit=100):
     return [y[len(y) - 1] + Btou, tb]
 
 
-def tougaard(x, I, B, C, C_d, D):
+def tougaard(x, y, B, C, C_d, D):
     # returns an approximation of the Tougaard BG for a given parameterset
-    bg = []
+    bg=[]
+    delta_x=(x[-1]-x[0])/len(x)
+    len_x=int(3*len(x))
+    padded_x=np.concatenate((x, np.linspace(x[-1]+delta_x, x[-1]+delta_x*len_x,len_x)))
+    padded_y=np.concatenate((y,np.mean(y[-1:])*np.ones(len_x)))
     for k in range(len(x)):
-        E = x[k]
-        bg_temp = 0
-        for j in range(len(I[k:])):
-            bg_temp += (x[k + j] - E) / ((C + C_d * (x[k + j] - E) ** 2) ** 2 + D * (x[k + j] - E) ** 2) * I[k + j] * (
-                        x[1] - x[0])
+        E=x[k]
+        bg_temp=0
+        for j in range(len(padded_y[k:])):
+            bg_temp+=(padded_x[k+j]-E)/((C+C_d*(padded_x[k+j]-E)**2)**2+D*(padded_x[k+j]-E)**2)*padded_y[k+j]*(padded_x[1]-padded_x[0])
         bg.append(bg_temp)
-    return [[B * elem for elem in bg], B]
+    return [[B*elem for elem in bg], B]
