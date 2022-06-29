@@ -179,11 +179,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
         list_bg_col = ['bg_c0', 'bg_c1', 'bg_c2', 'bg_c3', 'bg_c4']
         list_bg_row = ['Range (x0,x1), pt, hn, wf', 'Shirley', 'Tougaard', 'Polynomial', 'FD (amp, ctr, kt)',
                        'arctan (amp, ctr, sig)', 'erf (amp, ctr, sig)', 'cutoff (ctr, d1-4)']
-        self.fitp0 = QtWidgets.QTableWidget(len(list_bg_row), len(list_bg_col) * 2)
-        list_bg_colh = ['', 'bg_c0', '', 'bg_c1', '', 'bg_c2', '', 'bg_c3', '', 'bg_c4']
+        self.fitp0 = QtWidgets.QTableWidget(len(list_bg_row), len(list_bg_col) * 2+1)
+        list_bg_colh = ['', 'bg_c0', '', 'bg_c1', '', 'bg_c2', '', 'bg_c3', '', 'bg_c4', ' fit model']
         self.fitp0.setHorizontalHeaderLabels(list_bg_colh)
         self.fitp0.setVerticalHeaderLabels(list_bg_row)
-
         # set BG table checkbox
         for row in range(len(list_bg_row)):
             for col in range(len(list_bg_col)):
@@ -194,8 +193,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.fitp0.setItem(row, col * 2, item)
 
         # set BG table default
-        pre_bg = [[0, 300, 0, 270, 'pt', 101, 'hn', 1486.6, 'wf', 4], ['cv', 1e-06, 'it', 10, '', '', '', '', '', ''],
-                  ['B', 2866.0, 'C', 1643.0, 'C*', 1.0, 'D', 1.0, 'Keep fixed?', 0], [2, 0, 2, 0, 2, 0, 2, 0, '', '']]
+        pre_bg = [[0, 300, 0, 270, 'pt', 101, 'hn', 1486.6, 'wf', 4,''], ['cv', 1e-06, 'it', 10, '', '', '', '', '', '',''],
+                  ['B', 2866.0, 'C', 1643.0, 'C*', 1.0, 'D', 1.0, 'Keep fixed?', 0, 0], [2, 0, 2, 0, 2, 0, 2, 0, '', '', '']]
         self.setPreset(0, pre_bg, [])
 
         self.fitp0.resizeColumnsToContents()
@@ -602,7 +601,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if len(list_pre_bg) != 0 and self.addition == 0:
             for row in range(len(list_pre_bg)):
                 for col in range(len(list_pre_bg[0])):
-                    if (col % 2) != 0:
+                    if (col % 2) != 0 and col != 10:
                         item = QtWidgets.QTableWidgetItem(str(list_pre_bg[row][col]))
                     else:
                         if (row == 0 and col < 4) or row > 2:
@@ -614,6 +613,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         else:
                             item = QtWidgets.QTableWidgetItem(str(list_pre_bg[row][col]))
                     if row == 2 and col == 9:
+                        item = QtWidgets.QTableWidgetItem()
+                        if list_pre_bg[row][col] == 2:
+                            item.setCheckState(QtCore.Qt.Checked)
+                        else:
+                            item.setCheckState(QtCore.Qt.Unchecked)
+                    if row == 2 and col == 10:
                         item = QtWidgets.QTableWidgetItem()
                         if list_pre_bg[row][col] == 2:
                             item.setCheckState(QtCore.Qt.Checked)
@@ -1162,17 +1167,20 @@ class PrettyWidget(QtWidgets.QMainWindow):
             shB = float(self.fitp0.item(index_bg + 1, 3).text())
             bg_mod = xpy.shirley_calculate(x, y, shA, shB)
             y = y - bg_mod
-        if index_bg == 1:
+        if index_bg == 1 and self.fitp0.item(index_bg + 1, 10).checkState() == 0:
             toB = float(self.fitp0.item(index_bg + 1, 1).text())
             toC = float(self.fitp0.item(index_bg + 1, 3).text())
             toCd = float(self.fitp0.item(index_bg + 1, 5).text())
             toD = float(self.fitp0.item(index_bg + 1, 7).text())
             if mode == 'fit':
-                if self.fitp0.item(index_bg + 1, 9).checkState() == 2:
-                    [bg_mod, bg_toB] = xpy.tougaard(x, y, toB, toC, toCd, toD)
+                if self.fitp0.item(index_bg + 1, 10).checkState() == 0:
+                    if self.fitp0.item(index_bg + 1, 9).checkState() == 2:
+                        [bg_mod, bg_toB] = xpy.tougaard(x, y, toB, toC, toCd, toD)
+                    else:
+                        toM = float(self.fitp0.item(1, 3).text())
+                        [bg_mod, bg_toB] = xpy.tougaard_calculate(x, y, toB, toC, toCd, toD, toM)
                 else:
-                    toM = float(self.fitp0.item(1, 3).text())
-                    [bg_mod, bg_toB] = xpy.tougaard_calculate(x, y, toB, toC, toCd, toD, toM)
+                    bg_mod = 0
             else:
                 toM = 1
                 [bg_mod, bg_toB] = xpy.tougaard_calculate(x, y, toB, toC, toCd, toD, toM)
@@ -1180,6 +1188,27 @@ class PrettyWidget(QtWidgets.QMainWindow):
             item = QtWidgets.QTableWidgetItem(str(format(bg_toB, self.floating)))
             self.fitp0.setItem(index_bg + 1, 1, item)
             y = y - bg_mod
+        if index_bg == 1 and self.fitp0.item(index_bg + 1, 10).checkState() == 2:
+            mod = Model(xpy.tougaard2, independent_vars=["x", "y"], prefix='bg_')
+            if self.fitp0.item(index_bg + 1, 1) is None or self.fitp0.item(index_bg + 1, 3) is None or self.fitp0.item(
+                    index_bg + 1, 5) is None or self.fitp0.item(index_bg + 1, 7) is None:
+                pars = mod.guess(y, x=x, y=y)
+            else:
+                if len(self.fitp0.item(index_bg + 1, 1).text()) == 0 or \
+                        len(self.fitp0.item(index_bg + 1, 3).text()) == 0 or \
+                        len(self.fitp0.item(index_bg + 1, 5).text()) == 0 or \
+                        len(self.fitp0.item(index_bg + 1, 7).text()) == 0:
+                    pars = mod.guess(y, x=x, y=y)
+                else:
+                    pars = mod.make_params()
+                    pars['bg_B'].value = float(self.fitp0.item(index_bg + 1, 1).text())
+                    pars['bg_C'].value = float(self.fitp0.item(index_bg + 1, 3).text())
+                    pars['bg_C'].vary = False
+                    pars['bg_C_d'].value = float(self.fitp0.item(index_bg + 1, 5).text())
+                    pars['bg_C_d'].vary = False
+                    pars['bg_D'].value = float(self.fitp0.item(index_bg + 1, 7).text())
+                    pars['bg_D'].vary = False
+            bg_mod = 0
         if index_bg == 3:
             mod = ThermalDistributionModel(prefix='bg_', form='fermi')
             if self.fitp0.item(index_bg + 1, 1) is None or self.fitp0.item(index_bg + 1, 3) is None or self.fitp0.item(
@@ -1257,7 +1286,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             bg_mod = 0
 
         # Polynomial BG to be added for all BG
-        if index_bg <= 2:
+        if index_bg <= 2 and self.fitp0.item(index_bg + 1, 10).checkState() == 0:
             mod = PolynomialModel(3, prefix='pg_')
             if self.fitp0.item(3, 1) is None or self.fitp0.item(3, 3) is None \
                     or self.fitp0.item(3, 5) is None \
@@ -1289,9 +1318,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if index_bg == 2:
                 bg_mod = 0
         else:
+            print("wtf")
             modp = PolynomialModel(3, prefix='pg_')
             if self.fitp0.item(3, 1) is None or self.fitp0.item(3, 3) is None or \
-                    self.fitp0.item(3, 5) is not None or self.fitp0.item(3, 7) is None:
+                    self.fitp0.item(3, 5) is None or self.fitp0.item(3, 7) is None:
                 pars.update(modp.make_params())
                 for index in range(4):
                     pars['pg_c' + str(index)].value = 0
@@ -1301,6 +1331,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     item.setCheckState(QtCore.Qt.Checked)
                     self.fitp0.setItem(3, 2 * col, item)
             else:
+                print("hello?")
                 if len(self.fitp0.item(3, 1).text()) == 0 or len(self.fitp0.item(3, 3).text()) == 0 or len(
                         self.fitp0.item(3, 5).text()) == 0 or len(self.fitp0.item(3, 7).text()) == 0:
                     pars.update(modp.make_params())
@@ -1313,9 +1344,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         self.fitp0.setItem(3, 2 * col, item)
                 else:
                     pars.update(modp.make_params())
+                    print('success', pars)
                     for index in range(4):
                         pars['pg_c' + str(index)].value = float(self.fitp0.item(3, 2 * index + 1).text())
+                pars['pg_c0'].min = 0
             mod += modp
+
 
         # peak model selection and construction
         npeak = self.fitp1.columnCount()
@@ -1772,13 +1806,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
         else:
             strmode = 'Fitting'
         self.statusBar().showMessage(strmode + 'running.')
-        init = mod.eval(pars, x=x)
+        init = mod.eval(pars, x=x, y=y)
         if mode == 'eva':
-            out = mod.fit(y, pars, x=x)
+            out = mod.fit(y, pars, x=x, y=y)
         else:
-            out = mod.fit(y, pars, x=x, weights=1 / np.sqrt(raw_y))
+            out = mod.fit(y, pars, x=x, weights=1 / np.sqrt(raw_y),y=raw_y)
         comps = out.eval_components(x=x)
-
         # fit results to be checked
         for key in out.params:
             print(key, "=", out.params[key].value)
@@ -1794,6 +1827,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
         for index in range(4):
             item = QtWidgets.QTableWidgetItem(str(format(out.params['pg_c' + str(index)].value, self.floating)))
             self.fitp0.setItem(3, 2 * index + 1, item)
+        if index_bg == 1 and self.fitp0.item(index_bg + 1, 10).checkState() == 2:
+            item = QtWidgets.QTableWidgetItem(str(format(out.params['bg_B'].value, self.floating)))
+            self.fitp0.setItem(index_bg + 1, 1, item)
         if index_bg == 3:
             item = QtWidgets.QTableWidgetItem(str(format(out.params['bg_amplitude'].value, self.floating)))
             self.fitp0.setItem(index_bg + 1, 1, item)
@@ -2055,8 +2091,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
                 strind = strind.split(":", 1)[0]
                 if index_bg < 2:
-                    self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'],
+                    if self.fitp0.item(index_bg + 1, 10).checkState() == 0:
+                        self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'],
                                          bg_mod + comps['pg_'], label='peak_' + str(index_pk + 1))
+                    else:
+                        self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
+                                             comps['bg_'] + comps['pg_'], label='peak_' + str(index_pk + 1))
                 if index_bg == 2:
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['pg_'], comps['pg_'],
                                          label='peak_' + str(index_pk + 1))
