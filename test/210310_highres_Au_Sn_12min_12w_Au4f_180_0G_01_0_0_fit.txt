@@ -1,0 +1,62 @@
+LG4X: lmfit gui for xps curve fitting ver. 0.082
+
+[[Data file]]
+
+/mnt/c/Users/Julian Hochhaus/Promotion/Auswertung/Spektren Strahlzeit 2103/210512_Au_Sn_12min/210310_highres_Au_Sn_12min_12w_Au4f_180_0G_01_0_0.csv
+
+[[Fit results]]
+
+pg_c0	0.0
+pg_c1	0.0
+pg_c2	0.0
+pg_c3	0.0
+
+	g1
+amplitude	142895.53	
+center	284.6	
+sigma	0.25	
+gamma	0.02	
+fwhm	nan	
+height	nan	
+fraction	nan	
+skew	nan	
+q	nan	
+
+[[LG4X parameters]]
+
+[0, [[0, 85.0409, 0, 95.9746, 'pt', 101.0, 'hn', 1486.6, 'wf', 4.0], ['cv', 1e-06, 'it', 10.0, '', '', '', '', '', ''], ['B', 2866.0, 'C', 1643.0, 'C*', 1.0, 'D', 1.0, '', ''], [2, 0.0, 2, 0.0, 2, 0.0, 2, 0.0, '', ''], [0, '', 0, '', 0, '', 0, '', '', ''], [0, '', 0, '', 0, '', 0, '', '', ''], [0, '', 0, '', 0, '', 0, '', '', ''], [0, '', 0, '', 0, '', 0, '', '', '']], [['', 10], [2, 284.6], [2, 0.25], [2, 0.02], [0, 142895.526], [2, 0.5], [2, 0.0], [2, 0.0], [2, 0.026], [2, 0.1], [2, 0.7], [2, 0.2], [2, 1.0], ['', 0], [2, 0.1], ['', 0], [2, 0.5], ['', 0], [2, 1.0], ['', 0], [2, 1.0], ['', 0], [2, 1.0], ['', 0], [2, 1.0], [0, ''], [0, ''], [0, ''], [0, ''], [0, ''], [0, ''], [0, ''], [0, ''], [0, ''], [0, ''], [0, ''], [0, ''], [0, ''], [0, ''], [0, ''], [0, ''], [0, ''], [0, ''], [0, ''], [0, '']]]
+
+[[lmfit parameters]]
+
+Parameters([('pg_c0', <Parameter 'pg_c0', value=0.0 (fixed), bounds=[-inf:inf]>), ('pg_c1', <Parameter 'pg_c1', value=0.0 (fixed), bounds=[-inf:inf]>), ('pg_c2', <Parameter 'pg_c2', value=0.0 (fixed), bounds=[-inf:inf]>), ('pg_c3', <Parameter 'pg_c3', value=0.0 (fixed), bounds=[-inf:inf]>), ('g1_center_diff', <Parameter 'g1_center_diff', value=0.1 (fixed), bounds=[-inf:inf]>), ('g1_amp_ratio', <Parameter 'g1_amp_ratio', value=0.5 (fixed), bounds=[-inf:inf]>), ('g1_soc_ratio', <Parameter 'g1_soc_ratio', value=1.0 (fixed), bounds=[-inf:inf]>), ('g1_height_r_ratio', <Parameter 'g1_height_r_ratio', value=1.0 (fixed), bounds=[-inf:inf]>), ('g1_gaussian_ratio', <Parameter 'g1_gaussian_ratio', value=1.0 (fixed), bounds=[-inf:inf]>), ('g1_lorentzian_ratio', <Parameter 'g1_lorentzian_ratio', value=1.0 (fixed), bounds=[-inf:inf]>), ('g1_amplitude', <Parameter 'g1_amplitude', value=20000.0, bounds=[0:inf]>), ('g1_sigma', <Parameter 'g1_sigma', value=0.25 (fixed), bounds=[0:inf]>), ('g1_gamma', <Parameter 'g1_gamma', value=0.02 (fixed), bounds=[0:inf]>), ('g1_gaussian_sigma', <Parameter 'g1_gaussian_sigma', value=0.2 (fixed), bounds=[0:inf]>), ('g1_center', <Parameter 'g1_center', value=284.6 (fixed), bounds=[-inf:inf]>), ('g1_soc', <Parameter 'g1_soc', value=0.1 (fixed), bounds=[-inf:inf]>), ('g1_height_ratio', <Parameter 'g1_height_ratio', value=0.7 (fixed), bounds=[0:inf]>), ('g1_factor_sigma_doniach', <Parameter 'g1_factor_sigma_doniach', value=1.0 (fixed), bounds=[-inf:inf]>)])
+
+[[Model]]
+    (Model(polynomial, prefix='pg_') + Model(dublett, prefix='g1_'))
+[[Fit Statistics]]
+    # fitting method   = leastsq
+    # function evals   = 4
+    # data points      = 268
+    # variables        = 1
+    chi-square         = 3.9376e+09
+    reduced chi-square = 14747516.2
+    Akaike info crit   = 4424.76297
+    Bayesian info crit = 4428.35396
+[[Variables]]
+    pg_c0:                    0 (fixed)
+    pg_c1:                    0 (fixed)
+    pg_c2:                    0 (fixed)
+    pg_c3:                    0 (fixed)
+    g1_center_diff:           0.1 (fixed)
+    g1_amp_ratio:             0.5 (fixed)
+    g1_soc_ratio:             1 (fixed)
+    g1_height_r_ratio:        1 (fixed)
+    g1_gaussian_ratio:        1 (fixed)
+    g1_lorentzian_ratio:      1 (fixed)
+    g1_amplitude:             142895.526 +/- 15402.4317 (10.78%) (init = 20000)
+    g1_sigma:                 0.25 (fixed)
+    g1_gamma:                 0.02 (fixed)
+    g1_gaussian_sigma:        0.2 (fixed)
+    g1_center:                284.6 (fixed)
+    g1_soc:                   0.1 (fixed)
+    g1_height_ratio:          0.7 (fixed)
+    g1_factor_sigma_doniach:  1 (fixed)
