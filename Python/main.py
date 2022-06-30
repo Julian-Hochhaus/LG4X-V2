@@ -1173,12 +1173,14 @@ class PrettyWidget(QtWidgets.QMainWindow):
             toCd = float(self.fitp0.item(index_bg + 1, 5).text())
             toD = float(self.fitp0.item(index_bg + 1, 7).text())
             if mode == 'fit':
-                if self.fitp0.item(index_bg + 1, 9).checkState() == 2:
-                    [bg_mod, bg_toB] = xpy.tougaard(x, y, toB, toC, toCd, toD)
+                if self.fitp0.item(index_bg + 1, 10).checkState() == 0:
+                    if self.fitp0.item(index_bg + 1, 9).checkState() == 2:
+                        [bg_mod, bg_toB] = xpy.tougaard(x, y, toB, toC, toCd, toD)
+                    else:
+                        toM = float(self.fitp0.item(1, 3).text())
+                        [bg_mod, bg_toB] = xpy.tougaard_calculate(x, y, toB, toC, toCd, toD, toM)
                 else:
-                    toM = float(self.fitp0.item(1, 3).text())
-                    [bg_mod, bg_toB] = xpy.tougaard_calculate(x, y, toB, toC, toCd, toD, toM)
-
+                    bg_mod = 0
             else:
                 toM = 1
                 [bg_mod, bg_toB] = xpy.tougaard_calculate(x, y, toB, toC, toCd, toD, toM)
@@ -1187,32 +1189,26 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.fitp0.setItem(index_bg + 1, 1, item)
             y = y - bg_mod
         if index_bg == 1 and self.fitp0.item(index_bg + 1, 10).checkState() == 2:
-            toB = float(self.fitp0.item(index_bg + 1, 1).text())
-            toC = float(self.fitp0.item(index_bg + 1, 3).text())
-            toCd = float(self.fitp0.item(index_bg + 1, 5).text())
-            toD = float(self.fitp0.item(index_bg + 1, 7).text())
             mod = Model(xpy.tougaard2, independent_vars=["x", "y"], prefix='bg_')
             if self.fitp0.item(index_bg + 1, 1) is None or self.fitp0.item(index_bg + 1, 3) is None or self.fitp0.item(
-                index_bg + 1, 5) is None or self.fitp0.item(index_bg + 1, 7) is None:
+                    index_bg + 1, 5) is None or self.fitp0.item(index_bg + 1, 7) is None:
                 pars = mod.guess(y, x=x, y=y)
             else:
                 if len(self.fitp0.item(index_bg + 1, 1).text()) == 0 or \
-                    len(self.fitp0.item(index_bg + 1, 3).text()) == 0 or \
-                    len(self.fitp0.item(index_bg + 1, 5).text()) == 0 or \
-                    len(self.fitp0.item(index_bg + 1, 7).text()) == 0:
+                        len(self.fitp0.item(index_bg + 1, 3).text()) == 0 or \
+                        len(self.fitp0.item(index_bg + 1, 5).text()) == 0 or \
+                        len(self.fitp0.item(index_bg + 1, 7).text()) == 0:
                     pars = mod.guess(y, x=x, y=y)
                 else:
                     pars = mod.make_params()
                     pars['bg_B'].value = float(self.fitp0.item(index_bg + 1, 1).text())
-                    if self.fitp0.item(index_bg+1, 9).checkState() == 2:
-                        pars['bg_B'].vary = False
                     pars['bg_C'].value = float(self.fitp0.item(index_bg + 1, 3).text())
                     pars['bg_C'].vary = False
                     pars['bg_C_d'].value = float(self.fitp0.item(index_bg + 1, 5).text())
                     pars['bg_C_d'].vary = False
                     pars['bg_D'].value = float(self.fitp0.item(index_bg + 1, 7).text())
                     pars['bg_D'].vary = False
-                bg_mod = 0
+            bg_mod = 0
         if index_bg == 3:
             mod = ThermalDistributionModel(prefix='bg_', form='fermi')
             if self.fitp0.item(index_bg + 1, 1) is None or self.fitp0.item(index_bg + 1, 3) is None or self.fitp0.item(
@@ -1322,6 +1318,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if index_bg == 2:
                 bg_mod = 0
         else:
+            print("wtf")
             modp = PolynomialModel(3, prefix='pg_')
             if self.fitp0.item(3, 1) is None or self.fitp0.item(3, 3) is None or \
                     self.fitp0.item(3, 5) is None or self.fitp0.item(3, 7) is None:
@@ -1334,6 +1331,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     item.setCheckState(QtCore.Qt.Checked)
                     self.fitp0.setItem(3, 2 * col, item)
             else:
+                print("hello?")
                 if len(self.fitp0.item(3, 1).text()) == 0 or len(self.fitp0.item(3, 3).text()) == 0 or len(
                         self.fitp0.item(3, 5).text()) == 0 or len(self.fitp0.item(3, 7).text()) == 0:
                     pars.update(modp.make_params())
@@ -2132,7 +2130,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             strind = strind.split(":", 1)[0]
             df_c = pd.DataFrame(comps[strind + str(index_pk + 1) + '_'], columns=[strind + str(index_pk + 1)])
             self.result = pd.concat([self.result, df_c], axis=1)
-        print(out.fit_report())
+
         # macOS's compatibility issue on pyqt5, add below to update window
         self.repaint()
 
