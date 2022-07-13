@@ -167,7 +167,7 @@ def tougaard_calculate(x, y, tb=2866, tc=1643, tcd=1, td=1, maxit=100):
 
     it = 0
     while it < maxit:
-        if is_reversed == False:
+        if not is_reversed:
             for i in range(len(y) - 1, -1, -1):
                 Bint = 0
                 for j in range(len(y) - 1, i - 1, -1):
@@ -195,17 +195,20 @@ def tougaard_calculate(x, y, tb=2866, tc=1643, tcd=1, td=1, maxit=100):
 
     return [y[len(y) - 1] + Btou, tb]
 
-bgrnd=[[],[]]
+
+bgrnd = [[], []]
+
+
 def tougaard2(x, y, B, C, C_d, D):
     # returns an approximation of the Tougaard BG for a given parameterset
-    if np.array_equal(bgrnd[0],y):
-        return [B*elem for elem in bgrnd[1]]
+    if np.array_equal(bgrnd[0], y):
+        return [B * elem for elem in bgrnd[1]]
     else:
-        bgrnd[0]=y
-        bg=[]
+        bgrnd[0] = y
+        bg = []
         delta_x = abs((x[-1] - x[0]) / len(x))
         len_padded = int(50 / delta_x - len(x))
-        #len_padded = 3*len(x)
+        # len_padded = 3*len(x)
         padded_x = np.concatenate((x, np.linspace(x[-1] + delta_x, x[-1] + delta_x * len_padded, len_padded)))
         padded_y = np.concatenate((y, np.mean(y[-1:]) * np.ones(len_padded)))
         for k in range(len(x)):
@@ -214,23 +217,22 @@ def tougaard2(x, y, B, C, C_d, D):
             for j in range(len(padded_y[k:])):
                 padded_x_kj = padded_x[k + j]
                 bg_temp += (padded_x_kj - x_k) / ((C + C_d * (padded_x_kj - x_k) ** 2) ** 2
-                                              + D * (padded_x_kj - x_k) ** 2) * padded_y[k + j] * delta_x
+                                                  + D * (padded_x_kj - x_k) ** 2) * padded_y[k + j] * delta_x
             bg.append(bg_temp)
-        bgrnd[1]=bg
-        return [B*elem for elem in bgrnd[1]]
+        bgrnd[1] = bg
+        return [B * elem for elem in bgrnd[1]]
 
 
-bgrnd=[[],[]]
 def tougaard(x, y, B, C, C_d, D):
     # returns an approximation of the Tougaard BG for a given parameterset
-    if np.array_equal(bgrnd[0],y):
-        return [[B*elem for elem in bgrnd[1]], B]
+    if np.array_equal(bgrnd[0], y):
+        return [[B * elem for elem in bgrnd[1]], B]
     else:
-        bgrnd[0]=y
-        bg=[]
+        bgrnd[0] = y
+        bg = []
         delta_x = abs((x[-1] - x[0]) / len(x))
         len_padded = int(50 / delta_x - len(x))
-        #len_padded = 3*len(x)
+        # len_padded = 3*len(x)
         padded_x = np.concatenate((x, np.linspace(x[-1] + delta_x, x[-1] + delta_x * len_padded, len_padded)))
         padded_y = np.concatenate((y, np.mean(y[-1:]) * np.ones(len_padded)))
         for k in range(len(x)):
@@ -239,7 +241,17 @@ def tougaard(x, y, B, C, C_d, D):
             for j in range(len(padded_y[k:])):
                 padded_x_kj = padded_x[k + j]
                 bg_temp += (padded_x_kj - x_k) / ((C + C_d * (padded_x_kj - x_k) ** 2) ** 2
-                                              + D * (padded_x_kj - x_k) ** 2) * padded_y[k + j] * delta_x
+                                                  + D * (padded_x_kj - x_k) ** 2) * padded_y[k + j] * delta_x
             bg.append(bg_temp)
-        bgrnd[1]=bg
+        bgrnd[1] = bg
     return [[B * elem for elem in bg], B]
+
+
+def shirley(y, k, const):
+    n = len(y)
+    y_right = const
+    y_temp = y - y_right
+    bg = []
+    for i in range(n):
+        bg.append(np.sum(y_temp[i:]))
+    return [k * elem + y_right for elem in bg]

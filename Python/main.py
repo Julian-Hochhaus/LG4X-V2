@@ -70,7 +70,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
     def initUI(self):
         self.version = 'LG4X: LMFit GUI for XPS curve fitting V2 0.01'
-        self.floating = '.3f'
+        self.floating = '.4f'
         self.setGeometry(700, 500, 1600, 900)
         self.center()
         self.setWindowTitle(self.version)
@@ -179,8 +179,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         list_bg_col = ['bg_c0', 'bg_c1', 'bg_c2', 'bg_c3', 'bg_c4']
         list_bg_row = ['Range (x0,x1), pt, hn, wf', 'Shirley', 'Tougaard', 'Polynomial', 'FD (amp, ctr, kt)',
                        'arctan (amp, ctr, sig)', 'erf (amp, ctr, sig)', 'cutoff (ctr, d1-4)']
-        self.fitp0 = QtWidgets.QTableWidget(len(list_bg_row), len(list_bg_col) * 2+1)
-        list_bg_colh = ['', 'bg_c0', '', 'bg_c1', '', 'bg_c2', '', 'bg_c3', '', 'bg_c4', ' fit model']
+        self.fitp0 = QtWidgets.QTableWidget(len(list_bg_row), len(list_bg_col) * 2 + 1)
+        list_bg_colh = ['', 'bg_c0', '', 'bg_c1', '', 'bg_c2', '', 'bg_c3', '', 'bg_c4', ' active bg']
         self.fitp0.setHorizontalHeaderLabels(list_bg_colh)
         self.fitp0.setVerticalHeaderLabels(list_bg_row)
         # set BG table checkbox
@@ -191,15 +191,19 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 item.setCheckState(QtCore.Qt.Unchecked)
                 if (row == 0 and col < 2) or (row > 2 and col < 4) or (row > 6 and col < 5):
                     self.fitp0.setItem(row, col * 2, item)
-
+                if (row == 1 or row == 2) and col == 5:
+                    self.fitp0.setItem(row, col * 2 - 1, item)
+                    self.fitp0.setItem(row, col * 2, item)
         # set BG table default
-        pre_bg = [[0, 300, 0, 270, 'pt', 101, 'hn', 1486.6, 'wf', 4,''], ['cv', 1e-06, 'it', 10, '', '', '', '', '', '',''],
-                  ['B', 2866.0, 'C', 1643.0, 'C*', 1.0, 'D', 1.0, 'Keep fixed?', 0, 0], [2, 0, 2, 0, 2, 0, 2, 0, '', '', '']]
+        pre_bg = [[0, 300, 0, 270, 'pt', 101, 'hn', 1486.6, 'wf', 4, ''],
+                  ['cv', 1e-06, 'it', 10, 'k', 0.0003, 'const', 1000, 'Keep fixed?', 0, 0],
+                  ['B', 2866.0, 'C', 1643.0, 'C*', 1.0, 'D', 1.0, 'Keep fixed?', 0, 0],
+                  [2, 0, 2, 0, 2, 0, 2, 0, '', '', '']]
         self.setPreset(0, pre_bg, [])
 
         self.fitp0.resizeColumnsToContents()
         self.fitp0.resizeRowsToContents()
-        grid.addWidget(self.fitp0, 0, 3, 3, 4)
+        grid.addWidget(self.fitp0, 0, 3, 3, 6)
 
         # set Fit Table
         list_col = ['peak_1']
@@ -207,8 +211,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     'gaussian_sigma', 'fct_coster_kronig', 'center_ref', 'ctr_diff', 'amp_ref', 'ratio', 'soc_ref',
                     'soc_ratio', 'height_r_ref', 'ratio', 'g_s_ref', 'gaussian_ratio', 'lrtzn_s_ref', 'lrtzn_ratio',
                     'ctr_min', 'ctr_max', 'sig_min', 'sig_max', 'gam_min', 'gam_max', 'amp_min', 'amp_max', 'frac_min',
-                    'frac_max', 'skew_min', 'skew_max', 'q_min', 'q_max', 'kt_min','kt_max','soc_min', 'soc_max',
-                    'height_rtio_min', 'height_rtio_max', 'gaussian_s_min','gaussian_s_max', "coster-kronig_min",
+                    'frac_max', 'skew_min', 'skew_max', 'q_min', 'q_max', 'kt_min', 'kt_max', 'soc_min', 'soc_max',
+                    'height_rtio_min', 'height_rtio_max', 'gaussian_s_min', 'gaussian_s_max', "coster-kronig_min",
                     "coster-kronig_max", 'ctr_diff_min', 'ctr_diff_max', 'amp_ratio_min', 'amp_ratio_max',
                     'soc_ratio_min', 'soc_ratio_max', 'height_ref_min', 'height_ref_max', 'gaussian_ratio_min',
                     'gaussian_ratio_max', 'lorentz_ratio_min', 'lorentz_ratio_max']
@@ -289,7 +293,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         self.fitp1.resizeColumnsToContents()
         self.fitp1.resizeRowsToContents()
-        grid.addWidget(self.fitp1, 4, 3, 4, 3)
+        grid.addWidget(self.fitp1, 4, 3, 4, 4)
         list_res_row = ['gaussian_fwhm', 'lorentzian_fwhm_p1', 'lorentzian_fwhm_p2', 'fwhm_p1', 'fwhm_p2', 'height_p1',
                         'height_p2', 'area_p1', 'area_p2']
         self.res_tab = QtWidgets.QTableWidget(len(list_res_row), len(list_col))
@@ -297,7 +301,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.res_tab.setVerticalHeaderLabels(list_res_row)
         self.res_tab.resizeColumnsToContents()
         self.res_tab.resizeRowsToContents()
-        grid.addWidget(self.res_tab, 7, 6, 1, 3)
+        grid.addWidget(self.res_tab, 7, 7, 1, 2)
         list_stats_row = ['success?', 'message', 'nfev', 'nvary', 'ndata', 'nfree', 'chisqr', 'redchi', 'aic', 'bic']
         list_stats_col = ['Fit stats']
         self.stats_tab = QtWidgets.QTableWidget(len(list_stats_row), 1)
@@ -305,11 +309,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.stats_tab.setVerticalHeaderLabels(list_stats_row)
         self.stats_tab.resizeColumnsToContents()
         self.stats_tab.resizeRowsToContents()
-        grid.addWidget(self.stats_tab, 5, 6, 1, 3)
+        grid.addWidget(self.stats_tab, 5, 7, 1, 2)
         self.stats_label = QtWidgets.QLabel()
         self.stats_label.setText("Fit statistics:")
         self.stats_label.setStyleSheet("font-weight: bold; font-size:12pt")
-        grid.addWidget(self.stats_label, 4, 6, 1, 1)
+        grid.addWidget(self.stats_label, 4, 7, 1, 1)
         self.pars_label = QtWidgets.QLabel()
         self.pars_label.setText("Peak parameters:")
         self.pars_label.setStyleSheet("font-weight: bold; font-size:12pt")
@@ -317,9 +321,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.res_label = QtWidgets.QLabel()
         self.res_label.setText("Fit results:")
         self.res_label.setStyleSheet("font-weight: bold; font-size:12pt")
-        grid.addWidget(self.res_label, 6, 6, 1, 1)
-        self.plottitle=QtWidgets.QLineEdit()
-        grid.addWidget(self.plottitle,0,7,1,2)
+        grid.addWidget(self.res_label, 6, 7, 1, 1)
+        self.plottitle_label = QtWidgets.QLabel()
+        self.plottitle_label.setText("Plot title:")
+        self.plottitle_label.setStyleSheet("font-weight: bold; font-size:12pt")
+        grid.addWidget(self.plottitle_label, 3, 6, 1, 1)
+        self.plottitle = QtWidgets.QLineEdit()
+        grid.addWidget(self.plottitle, 3, 7, 1, 2)
         self.show()
 
     def add_col(self):
@@ -539,7 +547,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if index == 5:
             # load C1s peak preset
             pre_bg = [[2, 295, 2, 275, '', '', '', '', '', ''], ['cv', 1e-06, 'it', 10, '', '', '', '', '', ''],
-                      ['B', 2866.0, 'C', 1643.0, 'C*', 1.0, 'D', 1.0, 'Keep fixed?', 0], [2, 0, 2, 0, 2, 0, 2, 0, '', '']]
+                      ['B', 2866.0, 'C', 1643.0, 'C*', 1.0, 'D', 1.0, 'Keep fixed?', 0],
+                      [2, 0, 2, 0, 2, 0, 2, 0, '', '']]
             if self.comboBox_file.currentIndex() > 0:
                 # self.df = np.loadtxt(str(self.comboBox_file.currentText()),	delimiter=',', skiprows=1)
                 # x0 = self.df[:, 0]
@@ -612,13 +621,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                 item.setCheckState(QtCore.Qt.Unchecked)
                         else:
                             item = QtWidgets.QTableWidgetItem(str(list_pre_bg[row][col]))
-                    if row == 2 and col == 9:
-                        item = QtWidgets.QTableWidgetItem()
-                        if list_pre_bg[row][col] == 2:
-                            item.setCheckState(QtCore.Qt.Checked)
-                        else:
-                            item.setCheckState(QtCore.Qt.Unchecked)
-                    if row == 2 and col == 10:
+                    if (row == 2 or row == 1) and (col == 9 or col == 10):
                         item = QtWidgets.QTableWidgetItem()
                         if list_pre_bg[row][col] == 2:
                             item.setCheckState(QtCore.Qt.Checked)
@@ -999,7 +1002,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # print('new', len(self.ax.texts))
 
     def plot(self):
-        plottitle=self.plottitle.displayText()
+        plottitle = self.plottitle.displayText()
         # when file list is selected
         if self.comboBox_file.currentIndex() == 1:
             self.comboBox_file.clear()
@@ -1091,7 +1094,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.ana('fit')
 
     def ana(self, mode):
-        plottitle=self.plottitle.displayText()
+        plottitle = self.plottitle.displayText()
         # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
         x0 = self.df[:, 0]
         y0 = self.df[:, 1]
@@ -1163,10 +1166,24 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # colPosition = self.fitp1.columnCount()
         index_bg = self.comboBox_bg.currentIndex()
         if index_bg == 0:
-            shA = float(self.fitp0.item(index_bg + 1, 1).text())
-            shB = float(self.fitp0.item(index_bg + 1, 3).text())
-            bg_mod = xpy.shirley_calculate(x, y, shA, shB)
-            y = y - bg_mod
+            if self.fitp0.item(index_bg + 1, 10).checkState() == 0:
+                shA = float(self.fitp0.item(index_bg + 1, 1).text())
+                shB = float(self.fitp0.item(index_bg + 1, 3).text())
+                bg_mod = xpy.shirley_calculate(x, y, shA, shB)
+                y = y - bg_mod
+            else:
+                mod = Model(xpy.shirley, independent_vars=["y"], prefix='bg_')
+                k = float(self.fitp0.item(index_bg + 1, 5).text())
+                const = float(self.fitp0.item(index_bg + 1, 7).text())
+                pars = mod.make_params()
+                pars['bg_k'].value = float(k)
+                pars['bg_const'].value = float(const)
+                if self.fitp0.item(index_bg + 1, 9).checkState() == 2 or mode == "eva":
+                    pars['bg_k'].vary = False
+                    pars['bg_const'].vary = False
+                    bg_mod=xpy.shirley(y, k, const)
+                else:
+                    bg_mod=0
         if index_bg == 1 and self.fitp0.item(index_bg + 1, 10).checkState() == 0:
             toB = float(self.fitp0.item(index_bg + 1, 1).text())
             toC = float(self.fitp0.item(index_bg + 1, 3).text())
@@ -1318,7 +1335,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     pars = mod.make_params()
                     for index in range(4):
                         pars['pg_c' + str(index)].value = float(self.fitp0.item(3, 2 * index + 1).text())
-                    pars['pg_c0'].min=0
+                    pars['pg_c0'].min = 0
             if index_bg == 2:
                 bg_mod = 0
         else:
@@ -1351,7 +1368,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         pars['pg_c' + str(index)].value = float(self.fitp0.item(3, 2 * index + 1).text())
                 pars['pg_c0'].min = 0
             mod += modp
-
 
         # peak model selection and construction
         npeak = self.fitp1.columnCount()
@@ -1812,7 +1828,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if mode == 'eva':
             out = mod.fit(y, pars, x=x, y=y)
         else:
-            out = mod.fit(y, pars, x=x, weights=1 / np.sqrt(raw_y),y=raw_y)
+            out = mod.fit(y, pars, x=x, weights=1 / np.sqrt(raw_y), y=raw_y)
         comps = out.eval_components(x=x)
         # fit results to be checked
         for key in out.params:
@@ -1829,6 +1845,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
         for index in range(4):
             item = QtWidgets.QTableWidgetItem(str(format(out.params['pg_c' + str(index)].value, self.floating)))
             self.fitp0.setItem(3, 2 * index + 1, item)
+        if index_bg == 0 and self.fitp0.item(index_bg + 1, 10).checkState() == 2:
+            item = QtWidgets.QTableWidgetItem(str(format(out.params['bg_k'].value, '.7f')))
+            self.fitp0.setItem(index_bg + 1, 5, item)
+            item = QtWidgets.QTableWidgetItem(str(format(out.params['bg_const'].value, self.floating)))
+            self.fitp0.setItem(index_bg + 1, 7, item)
         if index_bg == 1 and self.fitp0.item(index_bg + 1, 10).checkState() == 2:
             item = QtWidgets.QTableWidgetItem(str(format(out.params['bg_B'].value, self.floating)))
             self.fitp0.setItem(index_bg + 1, 1, item)
@@ -2064,7 +2085,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.stats_tab.resizeColumnsToContents()
         self.stats_tab.resizeRowsToContents()
         if mode == 'eva':
-            plottitle=self.plottitle.displayText()
+            plottitle = self.plottitle.displayText()
             # ax.plot(x, init+bg_mod, 'b--', lw =2, label='initial')
             if plottitle != '':
                 self.ar.set_title(r"{}".format(plottitle), fontsize=11)
@@ -2095,7 +2116,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if index_bg < 2:
                     if self.fitp0.item(index_bg + 1, 10).checkState() == 0:
                         self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'],
-                                         bg_mod + comps['pg_'], label='peak_' + str(index_pk + 1))
+                                             bg_mod + comps['pg_'], label='peak_' + str(index_pk + 1))
                     else:
                         self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
                                              comps['bg_'] + comps['pg_'], label='peak_' + str(index_pk + 1))
