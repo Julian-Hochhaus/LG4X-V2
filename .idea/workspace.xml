@@ -7,7 +7,6 @@
     <list default="true" id="fd9b0103-3062-4884-9a9d-86d4591ee2f4" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Python/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/Python/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Python/usrmodel.py" beforeDir="false" afterPath="$PROJECT_DIR$/Python/usrmodel.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -48,7 +47,7 @@
       <updated>1656660668404</updated>
       <workItem from="1656660671790" duration="8602000" />
       <workItem from="1657712200641" duration="5806000" />
-      <workItem from="1657779073988" duration="6754000" />
+      <workItem from="1657779073988" duration="7568000" />
     </task>
     <servers />
   </component>

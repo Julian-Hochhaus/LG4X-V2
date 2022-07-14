@@ -2191,7 +2191,17 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if index_bg > 2:
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
                                          comps['bg_'] + comps['pg_'], label='peak_' + str(index_pk + 1))
-
+                #### Philipp: 14-07-2022 ####
+                if index_bg < 2:
+                    if self.fitp0.item(index_bg + 1, 10).checkState() == 0:
+                        self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'])
+                    else:
+                        self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
+                if index_bg == 2:
+                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['pg_'], comps['pg_'])
+                if index_bg > 2:
+                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
+                #### #### ####
             self.ar.plot(x, out.residual, 'g.', label='residual')  # modify residual and red chi-squared [feature]
         self.ax.legend(loc=0)
         self.ar.legend(loc=0)
