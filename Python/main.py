@@ -2171,7 +2171,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                  label='peak_' + str(index_pk + 1))
         else:
             # ax.plot(x, init+bg_mod, 'k:', label='initial')
-            self.ax.plot(x, out.best_fit + bg_mod, 'r-', lw=2, label='fit')
             plottitle = self.plottitle.displayText()
             if plottitle != '':
                 self.ar.set_title(r"{}".format(plottitle), fontsize=11)
@@ -2202,6 +2201,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if index_bg > 2:
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
                 #### #### ####
+            self.ax.plot(x, out.best_fit + bg_mod, 'r-', lw=2, label='fit')
             self.ar.plot(x, out.residual, 'g.', label='residual')  # modify residual and red chi-squared [feature]
         self.ax.legend(loc=0)
         self.ar.legend(loc=0)
