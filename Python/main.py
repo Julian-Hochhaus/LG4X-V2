@@ -22,7 +22,8 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 import vamas_export as vpy
 import xpspy as xpy
 from periodictable import PeriodicTable
-from usrmodel import ConvGaussianDoniachDublett, ConvGaussianDoniachSinglett, FermiEdgeModel
+from usrmodel import ConvGaussianDoniachDublett, ConvGaussianDoniachSinglett, FermiEdgeModel, singlett, fft_convolve
+from scipy import integrate
 
 # style.use('ggplot')
 style.use('seaborn-pastel')
@@ -295,7 +296,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp1.resizeRowsToContents()
         grid.addWidget(self.fitp1, 4, 3, 4, 4)
         list_res_row = ['gaussian_fwhm', 'lorentzian_fwhm_p1', 'lorentzian_fwhm_p2', 'fwhm_p1', 'fwhm_p2', 'height_p1',
-                        'height_p2', 'area_p1', 'area_p2']
+                        'height_p2', 'area_p1', 'area_p2', 'area_total']
         self.res_tab = QtWidgets.QTableWidget(len(list_res_row), len(list_col))
         self.res_tab.setHorizontalHeaderLabels(list_col)
         self.res_tab.setVerticalHeaderLabels(list_res_row)
@@ -1181,9 +1182,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if self.fitp0.item(index_bg + 1, 9).checkState() == 2 or mode == "eva":
                     pars['bg_k'].vary = False
                     pars['bg_const'].vary = False
-                    bg_mod=xpy.shirley(y, k, const)
+                    bg_mod = xpy.shirley(y, k, const)
                 else:
-                    bg_mod=0
+                    bg_mod = 0
         if index_bg == 1 and self.fitp0.item(index_bg + 1, 10).checkState() == 0:
             toB = float(self.fitp0.item(index_bg + 1, 1).text())
             toC = float(self.fitp0.item(index_bg + 1, 3).text())
@@ -1210,18 +1211,18 @@ class PrettyWidget(QtWidgets.QMainWindow):
             toD = float(self.fitp0.item(index_bg + 1, 7).text())
             mod = Model(xpy.tougaard2, independent_vars=["x", "y"], prefix='bg_')
             if self.fitp0.item(index_bg + 1, 1) is None or self.fitp0.item(index_bg + 1, 3) is None or self.fitp0.item(
-                index_bg + 1, 5) is None or self.fitp0.item(index_bg + 1, 7) is None:
+                    index_bg + 1, 5) is None or self.fitp0.item(index_bg + 1, 7) is None:
                 pars = mod.guess(y, x=x, y=y)
             else:
                 if len(self.fitp0.item(index_bg + 1, 1).text()) == 0 or \
-                    len(self.fitp0.item(index_bg + 1, 3).text()) == 0 or \
-                    len(self.fitp0.item(index_bg + 1, 5).text()) == 0 or \
-                    len(self.fitp0.item(index_bg + 1, 7).text()) == 0:
+                        len(self.fitp0.item(index_bg + 1, 3).text()) == 0 or \
+                        len(self.fitp0.item(index_bg + 1, 5).text()) == 0 or \
+                        len(self.fitp0.item(index_bg + 1, 7).text()) == 0:
                     pars = mod.guess(y, x=x, y=y)
                 else:
                     pars = mod.make_params()
                     pars['bg_B'].value = float(self.fitp0.item(index_bg + 1, 1).text())
-                    if self.fitp0.item(index_bg+1, 9).checkState() == 2:
+                    if self.fitp0.item(index_bg + 1, 9).checkState() == 2:
                         pars['bg_B'].vary = False
                     pars['bg_C'].value = float(self.fitp0.item(index_bg + 1, 3).text())
                     pars['bg_C'].vary = False
@@ -1917,10 +1918,16 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_height'].value, self.floating)))
                 self.res_tab.setItem(5, index_pk, item)
-                area = str(format(out.params[strind + str(index_pk + 1) + '_height'].value * out.params[
-                    strind + str(index_pk + 1) + '_fwhm'].value, self.floating))
-                item = QtWidgets.QTableWidgetItem(area)
-                self.res_tab.setItem(7, index_pk, item)
+                # included area
+                if mode == 'eva':
+                    item = QtWidgets.QTableWidgetItem('')
+                    self.res_tab.setItem(7, index_pk, item)
+                else:
+                    y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
+                    area = integrate.simps([y for y, x in zip(y_area, x)])
+                    item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100,'.2f'))))
+                    self.res_tab.setItem(7, index_pk, item)
+                    self.res_tab.setItem(8, index_pk, item)
                 item = QtWidgets.QTableWidgetItem('')
                 self.res_tab.setItem(2, index_pk, item)
                 item = QtWidgets.QTableWidgetItem('')
@@ -1932,8 +1939,19 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if index == 4 or index == 5 or index == 6 or index == 7 or index == 8 or index == 9 or index == 12:
                 rows = self.res_tab.rowCount()
                 for row in range(rows):
+                    if row != 7:
+                        item = QtWidgets.QTableWidgetItem('')
+                        self.res_tab.setItem(row, index_pk, item)
+                # included area
+                if mode == 'eva':
                     item = QtWidgets.QTableWidgetItem('')
-                    self.res_tab.setItem(row, index_pk, item)
+                    self.res_tab.setItem(7, index_pk, item)
+                else:
+                    y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
+                    area = integrate.simps([y for y, x in zip(y_area, x)])
+                    item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100,'.2f'))))
+                    self.res_tab.setItem(7, index_pk, item)
+                    self.res_tab.setItem(9, index_pk, item)
             if index == 2:
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_sigma'].value, self.floating)))
@@ -2002,15 +2020,27 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm'].value, self.floating)))
                 self.res_tab.setItem(1, index_pk, item)
-                item = QtWidgets.QTableWidgetItem(
-                    str(format(out.params[strind + str(index_pk + 1) + '_fwhm'].value, self.floating)))
-                self.res_tab.setItem(3, index_pk, item)
+                # included fwhm
+                if mode == 'eva':
+                    item = QtWidgets.QTableWidgetItem('')
+                    self.res_tab.setItem(3, index_pk, item)
+                    self.res_tab.setItem(7, index_pk, item)
+                    self.res_tab.setItem(9, index_pk, item)
+                else:
+                    y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
+                    y_temp = y_area / np.max(y_area)
+                    x_ = [i for i, j in zip(x, y_temp) if j >= 0.5]
+                    fwhm_temp = x_[-1] - x_[0]
+                    item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp, self.floating)))
+                    self.res_tab.setItem(3, index_pk, item)
+                    # included area
+                    area = integrate.simps([y for y, x in zip(y_area, x)])
+                    item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100,'.2f'))))
+                    self.res_tab.setItem(7, index_pk, item)
+                    self.res_tab.setItem(9, index_pk, item)
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_height'].value, self.floating)))
                 self.res_tab.setItem(5, index_pk, item)
-                item = QtWidgets.QTableWidgetItem(
-                    str(format(out.params[strind + str(index_pk + 1) + '_area'].value, self.floating)))
-                self.res_tab.setItem(7, index_pk, item)
             if index == 10:
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm_p1'].value, self.floating)))
@@ -2018,24 +2048,59 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm_p2'].value, self.floating)))
                 self.res_tab.setItem(2, index_pk, item)
-                item = QtWidgets.QTableWidgetItem(
-                    str(format(out.params[strind + str(index_pk + 1) + '_fwhm_p1'].value, self.floating)))
-                self.res_tab.setItem(3, index_pk, item)
-                item = QtWidgets.QTableWidgetItem(
-                    str(format(out.params[strind + str(index_pk + 1) + '_fwhm_p2'].value, self.floating)))
-                self.res_tab.setItem(4, index_pk, item)
+                if mode == 'eva':
+                    item = QtWidgets.QTableWidgetItem('')
+                    self.res_tab.setItem(3, index_pk, item)
+                    self.res_tab.setItem(4, index_pk, item)
+                    self.res_tab.setItem(7, index_pk, item)
+                    self.res_tab.setItem(8, index_pk, item)
+                else:
+                    # included fwhm
+                    y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
+                    y_area_p1 = singlett(x, amplitude=out.params[strind + str(index_pk + 1) + '_amplitude'].value,
+                                         sigma=out.params[strind + str(index_pk + 1) + '_sigma'].value,
+                                         gamma=out.params[strind + str(index_pk + 1) + '_gamma'].value,
+                                         gaussian_sigma=out.params[
+                                             strind + str(index_pk + 1) + '_gaussian_sigma'].value,
+                                         center=out.params[strind + str(index_pk + 1) + '_center'].value)
+                    y_area_p2 = singlett(x,
+                                         amplitude=out.params[strind + str(index_pk + 1) + '_amplitude'].value
+                                                   * out.params[strind + str(index_pk + 1) + '_height_ratio'].value,
+                                         sigma=out.params[strind + str(index_pk + 1) + '_sigma'].value
+                                               * out.params[strind + str(index_pk + 1) + '_coster_kronig_factor'].value,
+                                         gamma=out.params[strind + str(index_pk + 1) + '_gamma'].value,
+                                         gaussian_sigma=out.params[
+                                             strind + str(index_pk + 1) + '_gaussian_sigma'].value,
+                                         center=out.params[strind + str(index_pk + 1) + '_center'].value
+                                                - out.params[strind + str(index_pk + 1) + '_soc'].value)
+                    y_temp_p1 = y_area_p1 / np.max(y_area_p1)
+                    x_p1 = [i for i, j in zip(x, y_temp_p1) if j >= 0.5]
+                    fwhm_temp_p1 = x_p1[-1] - x_p1[0]
+                    item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp_p1, self.floating)))
+                    self.res_tab.setItem(3, index_pk, item)
+                    y_temp_p2 = y_area_p2 / np.max(y_area_p2)
+                    x_p2 = [i for i, j in zip(x, y_temp_p2) if j >= 0.5]
+                    fwhm_temp_p2 = x_p2[-1] - x_p2[0]
+                    item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp_p2, self.floating)))
+                    self.res_tab.setItem(4, index_pk, item)
+                    # included area
+                    area_p1 = integrate.simps([y for y, x in zip(y_area_p1, x)])
+                    area_p2 = integrate.simps([y for y, x in zip(y_area_p2, x)])
+                    area_ges = area_p1 + area_p2
+                    item = QtWidgets.QTableWidgetItem(
+                        str(format(area_p1, '.1f') + r' ({}%)'.format(format(area_p1 / area_ges * 100,'.2f'))))
+                    self.res_tab.setItem(7, index_pk, item)
+                    item = QtWidgets.QTableWidgetItem(
+                        str(format(area_p2, '.1f') + r' ({}%)'.format(format(area_p2 / area_ges * 100, '.2f'))))
+                    self.res_tab.setItem(8, index_pk, item)
+                    item = QtWidgets.QTableWidgetItem(str(format(area_ges, self.floating)))
+                    self.res_tab.setItem(9, index_pk, item)
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_height_p1'].value, self.floating)))
                 self.res_tab.setItem(5, index_pk, item)
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_height_p2'].value, self.floating)))
                 self.res_tab.setItem(6, index_pk, item)
-                item = QtWidgets.QTableWidgetItem(
-                    str(format(out.params[strind + str(index_pk + 1) + '_area_p1'].value, self.floating)))
-                self.res_tab.setItem(7, index_pk, item)
-                item = QtWidgets.QTableWidgetItem(
-                    str(format(out.params[strind + str(index_pk + 1) + '_area_p2'].value, self.floating)))
-                self.res_tab.setItem(8, index_pk, item)
             if index == 12:
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_kt'].value, self.floating)))

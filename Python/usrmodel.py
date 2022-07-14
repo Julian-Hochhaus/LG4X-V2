@@ -206,7 +206,7 @@ class ConvGaussianDoniachSinglett(lmfit.model.Model):
         self.set_param_hint('center', value=100, min=0)
         g_fwhm_expr = '2*{pre:s}gaussian_sigma*1.1774'
         self.set_param_hint('gaussian_fwhm', expr=g_fwhm_expr.format(pre=self.prefix))
-        l_fwhm_expr = '2*{pre:s}sigma*(1+{pre:s}gamma)'
+        l_fwhm_expr = '{pre:s}sigma*(2+{pre:s}gamma*2.5135+({pre:s}gamma*3.6398)**4)'
         self.set_param_hint('lorentzian_fwhm', expr=l_fwhm_expr.format(pre=self.prefix))
         full_fwhm_expr = ("0.5346*{pre:s}lorentzian_fwhm+" +
                           "sqrt(0.2166*{pre:s}lorentzian_fwhm**2+{pre:s}gaussian_fwhm**2)")
@@ -252,8 +252,8 @@ class ConvGaussianDoniachDublett(lmfit.model.Model):
         self.set_param_hint('coster_kronig_factor', value=1, min=0)
         g_fwhm_expr = '2*{pre:s}gaussian_sigma*1.1774'
         self.set_param_hint('gaussian_fwhm', expr=g_fwhm_expr.format(pre=self.prefix))
-        l_p1_fwhm_expr = '2*{pre:s}sigma*(1+{pre:s}gamma)'
-        l_p2_fwhm_expr = '2*{pre:s}sigma*{pre:s}coster_kronig_factor*(1+{pre:s}gamma)'
+        l_p1_fwhm_expr = '{pre:s}sigma*(2+{pre:s}gamma*2.5135+({pre:s}gamma*3.6398)**4)'
+        l_p2_fwhm_expr = '{pre:s}sigma*(2+{pre:s}gamma*2.5135+({pre:s}gamma*3.6398)**4)*{pre:s}coster_kronig_factor'
         self.set_param_hint('lorentzian_fwhm_p1', expr=l_p1_fwhm_expr.format(pre=self.prefix))
         self.set_param_hint('lorentzian_fwhm_p2', expr=l_p2_fwhm_expr.format(pre=self.prefix))
         fwhm_p1_expr = ("0.5346*{pre:s}lorentzian_fwhm_p1+" +
