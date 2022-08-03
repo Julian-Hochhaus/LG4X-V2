@@ -296,7 +296,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp1.resizeRowsToContents()
         grid.addWidget(self.fitp1, 4, 3, 4, 4)
         list_res_row = ['gaussian_fwhm', 'lorentzian_fwhm_p1', 'lorentzian_fwhm_p2', 'fwhm_p1', 'fwhm_p2', 'height_p1',
-                        'height_p2', 'area_p1', 'area_p2', 'area_total']
+                        'height_p2', 'approx. area_p1', 'approx. area_p2', 'area_total']
         self.res_tab = QtWidgets.QTableWidget(len(list_res_row), len(list_col))
         self.res_tab.setHorizontalHeaderLabels(list_col)
         self.res_tab.setVerticalHeaderLabels(list_res_row)
@@ -1882,6 +1882,14 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp0.resizeColumnsToContents()
         self.fitp0.resizeRowsToContents()
         # Peak results into table
+        y_peaks = [0 for i in range(len(y))]
+        for index_pk in range(npeak):
+            strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
+            strind = strind.split(":", 1)[0]
+            y_peaks+=out.eval_components()[strind + str(index_pk + 1) + '_']
+
+        print(y_peaks)
+        area_peaks = integrate.simps([y for y, x in zip(y_peaks, x)])
         for index_pk in range(npeak):
             index = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentIndex()
             strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
@@ -2035,7 +2043,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.res_tab.setItem(3, index_pk, item)
                     # included area
                     area = integrate.simps([y for y, x in zip(y_area, x)])
-                    item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
+                    item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(area/area_peaks*100, '.2f'))))
                     self.res_tab.setItem(7, index_pk, item)
                     self.res_tab.setItem(9, index_pk, item)
                 item = QtWidgets.QTableWidgetItem(
@@ -2056,7 +2064,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.res_tab.setItem(8, index_pk, item)
                 else:
                     # included fwhm
-                    y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
                     y_area_p1 = singlett(x, amplitude=out.params[strind + str(index_pk + 1) + '_amplitude'].value,
                                          sigma=out.params[strind + str(index_pk + 1) + '_sigma'].value,
                                          gamma=out.params[strind + str(index_pk + 1) + '_gamma'].value,
@@ -2093,7 +2100,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     item = QtWidgets.QTableWidgetItem(
                         str(format(area_p2, '.1f') + r' ({}%)'.format(format(area_p2 / area_ges * 100, '.2f'))))
                     self.res_tab.setItem(8, index_pk, item)
-                    item = QtWidgets.QTableWidgetItem(str(format(area_ges, self.floating)))
+                    y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
+                    area = integrate.simps([y for y, x in zip(y_area, x)])
+                    item = QtWidgets.QTableWidgetItem(str(format(area_p2, '.1f') + r' ({}%)'.format(format(area/ area_peaks * 100, '.2f'))))
                     self.res_tab.setItem(9, index_pk, item)
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_height_p1'].value, self.floating)))
