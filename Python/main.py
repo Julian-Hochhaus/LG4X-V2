@@ -1925,7 +1925,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 else:
                     y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
                     area = integrate.simps([y for y, x in zip(y_area, x)])
-                    item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100,'.2f'))))
+                    item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                     self.res_tab.setItem(7, index_pk, item)
                     self.res_tab.setItem(8, index_pk, item)
                 item = QtWidgets.QTableWidgetItem('')
@@ -1949,7 +1949,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 else:
                     y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
                     area = integrate.simps([y for y, x in zip(y_area, x)])
-                    item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100,'.2f'))))
+                    item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                     self.res_tab.setItem(7, index_pk, item)
                     self.res_tab.setItem(9, index_pk, item)
             if index == 2:
@@ -2035,7 +2035,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.res_tab.setItem(3, index_pk, item)
                     # included area
                     area = integrate.simps([y for y, x in zip(y_area, x)])
-                    item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100,'.2f'))))
+                    item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                     self.res_tab.setItem(7, index_pk, item)
                     self.res_tab.setItem(9, index_pk, item)
                 item = QtWidgets.QTableWidgetItem(
@@ -2088,7 +2088,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     area_p2 = integrate.simps([y for y, x in zip(y_area_p2, x)])
                     area_ges = area_p1 + area_p2
                     item = QtWidgets.QTableWidgetItem(
-                        str(format(area_p1, '.1f') + r' ({}%)'.format(format(area_p1 / area_ges * 100,'.2f'))))
+                        str(format(area_p1, '.1f') + r' ({}%)'.format(format(area_p1 / area_ges * 100, '.2f'))))
                     self.res_tab.setItem(7, index_pk, item)
                     item = QtWidgets.QTableWidgetItem(
                         str(format(area_p2, '.1f') + r' ({}%)'.format(format(area_p2 / area_ges * 100, '.2f'))))
