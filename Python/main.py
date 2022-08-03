@@ -24,6 +24,7 @@ import xpspy as xpy
 from periodictable import PeriodicTable
 from usrmodel import ConvGaussianDoniachDublett, ConvGaussianDoniachSinglett, FermiEdgeModel, singlett, fft_convolve
 from scipy import integrate
+from scipy import interpolate
 
 # style.use('ggplot')
 style.use('seaborn-pastel')
@@ -1882,13 +1883,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp0.resizeColumnsToContents()
         self.fitp0.resizeRowsToContents()
         # Peak results into table
-        y_peaks = [0 for i in range(len(y))]
+        # interpolate data for area/fwhm calculation
+        spline_fkt = interpolate.splrep(x, y)
+        x_spline = np.linspace(np.min(x), np.max(x), len(x)*10)
+        y_spline = interpolate.splev(x_spline, spline_fkt, der=0)
+        y_peaks = [0 for idx in range(len(y))]
         for index_pk in range(npeak):
             strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
             strind = strind.split(":", 1)[0]
-            y_peaks+=out.eval_components()[strind + str(index_pk + 1) + '_']
-
-        print(y_peaks)
+            y_peaks += out.eval_components()[strind + str(index_pk + 1) + '_']
         area_peaks = integrate.simps([y for y, x in zip(y_peaks, x)])
         for index_pk in range(npeak):
             index = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentIndex()
@@ -2028,7 +2031,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm'].value, self.floating)))
                 self.res_tab.setItem(1, index_pk, item)
-                # included fwhm
+                # included fwhm w spline?!
                 if mode == 'eva':
                     item = QtWidgets.QTableWidgetItem('')
                     self.res_tab.setItem(3, index_pk, item)
@@ -2043,7 +2046,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.res_tab.setItem(3, index_pk, item)
                     # included area
                     area = integrate.simps([y for y, x in zip(y_area, x)])
-                    item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(area/area_peaks*100, '.2f'))))
+                    item = QtWidgets.QTableWidgetItem(
+                        str(format(area, '.1f') + r' ({}%)'.format(format(area / area_peaks * 100, '.2f'))))
                     self.res_tab.setItem(7, index_pk, item)
                     self.res_tab.setItem(9, index_pk, item)
                 item = QtWidgets.QTableWidgetItem(
@@ -2064,13 +2068,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.res_tab.setItem(8, index_pk, item)
                 else:
                     # included fwhm
-                    y_area_p1 = singlett(x, amplitude=out.params[strind + str(index_pk + 1) + '_amplitude'].value,
+                    y_area_p1 = singlett(x_spline, amplitude=out.params[strind + str(index_pk + 1) + '_amplitude'].value,
                                          sigma=out.params[strind + str(index_pk + 1) + '_sigma'].value,
                                          gamma=out.params[strind + str(index_pk + 1) + '_gamma'].value,
                                          gaussian_sigma=out.params[
                                              strind + str(index_pk + 1) + '_gaussian_sigma'].value,
                                          center=out.params[strind + str(index_pk + 1) + '_center'].value)
-                    y_area_p2 = singlett(x,
+                    y_area_p2 = singlett(x_spline,
                                          amplitude=out.params[strind + str(index_pk + 1) + '_amplitude'].value
                                                    * out.params[strind + str(index_pk + 1) + '_height_ratio'].value,
                                          sigma=out.params[strind + str(index_pk + 1) + '_sigma'].value
@@ -2081,12 +2085,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                          center=out.params[strind + str(index_pk + 1) + '_center'].value
                                                 - out.params[strind + str(index_pk + 1) + '_soc'].value)
                     y_temp_p1 = y_area_p1 / np.max(y_area_p1)
-                    x_p1 = [i for i, j in zip(x, y_temp_p1) if j >= 0.5]
+                    x_p1 = [i for i, j in zip(x_spline, y_temp_p1) if j >= 0.5]
                     fwhm_temp_p1 = x_p1[-1] - x_p1[0]
                     item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp_p1, self.floating)))
                     self.res_tab.setItem(3, index_pk, item)
                     y_temp_p2 = y_area_p2 / np.max(y_area_p2)
-                    x_p2 = [i for i, j in zip(x, y_temp_p2) if j >= 0.5]
+                    x_p2 = [i for i, j in zip(x_spline, y_temp_p2) if j >= 0.5]
                     fwhm_temp_p2 = x_p2[-1] - x_p2[0]
                     item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp_p2, self.floating)))
                     self.res_tab.setItem(4, index_pk, item)
@@ -2102,7 +2106,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.res_tab.setItem(8, index_pk, item)
                     y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
                     area = integrate.simps([y for y, x in zip(y_area, x)])
-                    item = QtWidgets.QTableWidgetItem(str(format(area_p2, '.1f') + r' ({}%)'.format(format(area/ area_peaks * 100, '.2f'))))
+                    item = QtWidgets.QTableWidgetItem(
+                        str(format(area, '.1f') + r' ({}%)'.format(format(area / area_peaks * 100, '.2f'))))
                     self.res_tab.setItem(9, index_pk, item)
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_height_p1'].value, self.floating)))

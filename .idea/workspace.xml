@@ -49,11 +49,23 @@
       <workItem from="1657712200641" duration="5806000" />
       <workItem from="1657779073988" duration="8391000" />
       <workItem from="1658133611758" duration="134000" />
-      <workItem from="1659528533485" duration="3963000" />
+      <workItem from="1659528533485" duration="4042000" />
+      <workItem from="1659535860866" duration="2161000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Python/main.py</url>
+          <line>3</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>
