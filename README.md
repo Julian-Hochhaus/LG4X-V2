@@ -10,13 +10,24 @@ LG4X provides a graphical user interface for [XPS](https://en.wikipedia.org/wiki
 
 ## Methods
 ### Installation
-
 Download and install [Python 3](https://www.python.org/) and additional packages.
 
 > `brew install python3`
 >
+
+If you want to include the background into the fit-model, the so-called *active background method* as described i.e. by [Alberto Herrera-Gomez: The active background method in XPS data peak-fitting](https://rdataa.com/static/docs/Active_Background.pdf) , you need to install the latest development version of lmfit by:
+ > `git clone https://github.com/lmfit/lmfit-py.git`
+ 
+ > `python setup.py install`
+ 
+
+Otherwise, install lmfit via pip:
+
 > `pip3 install lmfit`
 >
+
+Additionally, you need to install:
+
 > `pip3 install pandas`
 >
 > `pip3 install matplotlib`
