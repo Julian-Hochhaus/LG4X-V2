@@ -6,7 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="fd9b0103-3062-4884-9a9d-86d4591ee2f4" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Python/xpspy.py" beforeDir="false" afterPath="$PROJECT_DIR$/Python/xpspy.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -49,6 +48,7 @@
       <workItem from="1657712200641" duration="5806000" />
       <workItem from="1657779073988" duration="8391000" />
       <workItem from="1658133611758" duration="134000" />
+      <workItem from="1659527711850" duration="1015000" />
     </task>
     <servers />
   </component>
