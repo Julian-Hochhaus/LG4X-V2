@@ -25,7 +25,7 @@ from periodictable import PeriodicTable
 from usrmodel import ConvGaussianDoniachDublett, ConvGaussianDoniachSinglett, FermiEdgeModel, singlett, fft_convolve
 from scipy import integrate
 from scipy import interpolate
-
+from helpers import autoscale_y
 # style.use('ggplot')
 style.use('seaborn-pastel')
 
@@ -2183,6 +2183,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if index_bg > 2:
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
                                  label='peak_' + str(index_pk + 1))
+            self.ax.set_xlim(left=x1)
+            self.ar.set_xlim(left=x1)
+            self.ax.set_xlim(right=x2)
+            self.ar.set_xlim(right=x2)
+            self.ar.set_xlim(right=x2)
+            autoscale_y(self.ax)
+
         else:
             # ax.plot(x, init+bg_mod, 'k:', label='initial')
             plottitle = self.plottitle.displayText()
@@ -2219,6 +2226,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.ar.plot(x, out.residual, 'g.', label='residual')  # modify residual and red chi-squared [feature]
         self.ax.legend(loc=0)
         self.ar.legend(loc=0)
+        self.ax.set_xlim(left=x1)
+        self.ar.set_xlim(left=x1)
+        self.ax.set_xlim(right=x2)
+        self.ar.set_xlim(right=x2)
+        autoscale_y(self.ax)
         self.canvas.draw()
 
         # make fit results to be global to export
