@@ -2183,11 +2183,14 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if index_bg > 2:
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
                                  label='peak_' + str(index_pk + 1))
-            self.ax.set_xlim(left=x1)
-            self.ar.set_xlim(left=x1)
-            self.ax.set_xlim(right=x2)
-            self.ar.set_xlim(right=x2)
-            self.ar.set_xlim(right=x2)
+            if self.fitp0.item(0, 0).checkState() == 2:
+                xlim1 = float(self.fitp0.item(0, 1).text())
+                self.ax.set_xlim(left=xlim1)
+                self.ar.set_xlim(left=xlim1)
+            if self.fitp0.item(0, 2).checkState() == 2:
+                xlim2 = float(self.fitp0.item(0, 3).text())
+                self.ax.set_xlim(right=xlim2)
+                self.ar.set_xlim(right=xlim2)
             autoscale_y(self.ax)
 
         else:
@@ -2222,15 +2225,20 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if index_bg > 2:
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
                 #### #### ####
+            if self.fitp0.item(0, 0).checkState() == 2:
+                xlim1 = float(self.fitp0.item(0, 1).text())
+                self.ax.set_xlim(left=xlim1)
+                self.ar.set_xlim(left=xlim1)
+            if self.fitp0.item(0, 2).checkState() == 2:
+                xlim2 = float(self.fitp0.item(0, 3).text())
+                self.ax.set_xlim(right=xlim2)
+                self.ar.set_xlim(right=xlim2)
             self.ax.plot(x, out.best_fit + bg_mod, 'r-', lw=2, label='fit')
             self.ar.plot(x, out.residual, 'g.', label='residual')  # modify residual and red chi-squared [feature]
+            lines = self.ax.get_lines()
+            autoscale_y(self.ax)
         self.ax.legend(loc=0)
         self.ar.legend(loc=0)
-        self.ax.set_xlim(left=x1)
-        self.ar.set_xlim(left=x1)
-        self.ax.set_xlim(right=x2)
-        self.ar.set_xlim(right=x2)
-        autoscale_y(self.ax)
         self.canvas.draw()
 
         # make fit results to be global to export

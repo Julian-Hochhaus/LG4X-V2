@@ -9,10 +9,14 @@ def autoscale_y(ax,margin=0.1):
         xd = line.get_xdata()
         yd = line.get_ydata()
         lo,hi = ax.get_xlim()
-        y_displayed = yd[((xd>lo) & (xd<hi))]
-        h = np.max(y_displayed) - np.min(y_displayed)
-        bot = np.min(y_displayed)
-        top = np.max(y_displayed)+margin*h
+        if not np.max(yd) == np.min(yd):
+            y_displayed = yd[((xd>lo) & (xd<hi))]
+            print(np.max(y_displayed), np.min(y_displayed))
+            h = np.max(y_displayed) - np.min(y_displayed)
+            bot = np.min(y_displayed)
+            top = np.max(y_displayed)+margin*h
+        else:
+            bot, top=np.min(yd), np.max(yd)
         return bot,top
 
     lines = ax.get_lines()
