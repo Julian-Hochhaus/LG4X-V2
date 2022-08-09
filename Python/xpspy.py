@@ -210,7 +210,7 @@ def tougaard2(x, y, B, C, C_d, D):
         len_padded = int(50 / delta_x)
         # len_padded = 3*len(x)
         padded_x = np.concatenate((x, np.linspace(x[-1] + delta_x, x[-1] + delta_x * len_padded, len_padded)))
-        padded_y = np.concatenate((y, np.mean(y[-1:]) * np.ones(len_padded)))
+        padded_y = np.concatenate((y, np.linspace(np.mean(y[-1:]),0 ,len_padded)))
         for k in range(len(x)):
             x_k = x[k]
             bg_temp = 0
