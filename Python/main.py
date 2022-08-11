@@ -143,7 +143,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # DropDown preset list
         self.comboBox_pres = QtWidgets.QComboBox(self)
         self.comboBox_pres.addItems(self.list_preset)
-        grid.addWidget(self.comboBox_pres, 2, 0, 1, 2)
+        grid.addWidget(self.comboBox_pres, 2, 0, 1, 1)
         self.comboBox_pres.currentIndexChanged.connect(self.preset)
         self.comboBox_pres.setCurrentIndex(0)
         self.addition = 0
@@ -170,7 +170,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_exp.resize(btn_exp.sizeHint())
         btn_exp.clicked.connect(self.exportResults)
         grid.addWidget(btn_exp, 2, 2, 1, 1)
-
+        # Export results and presets button
+        btn_exp_all = QtWidgets.QPushButton(r'Export Presets+Data', self)
+        btn_exp_all.resize(btn_exp_all.sizeHint())
+        btn_exp_all.clicked.connect(self.export_all)
+        grid.addWidget(btn_exp_all, 2, 1, 1, 1)
         # Evaluate Button
         btn_eva = QtWidgets.QPushButton('Evaluate', self)
         btn_eva.resize(btn_eva.sizeHint())
@@ -807,7 +811,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
             with open(cfilePath, 'w') as file:
                 file.write(str(self.parText))
             file.close()
-
+    def export_all(self):
+        self.exportResults()
+        self.savePreset()
+        self.savePresetDia()
     def exportResults(self):
         if not self.result.empty:
             if self.comboBox_file.currentIndex() > 0:
@@ -2084,16 +2091,23 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                              strind + str(index_pk + 1) + '_gaussian_sigma'].value,
                                          center=out.params[strind + str(index_pk + 1) + '_center'].value
                                                 - out.params[strind + str(index_pk + 1) + '_soc'].value)
-                    y_temp_p1 = y_area_p1 / np.max(y_area_p1)
-                    x_p1 = [i for i, j in zip(x_spline, y_temp_p1) if j >= 0.5]
-                    fwhm_temp_p1 = x_p1[-1] - x_p1[0]
-                    item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp_p1, self.floating)))
-                    self.res_tab.setItem(3, index_pk, item)
-                    y_temp_p2 = y_area_p2 / np.max(y_area_p2)
-                    x_p2 = [i for i, j in zip(x_spline, y_temp_p2) if j >= 0.5]
-                    fwhm_temp_p2 = x_p2[-1] - x_p2[0]
-                    item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp_p2, self.floating)))
-                    self.res_tab.setItem(4, index_pk, item)
+                    if np.max(y_area_p1) !=0 and np.max(y_area_p2)!=0:
+                        y_temp_p1 = y_area_p1 / np.max(y_area_p1)
+                        x_p1 = [i for i, j in zip(x_spline, y_temp_p1) if j >= 0.5]
+                        fwhm_temp_p1 = x_p1[-1] - x_p1[0]
+                        item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp_p1, self.floating)))
+                        self.res_tab.setItem(3, index_pk, item)
+                        y_temp_p2 = y_area_p2 / np.max(y_area_p2)
+                        x_p2 = [i for i, j in zip(x_spline, y_temp_p2) if j >= 0.5]
+                        fwhm_temp_p2 = x_p2[-1] - x_p2[0]
+                        item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp_p2, self.floating)))
+                        self.res_tab.setItem(4, index_pk, item)
+                    else:
+                        print("WARNING: Invalid value encountered in true division: Probably one of the amplitudes is set to 0.")
+                        item = QtWidgets.QTableWidgetItem("Error in calculation")
+                        self.res_tab.setItem(3, index_pk, item)
+                        self.res_tab.setItem(4, index_pk, item)
+
                     # included area
                     area_p1 = integrate.simps([y for y, x in zip(y_area_p1, x)])
                     area_p2 = integrate.simps([y for y, x in zip(y_area_p2, x)])
