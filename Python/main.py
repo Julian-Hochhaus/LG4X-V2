@@ -1778,6 +1778,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         if len(self.fitp1.item(16, 2 * index_pk + 1).text()) > 0:
                             pars[strind + str(index_pk + 1) + '_amplitude'].expr = strtar + str(
                                 pktar) + '_amplitude * ' + str(strind + str(index_pk + 1) + '_amp_ratio')
+                            pars[strind + str(index_pk + 1) + '_amplitude'].min=0
 
                 # BE diff setup
                 if self.fitp1.cellWidget(13, 2 * index_pk + 1).currentIndex() > 0:
