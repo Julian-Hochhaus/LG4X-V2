@@ -124,13 +124,22 @@ You can change the HOME directory in the main.py edited in a way below. `#` make
 
 ## Citing
 
-[https://doi.org/10.5281/zenodo.3901523](https://doi.org/10.5281/zenodo.3901523)
+[https://doi.org/10.5281/zenodo.390152394](https://doi.org/10.5281/zenodo.3901523)
 
 ## Video
 
 [YouTube: Introduction of LG4X](https://youtu.be/cDXXXBfWU1w)
 
 [YouTube: Installation of LG4X in miniconda3 environment](https://youtu.be/cEbo6ZHlK-U)
+
+
+## Planned features/Improvements
+
+- redesign the parameter table so that the limits are placed next to the corresponding parameters
+- introduce relative parameter for gamma and coster-kronig factor
+- rework the export files, so that additional informations such as fwhm and areas are exported in readable format as well
+- save the active background parameter checkbox to the parameter-files.
+- rewrite the Readme to explain the features introduced in LG4X-V2
 
 
 ## Database reference
