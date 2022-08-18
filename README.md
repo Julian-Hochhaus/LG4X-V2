@@ -2,6 +2,16 @@
 
 # LG4X-V2: lmfit GUI for XPS
 
+## Planned features/Improvements
+
+- [ ] redesign the parameter table so that the limits are placed next to the corresponding parameters
+- [ ] introduce relative parameter for gamma and coster-kronig factor
+- [ ] rework the export files, so that additional informations such as fwhm and areas are exported in readable format as well
+- [x] save the active background parameter checkbox to the parameter-files.
+- [ ] check lmfit version and catch UserWarning for independent vars as described in [#10](https://github.com/Julian-Hochhaus/LG4X-V2/issues/10)
+- [ ] keep the programm running if an error occurs in the fitting procedure
+- [ ] Pause/Interrupt fit button [#5](https://github.com/Julian-Hochhaus/LG4X-V2/issues/5)
+- [ ] rewrite the Readme to explain the features introduced in LG4X-V2
 ## Introduction
 LG4X-V2 is based on the great work of [Hideki NAKAJIMA](https://github.com/hidecode221b) who developed the software LG4X. 
 
@@ -133,13 +143,7 @@ You can change the HOME directory in the main.py edited in a way below. `#` make
 [YouTube: Installation of LG4X in miniconda3 environment](https://youtu.be/cEbo6ZHlK-U)
 
 
-## Planned features/Improvements
 
-- [ ] redesign the parameter table so that the limits are placed next to the corresponding parameters
-- [ ] introduce relative parameter for gamma and coster-kronig factor
-- [ ] rework the export files, so that additional informations such as fwhm and areas are exported in readable format as well
-- [x] save the active background parameter checkbox to the parameter-files.
-- [ ] rewrite the Readme to explain the features introduced in LG4X-V2
 
 
 ## Database reference
