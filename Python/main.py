@@ -1367,7 +1367,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         self.fitp0.setItem(3, 2 * col, item)
                 else:
                     pars.update(modp.make_params())
-                    print('success', pars)
                     for index in range(4):
                         pars['pg_c' + str(index)].value = float(self.fitp0.item(3, 2 * index + 1).text())
                 pars['pg_c0'].min = 0
@@ -1938,6 +1937,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     area = integrate.simps([y for y, x in zip(y_area, x)])
                     item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                     self.res_tab.setItem(7, index_pk, item)
+                    item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                     self.res_tab.setItem(8, index_pk, item)
                 item = QtWidgets.QTableWidgetItem('')
                 self.res_tab.setItem(2, index_pk, item)
@@ -1962,6 +1962,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     area = integrate.simps([y for y, x in zip(y_area, x)])
                     item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                     self.res_tab.setItem(7, index_pk, item)
+                    item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                     self.res_tab.setItem(9, index_pk, item)
             if index == 2:
                 item = QtWidgets.QTableWidgetItem(
@@ -2035,20 +2036,30 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if mode == 'eva':
                     item = QtWidgets.QTableWidgetItem('')
                     self.res_tab.setItem(3, index_pk, item)
+                    item = QtWidgets.QTableWidgetItem('')
                     self.res_tab.setItem(7, index_pk, item)
+                    item = QtWidgets.QTableWidgetItem('')
                     self.res_tab.setItem(9, index_pk, item)
                 else:
                     y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
-                    y_temp = y_area / np.max(y_area)
-                    x_ = [i for i, j in zip(x, y_temp) if j >= 0.5]
-                    fwhm_temp = x_[-1] - x_[0]
-                    item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp, self.floating)))
-                    self.res_tab.setItem(3, index_pk, item)
+                    if np.max(y_area) != 0:
+                        y_temp = y_area / np.max(y_area)
+                        x_ = [i for i, j in zip(x, y_temp) if j >= 0.5]
+                        fwhm_temp = x_[-1] - x_[0]
+                        item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp, self.floating)))
+                        self.res_tab.setItem(3, index_pk, item)
+                    else:
+                        print("WARNING: Invalid value encountered in true division: Probably one of the amplitudes is "
+                              "set to 0.")
+                        item = QtWidgets.QTableWidgetItem("Error in calculation")
+                        self.res_tab.setItem(3, index_pk, item)
                     # included area
                     area = integrate.simps([y for y, x in zip(y_area, x)])
                     item = QtWidgets.QTableWidgetItem(
                         str(format(area, '.1f') + r' ({}%)'.format(format(area / area_peaks * 100, '.2f'))))
                     self.res_tab.setItem(7, index_pk, item)
+                    item = QtWidgets.QTableWidgetItem(
+                        str(format(area, '.1f') + r' ({}%)'.format(format(area / area_peaks * 100, '.2f'))))
                     self.res_tab.setItem(9, index_pk, item)
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_height'].value, self.floating)))
@@ -2063,8 +2074,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if mode == 'eva':
                     item = QtWidgets.QTableWidgetItem('')
                     self.res_tab.setItem(3, index_pk, item)
+                    item = QtWidgets.QTableWidgetItem('')
                     self.res_tab.setItem(4, index_pk, item)
+                    item = QtWidgets.QTableWidgetItem('')
                     self.res_tab.setItem(7, index_pk, item)
+                    item = QtWidgets.QTableWidgetItem('')
                     self.res_tab.setItem(8, index_pk, item)
                 else:
                     # included fwhm
@@ -2100,6 +2114,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                               "set to 0.")
                         item = QtWidgets.QTableWidgetItem("Error in calculation")
                         self.res_tab.setItem(3, index_pk, item)
+                        item = QtWidgets.QTableWidgetItem("Error in calculation")
                         self.res_tab.setItem(4, index_pk, item)
 
                     # included area
