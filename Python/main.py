@@ -26,6 +26,7 @@ from usrmodel import ConvGaussianDoniachDublett, ConvGaussianDoniachSinglett, Fe
 from scipy import integrate
 from scipy import interpolate
 from helpers import autoscale_y
+
 # style.use('ggplot')
 style.use('seaborn-pastel')
 
@@ -71,7 +72,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.initUI()
 
     def initUI(self):
-        self.version = 'LG4X: LMFit GUI for XPS curve fitting V2 0.01'
+        self.version = 'LG4X: LMFit GUI for XPS curve fitting 2.0.2'
         self.floating = '.4f'
         self.setGeometry(700, 500, 1600, 900)
         self.center()
@@ -616,18 +617,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if len(list_pre_bg) != 0 and self.addition == 0:
             for row in range(len(list_pre_bg)):
                 for col in range(len(list_pre_bg[0])):
-                    if (col % 2) != 0 and col != 10:
+                    if ((col % 2) != 0 and col <= 8) or (row == 0 and col > 3) or (0 < row <= 2 and col <= 8):
                         item = QtWidgets.QTableWidgetItem(str(list_pre_bg[row][col]))
                     else:
-                        if (row == 0 and col < 4) or row > 2:
-                            item = QtWidgets.QTableWidgetItem()
-                            if list_pre_bg[row][col] == 2:
-                                item.setCheckState(QtCore.Qt.Checked)
-                            else:
-                                item.setCheckState(QtCore.Qt.Unchecked)
-                        else:
-                            item = QtWidgets.QTableWidgetItem(str(list_pre_bg[row][col]))
-                    if (row == 2 or row == 1) and (col == 9 or col == 10):
                         item = QtWidgets.QTableWidgetItem()
                         if list_pre_bg[row][col] == 2:
                             item.setCheckState(QtCore.Qt.Checked)
@@ -739,24 +731,25 @@ class PrettyWidget(QtWidgets.QMainWindow):
         for row in range(rowPosition):
             new = []
             for col in range(colPosition):
-                if (col % 2) != 0:
+                if ((col % 2) != 0 and col <= 8) or (col== 9 and row == 0):
                     if self.fitp0.item(row, col) is None or len(self.fitp0.item(row, col).text()) == 0:
                         new.append('')
                     else:
                         new.append(float(self.fitp0.item(row, col).text()))
+                elif (row == 0 and col > 3) or (0 < row <= 2 and col <= 8):
+                    if self.fitp0.item(row, col) is None or len(self.fitp0.item(row, col).text()) == 0:
+                        new.append('')
+                    else:
+                        new.append(str(self.fitp0.item(row, col).text()))
                 else:
-                    if (row == 0 and col < 4) or (row > 2 and col < 8):
+                    if self.fitp0.item(row, col) is None:
+                        new.append('')
+                    else:
                         if self.fitp0.item(row, col).checkState() == 2:
                             new.append(2)
                         else:
                             new.append(0)
-                    else:
-                        if self.fitp0.item(row, col) is None or len(self.fitp0.item(row, col).text()) == 0:
-                            new.append('')
-                        else:
-                            new.append(self.fitp0.item(row, col).text())
             list_pre_bg.append(new)
-
         rowPosition = self.fitp1.rowCount()
         colPosition = self.fitp1.columnCount()
         list_pre_pk = []
@@ -811,10 +804,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
             with open(cfilePath, 'w') as file:
                 file.write(str(self.parText))
             file.close()
+
     def export_all(self):
         self.exportResults()
         self.savePreset()
         self.savePresetDia()
+
     def exportResults(self):
         if not self.result.empty:
             if self.comboBox_file.currentIndex() > 0:
@@ -1778,7 +1773,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         if len(self.fitp1.item(16, 2 * index_pk + 1).text()) > 0:
                             pars[strind + str(index_pk + 1) + '_amplitude'].expr = strtar + str(
                                 pktar) + '_amplitude * ' + str(strind + str(index_pk + 1) + '_amp_ratio')
-                            pars[strind + str(index_pk + 1) + '_amplitude'].min=0
+                            pars[strind + str(index_pk + 1) + '_amplitude'].min = 0
 
                 # BE diff setup
                 if self.fitp1.cellWidget(13, 2 * index_pk + 1).currentIndex() > 0:
@@ -1828,6 +1823,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             if len(self.fitp1.item(24, 2 * index_pk + 1).text()) > 0:
                                 pars[strind + str(index_pk + 1) + '_sigma'].expr = strtar + str(
                                     pktar) + '_sigma * ' + str(strind + str(index_pk + 1) + '_lorentzian_ratio')
+                    pars.update(pars)
         # evaluate model and optimize parameters for fitting in lmfit
         if mode == 'eva':
             strmode = 'Evaluation'
@@ -1891,10 +1887,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp0.resizeColumnsToContents()
         self.fitp0.resizeRowsToContents()
         # Peak results into table
-        # interpolate data for area/fwhm calculation
-        spline_fkt = interpolate.splrep(x, y)
-        x_spline = np.linspace(np.min(x), np.max(x), len(x)*10)
-        y_spline = interpolate.splev(x_spline, spline_fkt, der=0)
         y_peaks = [0 for idx in range(len(y))]
         for index_pk in range(npeak):
             strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
@@ -2076,14 +2068,14 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.res_tab.setItem(8, index_pk, item)
                 else:
                     # included fwhm
-                    y_area_p1 = singlett(x_spline, amplitude=out.params[strind + str(index_pk + 1) + '_amplitude'].value,
+                    y_area_p1 = singlett(x,
+                                         amplitude=out.params[strind + str(index_pk + 1) + '_amplitude'].value,
                                          sigma=out.params[strind + str(index_pk + 1) + '_sigma'].value,
                                          gamma=out.params[strind + str(index_pk + 1) + '_gamma'].value,
                                          gaussian_sigma=out.params[
                                              strind + str(index_pk + 1) + '_gaussian_sigma'].value,
                                          center=out.params[strind + str(index_pk + 1) + '_center'].value)
-                    y_area_p2 = singlett(x_spline,
-                                         amplitude=out.params[strind + str(index_pk + 1) + '_amplitude'].value
+                    y_area_p2 = singlett(x, amplitude=out.params[strind + str(index_pk + 1) + '_amplitude'].value
                                                    * out.params[strind + str(index_pk + 1) + '_height_ratio'].value,
                                          sigma=out.params[strind + str(index_pk + 1) + '_sigma'].value
                                                * out.params[strind + str(index_pk + 1) + '_coster_kronig_factor'].value,
@@ -2092,19 +2084,20 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                              strind + str(index_pk + 1) + '_gaussian_sigma'].value,
                                          center=out.params[strind + str(index_pk + 1) + '_center'].value
                                                 - out.params[strind + str(index_pk + 1) + '_soc'].value)
-                    if np.max(y_area_p1) !=0 and np.max(y_area_p2)!=0:
+                    if np.max(y_area_p1) != 0 and np.max(y_area_p2) != 0:
                         y_temp_p1 = y_area_p1 / np.max(y_area_p1)
-                        x_p1 = [i for i, j in zip(x_spline, y_temp_p1) if j >= 0.5]
+                        x_p1 = [i for i, j in zip(x, y_temp_p1) if j >= 0.5]
                         fwhm_temp_p1 = x_p1[-1] - x_p1[0]
                         item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp_p1, self.floating)))
                         self.res_tab.setItem(3, index_pk, item)
                         y_temp_p2 = y_area_p2 / np.max(y_area_p2)
-                        x_p2 = [i for i, j in zip(x_spline, y_temp_p2) if j >= 0.5]
+                        x_p2 = [i for i, j in zip(x, y_temp_p2) if j >= 0.5]
                         fwhm_temp_p2 = x_p2[-1] - x_p2[0]
                         item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp_p2, self.floating)))
                         self.res_tab.setItem(4, index_pk, item)
                     else:
-                        print("WARNING: Invalid value encountered in true division: Probably one of the amplitudes is set to 0.")
+                        print("WARNING: Invalid value encountered in true division: Probably one of the amplitudes is "
+                              "set to 0.")
                         item = QtWidgets.QTableWidgetItem("Error in calculation")
                         self.res_tab.setItem(3, index_pk, item)
                         self.res_tab.setItem(4, index_pk, item)
@@ -2229,7 +2222,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if index_bg > 2:
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
                                          comps['bg_'] + comps['pg_'], label='peak_' + str(index_pk + 1))
-                #### Philipp: 14-07-2022 ####
+                # Philipp: 14-07-2022
                 if index_bg < 2:
                     if self.fitp0.item(index_bg + 1, 10).checkState() == 0:
                         self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'])
@@ -2239,7 +2232,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['pg_'], comps['pg_'])
                 if index_bg > 2:
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
-                #### #### ####
+                #
             if self.fitp0.item(0, 0).checkState() == 2:
                 xlim1 = float(self.fitp0.item(0, 1).text())
                 self.ax.set_xlim(left=xlim1)
