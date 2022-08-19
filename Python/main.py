@@ -74,6 +74,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.version = None
         self.df = None
         self.initUI()
+        self.error_dialog = QtWidgets.QErrorMessage()
 
     def initUI(self):
         self.version = 'LG4X: LMFit GUI for XPS curve fitting 2.0.2'
