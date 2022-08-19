@@ -27,6 +27,10 @@ from scipy import integrate
 from scipy import interpolate
 from helpers import autoscale_y
 
+
+import traceback # error handeling 
+import logging # error handaling
+
 # style.use('ggplot')
 style.use('seaborn-pastel')
 
@@ -539,7 +543,14 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 pre_pk = [[0, 0], [0, 1], [0, 1], [2, 0], [0, 1], [2, 0]]
             self.setPreset(0, [], pre_pk)
         if index == 2:
-            self.loadPreset()
+            try:
+                self.loadPreset()
+            except Exception as e:
+                self.error_dialog.setWindowTitle("Error: Not able to load parametes!")
+                self.error_dialog.showMessage(traceback.format_exc())
+                logging.error(traceback.format_exc())
+                return None
+            self.loadPreset(x)
             # print(self.df[0], self.df[1], self.df[2])
             if len(str(self.pre[0])) != 0 and len(self.pre[1]) != 0 and len(self.pre[2]) != 0:
                 self.setPreset(self.pre[0], self.pre[1], self.pre[2])
