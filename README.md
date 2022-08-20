@@ -122,6 +122,16 @@ If you have Miniconda3, you can create the environment to install lmfit from [co
     - Export text file for parameters
     - Save parameters as a preset for next analysis
 
+## Export csv file for curves
+The exported .csv file contains the raw data as well as all fitted components:
+Thereby, the first and second column contain the input data, respectively the x and y data.
+The third column contains the intensity data minus the background. 
+In the forth column, the sum over all components is given, if you wish to plot your data without background, this would be the sum curve over all components you wish to plot.
+In column five and six, the background and the polynomial background are given. Important to note that the background already contains the polynomial background, the polynomial background in column six is only given because LG4X-V2 adds a polynomial background to each fit, if the parameters pg_i are not fixed to 0.
+In the seventh column, the sum curve over all components and backgrounds is given, that's the sum curve you wish to plot if you are using the raw intensities including the background to present your data.
+The following columns contain the components of the fit model.
+
+
 #### Home directory to import data
 
 You can change the HOME directory in the main.py edited in a way below. `#` makes a line comment out. 
