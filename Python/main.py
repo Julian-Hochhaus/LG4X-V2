@@ -854,9 +854,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 fileName = 'sample'
 
             # S_File will get the directory path and extension.
-            cfilePath, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Fit file',
-                                                                 cfilePath + os.sep + fileName + '_fit.txt',
-                                                                 "Text Files (*.txt)")
+            cfilePath, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Fit file',cfilePath + os.sep + fileName + '_fit.txt', "Text Files (*.txt)")
             if cfilePath != "":
                 self.filePath = cfilePath
                 if self.comboBox_file.currentIndex() == 0:
@@ -916,8 +914,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     file.write(str(Text))
                 file.close()
                 # print(filePath)
-                filePath1 = os.path.dirname(cfilePath)
-                self.result.to_csv(filePath1 + os.sep + fileName + '_fit.csv', index=False)
+                if cfilePath.split("_")[-1]== "fit.txt":
+                    self.result.to_csv(cfilePath.rsplit("_",1)[0] + '_fit.csv', index=False)
+                else:
+                    self.result.to_csv(cfilePath.rsplit(".", 1)[0] + '.csv', index=False)
                 # print(self.result)
 
     def imp(self):
@@ -2279,12 +2279,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
                 strind = strind.split(":", 1)[0]
                 if index_bg < 2:
-                    if self.fitp0.item(index_bg + 1, 10).checkState() == 0:
-                        self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'],
-                                             bg_mod + comps['pg_'], label='peak_' + str(index_pk + 1))
-                    else:
+                    if self.fitp0.item(index_bg + 1, 10).checkState() == 2:
                         self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
                                              comps['bg_'] + comps['pg_'], label='peak_' + str(index_pk + 1))
+                    else:
+                        self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'],
+                                             bg_mod + comps['pg_'], label='peak_' + str(index_pk + 1))
                 if index_bg == 2:
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['pg_'], comps['pg_'],
                                          label='peak_' + str(index_pk + 1))
@@ -2325,15 +2325,26 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # print(key, "=", out.params[key].value)
         # make dataFrame and concat to export
         df_x = pd.DataFrame(x, columns=['x'])
-        df_y = pd.DataFrame(init, columns=['y'])
-        df_f = pd.DataFrame(out.best_fit, columns=['fit'])
+        df_raw_y = pd.DataFrame(raw_y, columns=['raw_y'])
+        if self.fitp0.item(index_bg + 1, 10).checkState() == 2:
+            df_y = pd.DataFrame(raw_y -comps['pg_']-comps['bg_'], columns=['data-bg'])
+            df_pks = pd.DataFrame(out.best_fit-comps['pg_']-comps['bg_'], columns=['sum_peaks'])
+            df_sum=pd.DataFrame(out.best_fit, columns=['sum_fit'])
+        else:
+            df_y = pd.DataFrame(raw_y-bg_mod-comps['pg_'], columns=['data-bg'])
+            df_pks = pd.DataFrame(out.best_fit-comps['pg_'], columns=['sum_peaks'])
+            df_sum = pd.DataFrame(out.best_fit+bg_mod, columns=['sum_fit'])
         if index_bg < 2:
-            df_b = pd.DataFrame(bg_mod + comps['pg_'], columns=['bg'])
+            if self.fitp0.item(index_bg + 1, 10).checkState() == 2:
+                df_b = pd.DataFrame(comps['pg_']+comps['bg_'], columns=['bg'])
+            else:
+                df_b = pd.DataFrame(bg_mod + comps['pg_'], columns=['bg'])
         if index_bg == 2:
             df_b = pd.DataFrame(comps['pg_'], columns=['bg'])
         if index_bg > 2:
             df_b = pd.DataFrame(comps['bg_'] + comps['pg_'], columns=['bg'])
-        self.result = pd.concat([df_x, df_y, df_f, df_b], axis=1)
+        df_b_pg = pd.DataFrame(comps['pg_'], columns=['pg'])
+        self.result = pd.concat([df_x, df_raw_y,df_y, df_pks, df_b, df_b_pg,df_sum], axis=1)
         for index_pk in range(npeak):
             strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
             strind = strind.split(":", 1)[0]
