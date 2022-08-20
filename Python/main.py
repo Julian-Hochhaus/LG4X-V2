@@ -27,9 +27,8 @@ from scipy import integrate
 from scipy import interpolate
 from helpers import autoscale_y
 
-
-import traceback # error handeling 
-import logging # error handaling
+import traceback  # error handling
+import logging  # error handling
 
 # style.use('ggplot')
 style.use('seaborn-pastel')
@@ -340,8 +339,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.plottitle = QtWidgets.QLineEdit()
         grid.addWidget(self.plottitle, 3, 7, 1, 2)
         self.show()
-    
-    def raise_error(self, windowTitle : str) -> None:
+
+    def raise_error(self, windowTitle: str) -> None:
         self.error_dialog.setWindowTitle(windowTitle)
         self.error_dialog.showMessage(traceback.format_exc())
         logging.error(traceback.format_exc())
@@ -551,16 +550,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if index == 2:
             try:
                 self.loadPreset()
-            except Exception:
-                return self.raise_error(windowTitle = "Error: Not able to load parametes!")
-            self.loadPreset(x)
+            except Exception as e:
+                return self.raise_error(windowTitle="Error: Could not load parameters!")
             # print(self.df[0], self.df[1], self.df[2])
             if len(str(self.pre[0])) != 0 and len(self.pre[1]) != 0 and len(self.pre[2]) != 0:
                 self.setPreset(self.pre[0], self.pre[1], self.pre[2])
         if index == 3:
             try:
                 self.addPreset()
-            except Exception:
+            except Exception as e:
                 return self.raise_error("Error: could not add parameters")
             # print(self.df[0], self.df[1], self.df[2])
             if len(str(self.pre[0])) != 0 and len(self.pre[1]) != 0 and len(self.pre[2]) != 0:
@@ -568,11 +566,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if index == 4:
             try:
                 self.savePreset()
-            except Exception:
+            except Exception as e:
                 return self.raise_error("Error: could not save parameters")
             try:
                 self.savePresetDia()
-            except Exception:
+            except Exception as e:
                 return self.raise_error("Error: could not save data")
         if index == 5:
             # load C1s peak preset
@@ -754,7 +752,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         for row in range(rowPosition):
             new = []
             for col in range(colPosition):
-                if ((col % 2) != 0 and col <= 8) or (col== 9 and row == 0):
+                if ((col % 2) != 0 and col <= 8) or (col == 9 and row == 0):
                     if self.fitp0.item(row, col) is None or len(self.fitp0.item(row, col).text()) == 0:
                         new.append('')
                     else:
@@ -831,15 +829,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def export_all(self):
         try:
             self.exportResults()
-        except Exception:
+        except Exception as e:
             self.raise_error("Error: could not export the results.")
         try:
             self.savePreset()
-        except Exception:
+        except Exception as e:
             self.raise_error("Error: could not save parameters.")
         try:
             self.savePresetDia()
-        except Exception:
+        except Exception as e:
             self.raise_error("Error: could not save parameters / export data.")
 
     def exportResults(self):
@@ -948,7 +946,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 # print (cfilePath)
                 try:
                     self.list_vamas = vpy.list_vms(cfilePath)
-                except Exception:
+                except Exception as e:
                     return self.raise_error("Error: could not load VAMAS file.")
                 self.list_file.extend(self.list_vamas)
 
@@ -1052,25 +1050,38 @@ class PrettyWidget(QtWidgets.QMainWindow):
             # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
             fileName = os.path.basename(self.comboBox_file.currentText())
             if os.path.splitext(fileName)[1] == '.csv':
-                self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
-                strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter=',', usecols=1,
-                                   max_rows=1)
-                # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1, header=None)
+                try:
+                    self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
+                    # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1,
+                    # header=None)
+                    strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter=',', usecols=1, max_rows=1)
+                except Exception as e:
+                    return self.raise_error("Error: The input .csv is not in the correct format!")
+
             else:
-                self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter='\t', skiprows=1)
-                strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter='\t', usecols=1,
+                try:
+                    self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter='\t', skiprows=1)
+                    # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1,
+                    # header=None, delimiter = '\t')
+                    strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter='\t', usecols=1,
                                    max_rows=1)
-                # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1,
-                # header=None, delimiter = '\t')
+                except Exception as e:
+                    return self.raise_error("Error: The input file is not in the correct format!")
+
+            # I have moved the error handling here directly to the import, there may exist situations, where already the
+            # Import would fail. I still left the following error handling there, but I am not sure if there are cases
+            # where this second error handling still will be necessary. However, we should check, if x0 and y0 have same
+            # lenght I think
+
             try:
                 x0 = self.df[:, 0]
-            except Exception:
+            except Exception as e:
                 return self.raise_error("Error: could not load csv file.")
             try:
                 y0 = self.df[:, 1]
-            except Exception:
+            except Exception as e:
                 return self.raise_error("Error: could not load csv file.")
-            # print(strpe)
+            #print(strpe)
             strpe = (str(strpe).split())
             # print(pe)
             if strpe[0] == 'PE:' and strpe[2] == 'eV':
@@ -1137,8 +1148,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if self.comboBox_file.currentIndex() > 0:
             try:
                 self.ana('fit')
-            except Exception:
-                return self.raise_error("Error: Fitting was not successfull.")
+            except Exception as e:
+                return self.raise_error("Error: Fitting was not successful.")
+
     def ana(self, mode):
         plottitle = self.plottitle.displayText()
         # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
@@ -2132,7 +2144,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                              strind + str(index_pk + 1) + '_gaussian_sigma'].value,
                                          center=out.params[strind + str(index_pk + 1) + '_center'].value)
                     y_area_p2 = singlett(x, amplitude=out.params[strind + str(index_pk + 1) + '_amplitude'].value
-                                                   * out.params[strind + str(index_pk + 1) + '_height_ratio'].value,
+                                                      * out.params[strind + str(index_pk + 1) + '_height_ratio'].value,
                                          sigma=out.params[strind + str(index_pk + 1) + '_sigma'].value
                                                * out.params[strind + str(index_pk + 1) + '_coster_kronig_factor'].value,
                                          gamma=out.params[strind + str(index_pk + 1) + '_gamma'].value,
