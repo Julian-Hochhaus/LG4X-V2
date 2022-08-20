@@ -27,6 +27,10 @@ from scipy import integrate
 from scipy import interpolate
 from helpers import autoscale_y
 
+
+import traceback # error handeling 
+import logging # error handaling
+
 # style.use('ggplot')
 style.use('seaborn-pastel')
 
@@ -57,7 +61,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.list_peak = None
         self.stats_tab = None
         self.fitp1 = None
-        self.list_imp = None
         self.comboBox_imp = None
         self.list_imp = None
         self.result = None
@@ -70,6 +73,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.version = None
         self.df = None
         self.initUI()
+        self.error_dialog = QtWidgets.QErrorMessage()
 
     def initUI(self):
         self.version = 'LG4X: LMFit GUI for XPS curve fitting 2.0.2'
@@ -336,6 +340,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.plottitle = QtWidgets.QLineEdit()
         grid.addWidget(self.plottitle, 3, 7, 1, 2)
         self.show()
+    
+    def raise_error(self, windowTitle : str) -> None:
+        self.error_dialog.setWindowTitle(windowTitle)
+        self.error_dialog.showMessage(traceback.format_exc())
+        logging.error(traceback.format_exc())
+        return None
 
     def add_col(self):
         rowPosition = self.fitp1.rowCount()
@@ -539,18 +549,31 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 pre_pk = [[0, 0], [0, 1], [0, 1], [2, 0], [0, 1], [2, 0]]
             self.setPreset(0, [], pre_pk)
         if index == 2:
-            self.loadPreset()
+            try:
+                self.loadPreset()
+            except Exception:
+                return self.raise_error(windowTitle = "Error: Not able to load parametes!")
+            self.loadPreset(x)
             # print(self.df[0], self.df[1], self.df[2])
             if len(str(self.pre[0])) != 0 and len(self.pre[1]) != 0 and len(self.pre[2]) != 0:
                 self.setPreset(self.pre[0], self.pre[1], self.pre[2])
         if index == 3:
-            self.addPreset()
+            try:
+                self.addPreset()
+            except Exception:
+                return self.raise_error("Error: could not add parameters")
             # print(self.df[0], self.df[1], self.df[2])
             if len(str(self.pre[0])) != 0 and len(self.pre[1]) != 0 and len(self.pre[2]) != 0:
                 self.setPreset(self.pre[0], self.pre[1], self.pre[2])
         if index == 4:
-            self.savePreset()
-            self.savePresetDia()
+            try:
+                self.savePreset()
+            except Exception:
+                return self.raise_error("Error: could not save parameters")
+            try:
+                self.savePresetDia()
+            except Exception:
+                return self.raise_error("Error: could not save data")
         if index == 5:
             # load C1s peak preset
             pre_bg = [[2, 295, 2, 275, '', '', '', '', '', ''], ['cv', 1e-06, 'it', 10, '', '', '', '', '', ''],
@@ -806,9 +829,18 @@ class PrettyWidget(QtWidgets.QMainWindow):
             file.close()
 
     def export_all(self):
-        self.exportResults()
-        self.savePreset()
-        self.savePresetDia()
+        try:
+            self.exportResults()
+        except Exception:
+            self.raise_error("Error: could not export the results.")
+        try:
+            self.savePreset()
+        except Exception:
+            self.raise_error("Error: could not save parameters.")
+        try:
+            self.savePresetDia()
+        except Exception:
+            self.raise_error("Error: could not save parameters / export data.")
 
     def exportResults(self):
         if not self.result.empty:
@@ -914,7 +946,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                                                  'VMS Files (*.vms *.npl)')
             if cfilePath != "":
                 # print (cfilePath)
-                self.list_vamas = vpy.list_vms(cfilePath)
+                try:
+                    self.list_vamas = vpy.list_vms(cfilePath)
+                except Exception:
+                    return self.raise_error("Error: could not load VAMAS file.")
                 self.list_file.extend(self.list_vamas)
 
                 # print (self.list_file)
@@ -1027,9 +1062,14 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                    max_rows=1)
                 # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1,
                 # header=None, delimiter = '\t')
-
-            x0 = self.df[:, 0]
-            y0 = self.df[:, 1]
+            try:
+                x0 = self.df[:, 0]
+            except Exception:
+                return self.raise_error("Error: could not load csv file.")
+            try:
+                y0 = self.df[:, 1]
+            except Exception:
+                return self.raise_error("Error: could not load csv file.")
             # print(strpe)
             strpe = (str(strpe).split())
             # print(pe)
@@ -1095,8 +1135,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
     def fit(self):
         if self.comboBox_file.currentIndex() > 0:
-            self.ana('fit')
-
+            try:
+                self.ana('fit')
+            except Exception:
+                return self.raise_error("Error: Fitting was not successfull.")
     def ana(self, mode):
         plottitle = self.plottitle.displayText()
         # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
