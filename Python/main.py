@@ -1135,8 +1135,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
     def fit(self):
         if self.comboBox_file.currentIndex() > 0:
-            self.ana('fit')
-
+            try:
+                self.ana('fit')
+            except Exception:
+                return self.raise_error("Error: Fitting was not successfull.")
     def ana(self, mode):
         plottitle = self.plottitle.displayText()
         # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
