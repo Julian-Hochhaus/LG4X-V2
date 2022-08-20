@@ -61,7 +61,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.list_peak = None
         self.stats_tab = None
         self.fitp1 = None
-        self.list_imp = None
         self.comboBox_imp = None
         self.list_imp = None
         self.result = None
