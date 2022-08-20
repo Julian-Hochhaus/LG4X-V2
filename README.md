@@ -9,9 +9,11 @@
 - [ ] rework the export files, so that additional informations such as fwhm and areas are exported in readable format as well
 - [x] save the active background parameter checkbox to the parameter-files.
 - [ ] check lmfit version and catch UserWarning for independent vars as described in [#10](https://github.com/Julian-Hochhaus/LG4X-V2/issues/10)
-- [ ] keep the programm running if an error occurs in the fitting procedure
+- [x] keep the programm running if an error occurs in the fitting procedure
+     - error handling introduced for errors during file import, parameter import, saving parameters, exporting results (Thanks to @Hexanders)
 - [ ] Pause/Interrupt fit button [#5](https://github.com/Julian-Hochhaus/LG4X-V2/issues/5)
 - [ ] rewrite the Readme to explain the features introduced in LG4X-V2
+- [ ] Undo button (log of last parameter sets, as suggested in [#13](https://github.com/Julian-Hochhaus/LG4X-V2/issues/13))
 ## Introduction
 LG4X-V2 is based on the great work of [Hideki NAKAJIMA](https://github.com/hidecode221b) who developed the software LG4X. 
 
