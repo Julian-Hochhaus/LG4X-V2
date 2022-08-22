@@ -2,6 +2,18 @@
 
 # LG4X-V2: lmfit GUI for XPS
 
+## Planned features/Improvements
+
+- [ ] redesign the parameter table so that the limits are placed next to the corresponding parameters
+- [ ] introduce relative parameter for gamma and coster-kronig factor
+- [ ] rework the export files, so that additional informations such as fwhm and areas are exported in readable format as well
+- [x] save the active background parameter checkbox to the parameter-files.
+- [ ] check lmfit version and catch UserWarning for independent vars as described in [#10](https://github.com/Julian-Hochhaus/LG4X-V2/issues/10)
+- [x] keep the programm running if an error occurs in the fitting procedure
+     - error handling introduced for errors during file import, parameter import, saving parameters, exporting results (Thanks to [@Hexanders](https://github.com/Hexanders))
+- [ ] Pause/Interrupt fit button [#5](https://github.com/Julian-Hochhaus/LG4X-V2/issues/5)
+- [ ] rewrite the Readme to explain the features introduced in LG4X-V2
+- [ ] Undo button (log of last parameter sets, as suggested in [#13](https://github.com/Julian-Hochhaus/LG4X-V2/issues/13))
 ## Introduction
 LG4X-V2 is based on the great work of [Hideki NAKAJIMA](https://github.com/hidecode221b) who developed the software LG4X. 
 
@@ -110,6 +122,16 @@ If you have Miniconda3, you can create the environment to install lmfit from [co
     - Export text file for parameters
     - Save parameters as a preset for next analysis
 
+## Export csv file for curves
+The exported .csv file contains the raw data as well as all fitted components:
+Thereby, the first and second column contain the input data, respectively the x and y data.
+The third column contains the intensity data minus the background. 
+In the forth column, the sum over all components is given, if you wish to plot your data without background, this would be the sum curve over all components you wish to plot.
+In column five and six, the background and the polynomial background are given. Important to note that the background already contains the polynomial background, the polynomial background in column six is only given because LG4X-V2 adds a polynomial background to each fit, if the parameters pg_i are not fixed to 0.
+In the seventh column, the sum curve over all components and backgrounds is given, that's the sum curve you wish to plot if you are using the raw intensities including the background to present your data.
+The following columns contain the components of the fit model.
+
+
 #### Home directory to import data
 
 You can change the HOME directory in the main.py edited in a way below. `#` makes a line comment out. 
@@ -124,7 +146,7 @@ You can change the HOME directory in the main.py edited in a way below. `#` make
 
 ## Citing
 
-[https://doi.org/10.5281/zenodo.390152394](https://doi.org/10.5281/zenodo.3901523)
+[https://doi.org/10.5281/zenodo.3901523](https://doi.org/10.5281/zenodo.3901523)
 
 ## Video
 
@@ -133,13 +155,7 @@ You can change the HOME directory in the main.py edited in a way below. `#` make
 [YouTube: Installation of LG4X in miniconda3 environment](https://youtu.be/cEbo6ZHlK-U)
 
 
-## Planned features/Improvements
 
-- redesign the parameter table so that the limits are placed next to the corresponding parameters
-- introduce relative parameter for gamma and coster-kronig factor
-- rework the export files, so that additional informations such as fwhm and areas are exported in readable format as well
-- save the active background parameter checkbox to the parameter-files.
-- rewrite the Readme to explain the features introduced in LG4X-V2
 
 
 ## Database reference

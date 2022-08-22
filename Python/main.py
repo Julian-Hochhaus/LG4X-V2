@@ -29,6 +29,9 @@ from scipy import interpolate
 from helpers import autoscale_y
 import threading
 
+import traceback  # error handling
+import logging  # error handling
+
 # style.use('ggplot')
 style.use('seaborn-pastel')
 
@@ -73,7 +76,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.list_peak = None
         self.stats_tab = None
         self.fitp1 = None
-        self.list_imp = None
         self.comboBox_imp = None
         self.list_imp = None
         self.result = None
@@ -87,6 +89,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.df = None
         self.event_stop = threading.Event()
         self.initUI()
+        self.error_dialog = QtWidgets.QErrorMessage()
 
     def initUI(self):
         self.version = 'LG4X: LMFit GUI for XPS curve fitting 2.0.2'
@@ -358,6 +361,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
         grid.addWidget(self.plottitle, 4, 7, 1, 2)
         self.show()
 
+    def raise_error(self, windowTitle: str) -> None:
+        self.error_dialog.setWindowTitle(windowTitle)
+        self.error_dialog.showMessage(traceback.format_exc())
+        logging.error(traceback.format_exc())
+        return None
+
     def add_col(self):
         rowPosition = self.fitp1.rowCount()
         colPosition_fitp1 = self.fitp1.columnCount()
@@ -560,18 +569,30 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 pre_pk = [[0, 0], [0, 1], [0, 1], [2, 0], [0, 1], [2, 0]]
             self.setPreset(0, [], pre_pk)
         if index == 2:
-            self.loadPreset()
+            try:
+                self.loadPreset()
+            except Exception as e:
+                return self.raise_error(windowTitle="Error: Could not load parameters!")
             # print(self.df[0], self.df[1], self.df[2])
             if len(str(self.pre[0])) != 0 and len(self.pre[1]) != 0 and len(self.pre[2]) != 0:
                 self.setPreset(self.pre[0], self.pre[1], self.pre[2])
         if index == 3:
-            self.addPreset()
+            try:
+                self.addPreset()
+            except Exception as e:
+                return self.raise_error("Error: could not add parameters")
             # print(self.df[0], self.df[1], self.df[2])
             if len(str(self.pre[0])) != 0 and len(self.pre[1]) != 0 and len(self.pre[2]) != 0:
                 self.setPreset(self.pre[0], self.pre[1], self.pre[2])
         if index == 4:
-            self.savePreset()
-            self.savePresetDia()
+            try:
+                self.savePreset()
+            except Exception as e:
+                return self.raise_error("Error: could not save parameters")
+            try:
+                self.savePresetDia()
+            except Exception as e:
+                return self.raise_error("Error: could not save data")
         if index == 5:
             # load C1s peak preset
             pre_bg = [[2, 295, 2, 275, '', '', '', '', '', ''], ['cv', 1e-06, 'it', 10, '', '', '', '', '', ''],
@@ -752,7 +773,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         for row in range(rowPosition):
             new = []
             for col in range(colPosition):
-                if ((col % 2) != 0 and col <= 8) or (col== 9 and row == 0):
+                if ((col % 2) != 0 and col <= 8) or (col == 9 and row == 0):
                     if self.fitp0.item(row, col) is None or len(self.fitp0.item(row, col).text()) == 0:
                         new.append('')
                     else:
@@ -827,9 +848,18 @@ class PrettyWidget(QtWidgets.QMainWindow):
             file.close()
 
     def export_all(self):
-        self.exportResults()
-        self.savePreset()
-        self.savePresetDia()
+        try:
+            self.exportResults()
+        except Exception as e:
+            self.raise_error("Error: could not export the results.")
+        try:
+            self.savePreset()
+        except Exception as e:
+            self.raise_error("Error: could not save parameters.")
+        try:
+            self.savePresetDia()
+        except Exception as e:
+            self.raise_error("Error: could not save parameters / export data.")
 
     def exportResults(self):
         if not self.result.empty:
@@ -845,9 +875,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 fileName = 'sample'
 
             # S_File will get the directory path and extension.
-            cfilePath, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Fit file',
-                                                                 cfilePath + os.sep + fileName + '_fit.txt',
-                                                                 "Text Files (*.txt)")
+            cfilePath, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Fit file',cfilePath + os.sep + fileName + '_fit.txt', "Text Files (*.txt)")
             if cfilePath != "":
                 self.filePath = cfilePath
                 if self.comboBox_file.currentIndex() == 0:
@@ -907,8 +935,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     file.write(str(Text))
                 file.close()
                 # print(filePath)
-                filePath1 = os.path.dirname(cfilePath)
-                self.result.to_csv(filePath1 + os.sep + fileName + '_fit.csv', index=False)
+                if cfilePath.split("_")[-1]== "fit.txt":
+                    self.result.to_csv(cfilePath.rsplit("_",1)[0] + '_fit.csv', index=False)
+                else:
+                    self.result.to_csv(cfilePath.rsplit(".", 1)[0] + '.csv', index=False)
                 # print(self.result)
 
     def imp(self):
@@ -935,7 +965,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                                                  'VMS Files (*.vms *.npl)')
             if cfilePath != "":
                 # print (cfilePath)
-                self.list_vamas = vpy.list_vms(cfilePath)
+                try:
+                    self.list_vamas = vpy.list_vms(cfilePath)
+                except Exception as e:
+                    return self.raise_error("Error: could not load VAMAS file.")
                 self.list_file.extend(self.list_vamas)
 
                 # print (self.list_file)
@@ -1038,20 +1071,38 @@ class PrettyWidget(QtWidgets.QMainWindow):
             # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
             fileName = os.path.basename(self.comboBox_file.currentText())
             if os.path.splitext(fileName)[1] == '.csv':
-                self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
-                strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter=',', usecols=1,
-                                   max_rows=1)
-                # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1, header=None)
-            else:
-                self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter='\t', skiprows=1)
-                strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter='\t', usecols=1,
-                                   max_rows=1)
-                # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1,
-                # header=None, delimiter = '\t')
+                try:
+                    self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
+                    # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1,
+                    # header=None)
+                    strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter=',', usecols=1, max_rows=1)
+                except Exception as e:
+                    return self.raise_error("Error: The input .csv is not in the correct format!")
 
-            x0 = self.df[:, 0]
-            y0 = self.df[:, 1]
-            # print(strpe)
+            else:
+                try:
+                    self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter='\t', skiprows=1)
+                    # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1,
+                    # header=None, delimiter = '\t')
+                    strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter='\t', usecols=1,
+                                   max_rows=1)
+                except Exception as e:
+                    return self.raise_error("Error: The input file is not in the correct format!")
+
+            # I have moved the error handling here directly to the import, there may exist situations, where already the
+            # Import would fail. I still left the following error handling there, but I am not sure if there are cases
+            # where this second error handling still will be necessary. However, we should check, if x0 and y0 have same
+            # lenght I think
+
+            try:
+                x0 = self.df[:, 0]
+            except Exception as e:
+                return self.raise_error("Error: could not load csv file.")
+            try:
+                y0 = self.df[:, 1]
+            except Exception as e:
+                return self.raise_error("Error: could not load csv file.")
+            #print(strpe)
             strpe = (str(strpe).split())
             # print(pe)
             if strpe[0] == 'PE:' and strpe[2] == 'eV':
@@ -1116,12 +1167,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
     def fit(self):
         if self.comboBox_file.currentIndex() > 0:
-            self.fitter = Fitting(self.ana, "fit")
-            self.threadpool.start(self.fitter)
-
+            try:
+                self.fitter = Fitting(self.ana, "fit")
+                self.threadpool.start(self.fitter)
+            except Exception as e:
+                return self.raise_error("Error: Fitting was not successful.")
     def interrupt_fit(self):
         print("does nothing yet")
-
     def ana(self, mode):
         plottitle = self.plottitle.displayText()
         # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
@@ -2115,7 +2167,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                              strind + str(index_pk + 1) + '_gaussian_sigma'].value,
                                          center=out.params[strind + str(index_pk + 1) + '_center'].value)
                     y_area_p2 = singlett(x, amplitude=out.params[strind + str(index_pk + 1) + '_amplitude'].value
-                                                   * out.params[strind + str(index_pk + 1) + '_height_ratio'].value,
+                                                      * out.params[strind + str(index_pk + 1) + '_height_ratio'].value,
                                          sigma=out.params[strind + str(index_pk + 1) + '_sigma'].value
                                                * out.params[strind + str(index_pk + 1) + '_coster_kronig_factor'].value,
                                          gamma=out.params[strind + str(index_pk + 1) + '_gamma'].value,
@@ -2250,12 +2302,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
                 strind = strind.split(":", 1)[0]
                 if index_bg < 2:
-                    if self.fitp0.item(index_bg + 1, 10).checkState() == 0:
-                        self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'],
-                                             bg_mod + comps['pg_'], label='peak_' + str(index_pk + 1))
-                    else:
+                    if self.fitp0.item(index_bg + 1, 10).checkState() == 2:
                         self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
                                              comps['bg_'] + comps['pg_'], label='peak_' + str(index_pk + 1))
+                    else:
+                        self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'],
+                                             bg_mod + comps['pg_'], label='peak_' + str(index_pk + 1))
                 if index_bg == 2:
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['pg_'], comps['pg_'],
                                          label='peak_' + str(index_pk + 1))
@@ -2296,15 +2348,26 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # print(key, "=", out.params[key].value)
         # make dataFrame and concat to export
         df_x = pd.DataFrame(x, columns=['x'])
-        df_y = pd.DataFrame(init, columns=['y'])
-        df_f = pd.DataFrame(out.best_fit, columns=['fit'])
+        df_raw_y = pd.DataFrame(raw_y, columns=['raw_y'])
+        if self.fitp0.item(index_bg + 1, 10).checkState() == 2:
+            df_y = pd.DataFrame(raw_y -comps['pg_']-comps['bg_'], columns=['data-bg'])
+            df_pks = pd.DataFrame(out.best_fit-comps['pg_']-comps['bg_'], columns=['sum_peaks'])
+            df_sum=pd.DataFrame(out.best_fit, columns=['sum_fit'])
+        else:
+            df_y = pd.DataFrame(raw_y-bg_mod-comps['pg_'], columns=['data-bg'])
+            df_pks = pd.DataFrame(out.best_fit-comps['pg_'], columns=['sum_peaks'])
+            df_sum = pd.DataFrame(out.best_fit+bg_mod, columns=['sum_fit'])
         if index_bg < 2:
-            df_b = pd.DataFrame(bg_mod + comps['pg_'], columns=['bg'])
+            if self.fitp0.item(index_bg + 1, 10).checkState() == 2:
+                df_b = pd.DataFrame(comps['pg_']+comps['bg_'], columns=['bg'])
+            else:
+                df_b = pd.DataFrame(bg_mod + comps['pg_'], columns=['bg'])
         if index_bg == 2:
             df_b = pd.DataFrame(comps['pg_'], columns=['bg'])
         if index_bg > 2:
             df_b = pd.DataFrame(comps['bg_'] + comps['pg_'], columns=['bg'])
-        self.result = pd.concat([df_x, df_y, df_f, df_b], axis=1)
+        df_b_pg = pd.DataFrame(comps['pg_'], columns=['pg'])
+        self.result = pd.concat([df_x, df_raw_y,df_y, df_pks, df_b, df_b_pg,df_sum], axis=1)
         for index_pk in range(npeak):
             strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
             strind = strind.split(":", 1)[0]
