@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from PyQt5 import QtWidgets, QtCore
+from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot
 from lmfit import Model
 from lmfit.models import ExponentialGaussianModel, SkewedGaussianModel, SkewedVoigtModel, DoniachModel, \
     BreitWignerModel, LognormalModel
@@ -26,14 +27,29 @@ from usrmodel import ConvGaussianDoniachDublett, ConvGaussianDoniachSinglett, Fe
 from scipy import integrate
 from scipy import interpolate
 from helpers import autoscale_y
+import threading
 
 # style.use('ggplot')
 style.use('seaborn-pastel')
 
 
+class Fitting(QRunnable):
+    '''
+    Worker thread for fitting process
+    '''
+
+    def __init__(self, fn, *args):
+        super(Fitting, self).__init__()
+        self.fn = fn
+        self.args = args
+    @pyqtSlot()
+    def run(self):
+        self.fn(*self.args)
+
 class PrettyWidget(QtWidgets.QMainWindow):
     def __init__(self):
         super(PrettyWidget, self).__init__()
+        self.threadpool = QThreadPool() #thread pool for worker/stop execution button
         # super(PrettyWidget, self).__init__()
         self.export_out = None
         self.export_pars = None
@@ -69,6 +85,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.floating = None
         self.version = None
         self.df = None
+        self.event_stop = threading.Event()
         self.initUI()
 
     def initUI(self):
@@ -107,8 +124,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.toolbar.setMaximumHeight(20)
         self.toolbar.setMinimumHeight(15)
         self.toolbar.setStyleSheet("QToolBar { border: 0px }")
-        grid.addWidget(self.canvas, 4, 0, 4, 3)
-        grid.addWidget(self.toolbar, 3, 0, 1, 3)
+        grid.addWidget(self.canvas, 5, 0, 4, 3)
+        grid.addWidget(self.toolbar, 4, 0, 1, 3)
 
         # data template
         # self.df = pd.DataFrame()
@@ -181,7 +198,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_eva.resize(btn_eva.sizeHint())
         btn_eva.clicked.connect(self.eva)
         grid.addWidget(btn_eva, 0, 2, 1, 1)
-
+        # Interrupt fit Button
+        btn_interrupt = QtWidgets.QPushButton('Interrupt fitting (not implemented)', self)
+        btn_interrupt.resize(btn_interrupt.sizeHint())
+        btn_interrupt.clicked.connect(self.interrupt_fit)
+        grid.addWidget(btn_interrupt, 3, 2, 1, 1)
         # PolyBG Table
         list_bg_col = ['bg_c0', 'bg_c1', 'bg_c2', 'bg_c3', 'bg_c4']
         list_bg_row = ['Range (x0,x1), pt, hn, wf', 'Shirley', 'Tougaard', 'Polynomial', 'FD (amp, ctr, kt)',
@@ -300,7 +321,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         self.fitp1.resizeColumnsToContents()
         self.fitp1.resizeRowsToContents()
-        grid.addWidget(self.fitp1, 4, 3, 4, 4)
+        grid.addWidget(self.fitp1, 4, 3, 5, 4)
         list_res_row = ['gaussian_fwhm', 'lorentzian_fwhm_p1', 'lorentzian_fwhm_p2', 'fwhm_p1', 'fwhm_p2', 'height_p1',
                         'height_p2', 'approx. area_p1', 'approx. area_p2', 'area_total']
         self.res_tab = QtWidgets.QTableWidget(len(list_res_row), len(list_col))
@@ -308,7 +329,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.res_tab.setVerticalHeaderLabels(list_res_row)
         self.res_tab.resizeColumnsToContents()
         self.res_tab.resizeRowsToContents()
-        grid.addWidget(self.res_tab, 7, 7, 1, 2)
+        grid.addWidget(self.res_tab, 8, 7, 1, 2)
         list_stats_row = ['success?', 'message', 'nfev', 'nvary', 'ndata', 'nfree', 'chisqr', 'redchi', 'aic', 'bic']
         list_stats_col = ['Fit stats']
         self.stats_tab = QtWidgets.QTableWidget(len(list_stats_row), 1)
@@ -316,11 +337,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.stats_tab.setVerticalHeaderLabels(list_stats_row)
         self.stats_tab.resizeColumnsToContents()
         self.stats_tab.resizeRowsToContents()
-        grid.addWidget(self.stats_tab, 5, 7, 1, 2)
+        grid.addWidget(self.stats_tab, 6, 7, 1, 2)
         self.stats_label = QtWidgets.QLabel()
         self.stats_label.setText("Fit statistics:")
         self.stats_label.setStyleSheet("font-weight: bold; font-size:12pt")
-        grid.addWidget(self.stats_label, 4, 7, 1, 1)
+        grid.addWidget(self.stats_label, 5, 7, 1, 1)
         self.pars_label = QtWidgets.QLabel()
         self.pars_label.setText("Peak parameters:")
         self.pars_label.setStyleSheet("font-weight: bold; font-size:12pt")
@@ -328,13 +349,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.res_label = QtWidgets.QLabel()
         self.res_label.setText("Fit results:")
         self.res_label.setStyleSheet("font-weight: bold; font-size:12pt")
-        grid.addWidget(self.res_label, 6, 7, 1, 1)
+        grid.addWidget(self.res_label, 7, 7, 1, 1)
         self.plottitle_label = QtWidgets.QLabel()
         self.plottitle_label.setText("Plot title:")
         self.plottitle_label.setStyleSheet("font-weight: bold; font-size:12pt")
-        grid.addWidget(self.plottitle_label, 3, 6, 1, 1)
+        grid.addWidget(self.plottitle_label, 3, 7, 1, 1)
         self.plottitle = QtWidgets.QLineEdit()
-        grid.addWidget(self.plottitle, 3, 7, 1, 2)
+        grid.addWidget(self.plottitle, 4, 7, 1, 2)
         self.show()
 
     def add_col(self):
@@ -1095,7 +1116,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
     def fit(self):
         if self.comboBox_file.currentIndex() > 0:
-            self.ana('fit')
+            self.fitter = Fitting(self.ana, "fit")
+            self.threadpool.start(self.fitter)
+
+    def interrupt_fit(self):
+        print("does nothing yet")
 
     def ana(self, mode):
         plottitle = self.plottitle.displayText()

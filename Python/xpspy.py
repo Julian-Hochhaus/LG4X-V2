@@ -207,7 +207,7 @@ def tougaard2(x, y, B, C, C_d, D):
         bgrnd[0] = y
         bg = []
         delta_x = abs((x[-1] - x[0]) / len(x))
-        extend=35-(x[-1]-x[np.argmax(y)])
+        extend=35
         len_padded = int(extend / delta_x)
         # len_padded = 3*len(x)
         padded_x = np.concatenate((x, np.linspace(x[-1] + delta_x, x[-1] + delta_x * len_padded, len_padded)))
