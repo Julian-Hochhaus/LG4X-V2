@@ -87,6 +87,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.floating = None
         self.version = None
         self.df = None
+        self.parameter_history = []
+        self.go_back_in_paramaeter_history = False
         self.event_stop = threading.Event()
         self.initUI()
         self.error_dialog = QtWidgets.QErrorMessage()
@@ -1911,6 +1913,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if mode == 'eva':
             out = mod.fit(y, pars, x=x, y=y)
         else:
+             if self.go_back_in_paramaeter_history:
+                try:
+                    pars = self.parameter_history.pop()
+                    self.go_back_in_paramaeter_history = False
+                except IndexError:
+                    return self.raise_error('No further steps are saved')
+                    self.go_back_in_paramaeter_history = False
+            else:
+                self.parameter_history.append(pars)
             out = mod.fit(y, pars, x=x, weights=1 / np.sqrt(raw_y), y=raw_y)
         comps = out.eval_components(x=x)
         # fit results to be checked
