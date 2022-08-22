@@ -176,6 +176,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_fit.resize(btn_fit.sizeHint())
         btn_fit.clicked.connect(self.fit)
         grid.addWidget(btn_fit, 1, 2, 1, 1)
+        
+        # Undo Fit Button
+        btn_undoFit = QtWidgets.QPushButton('undo Fit', self)
+        btn_undoFit.resize(btn_undoFit.sizeHint())
+        btn_undoFit.clicked.connect(self.one_step_back_in_params_history)
+        grid.addWidget(btn_undoFit, 4, 2, 1, 1)
+
 
         # Add Button
         btn_add = QtWidgets.QPushButton('add peak', self)
@@ -1177,6 +1184,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 return self.raise_error("Error: Fitting was not successful.")
     def interrupt_fit(self):
         print("does nothing yet")
+
+    def one_step_back_in_params_history(self):
+        self.go_back_in_paramaeter_history = False
+        self.fit()
 
     def history_manager(self,pars):
         if self.go_back_in_paramaeter_history:
