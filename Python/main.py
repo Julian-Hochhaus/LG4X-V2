@@ -1168,8 +1168,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def fit(self):
         if self.comboBox_file.currentIndex() > 0:
             try:
-                self.fitter = Fitting(self.ana, "fit")
-                self.threadpool.start(self.fitter)
+                self.ana("fit")
+                #self.fitter = Fitting(self.ana, "fit")
+                #self.threadpool.start(self.fitter)
             except Exception as e:
                 return self.raise_error("Error: Fitting was not successful.")
     def interrupt_fit(self):
