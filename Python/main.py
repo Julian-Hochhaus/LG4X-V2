@@ -2308,7 +2308,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             # ax.plot(x, init+bg_mod, 'b--', lw =2, label='initial')
             if plottitle != '':
                 self.ar.set_title(r"{}".format(plottitle), fontsize=11)
-            self.ax.plot(x, out.best_fit + bg_mod, 'k-', lw=2, label='initial')
+            #self.ax.plot(x, out.best_fit + bg_mod, 'k-', lw=2, label='initial')
 
             for index_pk in range(npeak):
                 # print(index_pk, color)
