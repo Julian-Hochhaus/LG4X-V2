@@ -5,6 +5,7 @@ import ast
 import math
 import os
 import sys
+import pickle
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -32,7 +33,7 @@ import threading
 import traceback  # error handling
 import logging  # error handling
 
-# style.use('ggplot')
+# style.use('ggplot')    
 style.use('seaborn-pastel')
 
 
@@ -869,6 +870,21 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.savePresetDia()
         except Exception as e:
             self.raise_error("Error: could not save parameters / export data.")
+    
+    def export_pickle(self,path_for_export):
+        
+        """
+        Exporting all parameters as parText, export_pars and export_out.fit_report as a dictionary in to pickle file.
+            It taks path from exportResults function so path_for_export should end with ".txt"    
+        """
+        with open(path_for_export.replace('.txt','.pickle'), 'wb') as handle:
+            pickle.dump({
+                'LG4X_parameters':self.parText,
+                'lmfit_parameters':self.export_pars,
+                'lmfit_report':self.export_out.fit_report(min_correl=0.1)
+                }, 
+                        handle, 
+                        protocol=pickle.HIGHEST_PROTOCOL)
 
     def exportResults(self):
         if not self.result.empty:
@@ -939,6 +955,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.savePreset()
                 Text += '\n\n[[LG4X parameters]]\n\n' + str(self.parText) + '\n\n[[lmfit parameters]]\n\n' + str(
                     self.export_pars) + '\n\n' + str(self.export_out.fit_report(min_correl=0.1))
+                
+                self.export_pickle(cfilePath) #export las fit parameters as dict int po pickle file 
 
                 with open(cfilePath, 'w') as file:
                     file.write(str(Text))
