@@ -87,7 +87,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.floating = None
         self.version = None
         self.df = None
-        self.parameter_history = []
+        self.parameter_history_list = []
         self.go_back_in_paramaeter_history = False
         self.event_stop = threading.Event()
         self.initUI()
@@ -1186,20 +1186,29 @@ class PrettyWidget(QtWidgets.QMainWindow):
         print("does nothing yet")
 
     def one_step_back_in_params_history(self):
-        self.go_back_in_paramaeter_history = False
+        """
+        Is called if button undo Fit is prest.
+        """
+        self.go_back_in_paramaeter_history = True
         self.fit()
 
-    def history_manager(self,pars):
-        if self.go_back_in_paramaeter_history:
+    def history_manager(self,pars: list) -> tuple[list, list] or None:
+        """
+        Manages saving of the fit parameters and presets (e.g. how many peaks, aktive backgrounds and so on) in a list.
+        In this approach the insane function ana() must be extended. The ana() should be destroyd! and replaaced by couple of smaller methods for better readability
+        """
+        if self.go_back_in_paramaeter_history is True:
                 try:
-                    pars = self.parameter_history.pop()
+                    pars,parText = self.parameter_history_list.pop()
                     self.go_back_in_paramaeter_history = False
+                    return pars, parText
                 except IndexError:
-                    return self.raise_error('No further steps are saved')
                     self.go_back_in_paramaeter_history = False
+                    return self.raise_error('No further steps are saved')
         else:
-            self.parameter_history.append(pars)
-        return pars
+            self.savePreset()       
+            self.parameter_history_list.append([pars,self.parText])
+            return None
 
     def ana(self, mode):
         plottitle = self.plottitle.displayText()
@@ -1937,8 +1946,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if mode == 'eva':
             out = mod.fit(y, pars, x=x, y=y)
         else:
-            pars = self.history_manager(pars) 
-            #print(self.parameter_history)
+            try_me_out = self.history_manager(pars)
+            if try_me_out is not None:
+                pars, parText= try_me_out
+                self.setPreset(parText[0],parText[1],parText[2])
             out = mod.fit(y, pars, x=x, weights=1 / np.sqrt(raw_y), y=raw_y)
         comps = out.eval_components(x=x)
         # fit results to be checked
