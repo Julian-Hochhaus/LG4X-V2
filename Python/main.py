@@ -871,17 +871,28 @@ class PrettyWidget(QtWidgets.QMainWindow):
         except Exception as e:
             self.raise_error("Error: could not save parameters / export data.")
     
-    def export_pickle(self,path_for_export):
+    def export_pickle(self,path_for_export: str):
         
         """
-        Exporting all parameters as parText, export_pars and export_out.fit_report as a dictionary in to pickle file.
+        Exporting all parameters as parText, export_pars and export_out.results as a dictionary in to pickle file.
             It taks path from exportResults function so path_for_export should end with ".txt"    
         """
+
+        ### this is an approche to export lmfit_results but  mod = PolynomialModel(3, prefix='pg_') is lockal and causing problems
+        # lmfit_attr_dict = {}
+        # for attr, value in self.export_out.__dict__.items():
+        #     if attr == 'model':
+        #         lmfit_attr_dict[attr] = value._reprstring() # Convert moodel to a string becaus pickle dos not work with local objects. bad: "mod = PolynomialModel(3, prefix='pg_')"
+        #     else:
+        #         lmfit_attr_dict[attr] = value
+        
         with open(path_for_export.replace('.txt','.pickle'), 'wb') as handle:
             pickle.dump({
                 'LG4X_parameters':self.parText,
                 'lmfit_parameters':self.export_pars,
-                'lmfit_report':self.export_out.fit_report(min_correl=0.1)
+                #'lmfit_report':self.export_out.fit_report(min_correl=0.1)
+                #'lmfit_report': lmfit_attr_dict
+                'lmfit_result': self.export_out.result
                 }, 
                         handle, 
                         protocol=pickle.HIGHEST_PROTOCOL)
