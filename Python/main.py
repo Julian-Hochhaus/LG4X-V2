@@ -1221,10 +1221,20 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.go_back_in_paramaeter_history = True
         self.fit()
 
-    def history_manager(self,pars: list) -> tuple[list, list] or None:
+    def history_manager(self,pars):
         """
         Manages saving of the fit parameters and presets (e.g. how many peaks, aktive backgrounds and so on) in a list.
         In this approach the insane function ana() must be extended. The ana() should be destroyd! and replaaced by couple of smaller methods for better readability
+        
+        Parameters
+        ----------
+            pars: list:
+                parameters of the fit, whitch have to be saved
+        Returns 
+            list: [self.pars, self.parText]
+            or 
+            None: if self.go_back_in_paramaeter_history is False do nothing
+
         """
         if self.go_back_in_paramaeter_history is True:
                 try:
