@@ -93,7 +93,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.event_stop = threading.Event()
         self.initUI()
         self.error_dialog = QtWidgets.QErrorMessage()
-
+  
     def initUI(self):
         self.version = 'LG4X: LMFit GUI for XPS curve fitting 2.0.2'
         self.floating = '.4f'
@@ -107,6 +107,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.pt.setWindowTitle('Periodic Table')
         self.pt.elementEmitted.connect(self.handleElementClicked)
         self.pt.selectedElements = []
+        
+        
 
         # Grid Layout
         grid = QtWidgets.QGridLayout()
@@ -148,6 +150,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # DropDown file import
         self.comboBox_imp = QtWidgets.QComboBox(self)
         self.comboBox_imp.addItems(self.list_imp)
+
         grid.addWidget(self.comboBox_imp, 0, 0, 1, 1)
         self.comboBox_imp.currentIndexChanged.connect(self.imp)
         self.comboBox_imp.setCurrentIndex(0)
@@ -183,6 +186,79 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_undoFit.resize(btn_undoFit.sizeHint())
         btn_undoFit.clicked.connect(self.one_step_back_in_params_history)
         grid.addWidget(btn_undoFit, 4, 2, 1, 1)
+
+        # Menue bar 
+        exitAction = QtWidgets.QAction('&Exit', self)        
+        exitAction.setShortcut('Ctrl+Q')
+        exitAction.setStatusTip('Exit application')
+        exitAction.triggered.connect(QtWidgets.qApp.quit)
+        
+        menubar = self.menuBar()
+            ## Import sub menue
+        fileMenu = menubar.addMenu('&File')
+        
+        btn_imp_csv = QtWidgets.QAction('Import csv', self)
+        btn_imp_csv.setShortcut('Ctrl+Shift+C')
+        btn_imp_csv.triggered.connect(self.clickOnBtnImpCsv)
+        
+              
+        btn_imp_txt = QtWidgets.QAction('Import txt', self)
+        btn_imp_txt.setShortcut('Ctrl+Shift+T')
+        btn_imp_txt.triggered.connect(self.clickOnBtnImpTxt)
+
+        btn_imp_vms = QtWidgets.QAction('Import vms', self)
+        btn_imp_vms.setShortcut('Ctrl+Shift+V')
+        btn_imp_vms.triggered.connect(self.clickOnBtnImpVms)
+        
+        fileSubmenu = fileMenu.addMenu('Import')
+        fileSubmenu.addAction(btn_imp_csv)    
+        fileSubmenu.addAction(btn_imp_txt)
+        fileSubmenu.addAction(btn_imp_vms)    
+
+        fileMenu.addAction(exitAction)
+            ## Preset menue
+        
+        
+        presetMenu = menubar.addMenu('&Preset')
+
+        btn_preset_new = QtWidgets.QAction('&New', self)
+        btn_preset_new.setShortcut('Ctrl+Shift+N')
+        btn_preset_new.triggered.connect(self.clickOnBtnPresetNew)
+
+        btn_preset_load = QtWidgets.QAction('&Load', self)
+        btn_preset_load.setShortcut('Ctrl+Shift+L')
+        btn_preset_load.triggered.connect(self.clickOnBtnPresetLoad)
+
+        btn_preset_append = QtWidgets.QAction('&Append', self)
+        btn_preset_append.setShortcut('Ctrl+Shift+A')
+        btn_preset_append.triggered.connect(self.clickOnBtnPresetAppend)
+
+        btn_preset_save = QtWidgets.QAction('&Save', self)
+        #btn_preset_save.setShortcut('Ctrl+Shift+S')
+        btn_preset_save.triggered.connect(self.clickOnBtnPresetSave)
+        
+        btn_preset_c1s = QtWidgets.QAction('&C1s', self)
+        #btn_preset_c1s.setShortcut('Ctrl+Shift+')
+        btn_preset_c1s.triggered.connect(self.clickOnBtnPresetConeS)
+
+        btn_preset_ckedge = QtWidgets.QAction('&C K edge', self)
+        #btn_preset_ckedge.setShortcut('Ctrl+Shift+')
+        btn_preset_ckedge.triggered.connect(self.clickOnBtnPresetCKedge)
+
+        btn_preset_ptable = QtWidgets.QAction('&Periodic Table', self)
+        # btn_preset_ptable.setShortcut('Ctrl+Shift+')
+        btn_preset_ptable.triggered.connect(self.clickOnBtnPresetPtable)
+        
+        presetMenu.addAction(btn_preset_new)
+        presetMenu.addAction(btn_preset_load)
+        presetMenu.addAction(btn_preset_append)
+        presetMenu.addAction(btn_preset_save)
+        presetMenu.addAction(btn_preset_c1s)
+        presetMenu.addAction(btn_preset_ckedge)
+        presetMenu.addAction(btn_preset_ptable)
+
+
+
 
 
         # Add Button
@@ -559,6 +635,34 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.fitp1.setCellWidget(23, 2 * col + 1, comboBox)
                 if index > 0:
                     comboBox.setCurrentIndex(index)
+    
+    def clickOnBtnPresetNew(self):
+        self.comboBox_pres.setCurrentIndex(1)
+        self.preset()
+    
+    def clickOnBtnPresetLoad(self):
+        self.comboBox_pres.setCurrentIndex(2)
+        self.preset()
+
+    def clickOnBtnPresetAppend(self):
+        self.comboBox_pres.setCurrentIndex(3)
+        self.preset()
+
+    def clickOnBtnPresetSave(self):
+        self.comboBox_pres.setCurrentIndex(4)
+        self.preset()
+
+    def clickOnBtnPresetConeS(self):
+        self.comboBox_pres.setCurrentIndex(5)
+        self.preset()
+
+    def clickOnBtnPresetCKedge(self):
+        self.comboBox_pres.setCurrentIndex(6)
+        self.preset()
+
+    def clickOnBtnPresetPtable(self):
+        self.comboBox_pres.setCurrentIndex(7)
+        self.preset()
 
     def preset(self):
         index = self.comboBox_pres.currentIndex()
@@ -978,6 +1082,17 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 else:
                     self.result.to_csv(cfilePath.rsplit(".", 1)[0] + '.csv', index=False)
                 # print(self.result)
+    def clickOnBtnImpCsv(self):
+        self.comboBox_imp.setCurrentIndex(1)
+        self.imp()
+
+    def clickOnBtnImpTxt(self):
+        self.comboBox_imp.setCurrentIndex(2)
+        self.imp()
+
+    def clickOnBtnImpVms(self):
+        self.comboBox_imp.setCurrentIndex(3)
+        self.imp()
 
     def imp(self):
         index = self.comboBox_imp.currentIndex()
