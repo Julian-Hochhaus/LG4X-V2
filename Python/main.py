@@ -197,31 +197,31 @@ class PrettyWidget(QtWidgets.QMainWindow):
         ## Import sub menue
         fileMenu = menubar.addMenu('&File')
 
-        btn_imp_csv = QtWidgets.QAction('Import csv', self)
+        btn_imp_csv = QtWidgets.QAction('Import &csv', self)
         btn_imp_csv.setShortcut('Ctrl+Shift+C')
         btn_imp_csv.triggered.connect(self.clickOnBtnImpCsv)
         
               
-        btn_imp_txt = QtWidgets.QAction('Import txt', self)
+        btn_imp_txt = QtWidgets.QAction('Import &txt', self)
         btn_imp_txt.setShortcut('Ctrl+Shift+T')
         btn_imp_txt.triggered.connect(self.clickOnBtnImpTxt)
 
-        btn_imp_vms = QtWidgets.QAction('Import vms', self)
+        btn_imp_vms = QtWidgets.QAction('Import &vms', self)
         btn_imp_vms.setShortcut('Ctrl+Shift+V')
         btn_imp_vms.triggered.connect(self.clickOnBtnImpVms)
         
-        importSubmenu = fileMenu.addMenu('Import')
+        importSubmenu = fileMenu.addMenu('&Import')
         importSubmenu.addAction(btn_imp_csv)    
         importSubmenu.addAction(btn_imp_txt)
         importSubmenu.addAction(btn_imp_vms)
 
         ### Export submenu
         btn_exp_results = QtWidgets.QAction('&Results', self)
-        btn_exp_results.setShortcut('Alt+Shift+R')
+        btn_exp_results.setShortcut('Ctrl+Shift+R')
         btn_exp_results.triggered.connect(self.exportResults)
 
-        btn_exp_all_results = QtWidgets.QAction('Results + &Data', self)
-        btn_exp_all_results.setShortcut('Alt+Shift+D')
+        btn_exp_all_results = QtWidgets.QAction('Re&sults + Data', self)
+        btn_exp_all_results.setShortcut('Ctrl+Shift+S')
         btn_exp_all_results.triggered.connect(self.export_all)
 
         exportSubmenu = fileMenu.addMenu('&Export')
