@@ -151,26 +151,26 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.comboBox_imp = QtWidgets.QComboBox(self)
         self.comboBox_imp.addItems(self.list_imp)
 
-        grid.addWidget(self.comboBox_imp, 0, 0, 1, 1)
+        #grid.addWidget(self.comboBox_imp, 0, 0, 1, 1)
         self.comboBox_imp.currentIndexChanged.connect(self.imp)
         self.comboBox_imp.setCurrentIndex(0)
 
         # DropDown file list
         self.comboBox_file = QtWidgets.QComboBox(self)
         self.comboBox_file.addItems(self.list_file)
-        grid.addWidget(self.comboBox_file, 1, 0, 1, 2)
+        grid.addWidget(self.comboBox_file, 2, 0, 1, 3)
         self.comboBox_file.currentIndexChanged.connect(self.plot)
 
         # DropDown BG list
         self.comboBox_bg = QtWidgets.QComboBox(self)
         self.comboBox_bg.addItems(self.list_bg)
-        grid.addWidget(self.comboBox_bg, 0, 1, 1, 1)
+        #grid.addWidget(self.comboBox_bg, 0, 1, 1, 1)
         self.comboBox_bg.setCurrentIndex(0)
 
         # DropDown preset list
         self.comboBox_pres = QtWidgets.QComboBox(self)
         self.comboBox_pres.addItems(self.list_preset)
-        grid.addWidget(self.comboBox_pres, 2, 0, 1, 1)
+        #grid.addWidget(self.comboBox_pres, 2, 0, 1, 1)
         self.comboBox_pres.currentIndexChanged.connect(self.preset)
         self.comboBox_pres.setCurrentIndex(0)
         self.addition = 0
@@ -179,24 +179,24 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_fit = QtWidgets.QPushButton('Fit', self)
         btn_fit.resize(btn_fit.sizeHint())
         btn_fit.clicked.connect(self.fit)
-        grid.addWidget(btn_fit, 1, 2, 1, 1)
+        grid.addWidget(btn_fit, 0, 0, 1, 1)
         
         # Undo Fit Button
         btn_undoFit = QtWidgets.QPushButton('undo Fit', self)
         btn_undoFit.resize(btn_undoFit.sizeHint())
         btn_undoFit.clicked.connect(self.one_step_back_in_params_history)
-        grid.addWidget(btn_undoFit, 4, 2, 1, 1)
+        grid.addWidget(btn_undoFit, 0, 1, 1, 1)
 
-        # Menue bar 
-        exitAction = QtWidgets.QAction('&Exit', self)        
+        # Menu bar 
+        exitAction = QtWidgets.QAction('E&xit', self)        
         exitAction.setShortcut('Ctrl+Q')
         exitAction.setStatusTip('Exit application')
         exitAction.triggered.connect(QtWidgets.qApp.quit)
         
         menubar = self.menuBar()
-            ## Import sub menue
+        ## Import sub menue
         fileMenu = menubar.addMenu('&File')
-        
+
         btn_imp_csv = QtWidgets.QAction('Import csv', self)
         btn_imp_csv.setShortcut('Ctrl+Shift+C')
         btn_imp_csv.triggered.connect(self.clickOnBtnImpCsv)
@@ -210,15 +210,28 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_imp_vms.setShortcut('Ctrl+Shift+V')
         btn_imp_vms.triggered.connect(self.clickOnBtnImpVms)
         
-        fileSubmenu = fileMenu.addMenu('Import')
-        fileSubmenu.addAction(btn_imp_csv)    
-        fileSubmenu.addAction(btn_imp_txt)
-        fileSubmenu.addAction(btn_imp_vms)    
+        importSubmenu = fileMenu.addMenu('Import')
+        importSubmenu.addAction(btn_imp_csv)    
+        importSubmenu.addAction(btn_imp_txt)
+        importSubmenu.addAction(btn_imp_vms)
+
+        ### Export submenu
+        btn_exp_results = QtWidgets.QAction('&Results', self)
+        btn_exp_results.setShortcut('Alt+Shift+R')
+        btn_exp_results.triggered.connect(self.exportResults)
+
+        btn_exp_all_results = QtWidgets.QAction('Results + &Data', self)
+        btn_exp_all_results.setShortcut('Alt+Shift+D')
+        btn_exp_all_results.triggered.connect(self.export_all)
+
+        exportSubmenu = fileMenu.addMenu('&Export')
+        exportSubmenu.addAction(btn_exp_results)    
+        exportSubmenu.addAction(btn_exp_all_results)    
+
 
         fileMenu.addAction(exitAction)
-            ## Preset menue
-        
-        
+    
+        ## Preset sub menue
         presetMenu = menubar.addMenu('&Preset')
 
         btn_preset_new = QtWidgets.QAction('&New', self)
@@ -241,7 +254,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         #btn_preset_c1s.setShortcut('Ctrl+Shift+')
         btn_preset_c1s.triggered.connect(self.clickOnBtnPresetConeS)
 
-        btn_preset_ckedge = QtWidgets.QAction('&C K edge', self)
+        btn_preset_ckedge = QtWidgets.QAction('C &K edge', self)
         #btn_preset_ckedge.setShortcut('Ctrl+Shift+')
         btn_preset_ckedge.triggered.connect(self.clickOnBtnPresetCKedge)
 
@@ -272,26 +285,18 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_rem.resize(btn_rem.sizeHint())
         btn_rem.clicked.connect(self.rem_col)
         grid.addWidget(btn_rem, 3, 5, 1, 1)
-        # Export results Button
-        btn_exp = QtWidgets.QPushButton('Export', self)
-        btn_exp.resize(btn_exp.sizeHint())
-        btn_exp.clicked.connect(self.exportResults)
-        grid.addWidget(btn_exp, 2, 2, 1, 1)
-        # Export results and presets button
-        btn_exp_all = QtWidgets.QPushButton(r'Export Presets+Data', self)
-        btn_exp_all.resize(btn_exp_all.sizeHint())
-        btn_exp_all.clicked.connect(self.export_all)
-        grid.addWidget(btn_exp_all, 2, 1, 1, 1)
+      
         # Evaluate Button
         btn_eva = QtWidgets.QPushButton('Evaluate', self)
         btn_eva.resize(btn_eva.sizeHint())
         btn_eva.clicked.connect(self.eva)
-        grid.addWidget(btn_eva, 0, 2, 1, 1)
+        grid.addWidget(btn_eva, 1, 0, 1, 1)
+        
         # Interrupt fit Button
         btn_interrupt = QtWidgets.QPushButton('Interrupt fitting (not implemented)', self)
         btn_interrupt.resize(btn_interrupt.sizeHint())
         btn_interrupt.clicked.connect(self.interrupt_fit)
-        grid.addWidget(btn_interrupt, 3, 2, 1, 1)
+        grid.addWidget(btn_interrupt, 0, 2, 1, 1)
         # PolyBG Table
         list_bg_col = ['bg_c0', 'bg_c1', 'bg_c2', 'bg_c3', 'bg_c4']
         list_bg_row = ['Range (x0,x1), pt, hn, wf', 'Shirley', 'Tougaard', 'Polynomial', 'FD (amp, ctr, kt)',
