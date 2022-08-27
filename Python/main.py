@@ -1211,8 +1211,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 #self.threadpool.start(self.fitter)
             except Exception as e:
                 return self.raise_error("Error: Fitting was not successful.")
-    def interrupt_fit(self):
-        print("does nothing yet")
+
+    def interrupt_fit(self, pars, iteration, resid, *args, **kws):
+        #print(" ITER ", iteration, [f"{p.name} = {p.value:.5f}" for p in pars.values()])
+        new_message =  "ITER: "+str(iteration)+''.join([f"{p.name} = {p.value:.5f}" for p in pars.values()])
+        self.statusBar().showMessage(new_message)
+        #print("does nothing yet")
 
     def one_step_back_in_params_history(self):
         """
@@ -1983,13 +1987,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.statusBar().showMessage(strmode + 'running.')
         init = mod.eval(pars, x=x, y=y)
         if mode == 'eva':
-            out = mod.fit(y, pars, x=x, y=y)
+            out = mod.fit(y, pars, x=x, y=y, iter_cb=self.interrupt_fit)
         else:
             try_me_out = self.history_manager(pars)
             if try_me_out is not None:
                 pars, parText= try_me_out
                 self.setPreset(parText[0],parText[1],parText[2])
-            out = mod.fit(y, pars, x=x, weights=1 / np.sqrt(raw_y), y=raw_y)
+            out = mod.fit(y, pars, x=x, weights=1 / np.sqrt(raw_y), y=raw_y, iter_cb=self.interrupt_fit)
         comps = out.eval_components(x=x)
         # fit results to be checked
         for key in out.params:
