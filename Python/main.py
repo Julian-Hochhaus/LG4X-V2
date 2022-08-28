@@ -66,9 +66,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.parText = None
         self.res_tab = None
         self.fitp0 = None
-        self.comboBox_pres = None
+        #self.comboBox_pres = None
         self.addition = None
-        self.comboBox_bg = None
+        #self.comboBox_bg = None
         self.comboBox_file = None
         self.list_preset = None
         self.list_bg = None
@@ -77,7 +77,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.list_peak = None
         self.stats_tab = None
         self.fitp1 = None
-        self.comboBox_imp = None
         self.list_imp = None
         self.result = None
         self.canvas = None
@@ -147,14 +146,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         'VBM/Cutoff']
         self.list_preset = ['Fitting preset', 'New', 'Load', 'Append', 'Save', 'C1s', 'C K edge', 'Periodic Table']
 
-        # DropDown file import
-        self.comboBox_imp = QtWidgets.QComboBox(self)
-        self.comboBox_imp.addItems(self.list_imp)
-
-        #grid.addWidget(self.comboBox_imp, 0, 0, 1, 1)
-        self.comboBox_imp.currentIndexChanged.connect(self.imp)
-        self.comboBox_imp.setCurrentIndex(0)
-
+        self.idx_imp=0
         # DropDown file list
         self.comboBox_file = QtWidgets.QComboBox(self)
         self.comboBox_file.addItems(self.list_file)
@@ -162,17 +154,19 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.comboBox_file.currentIndexChanged.connect(self.plot)
 
         # DropDown BG list
-        self.comboBox_bg = QtWidgets.QComboBox(self)
-        self.comboBox_bg.addItems(self.list_bg)
+        #self.comboBox_bg = QtWidgets.QComboBox(self)
+        #self.comboBox_bg.addItems(self.list_bg)
         #grid.addWidget(self.comboBox_bg, 0, 1, 1, 1)
-        self.comboBox_bg.setCurrentIndex(0)
+        #self.comboBox_bg.setCurrentIndex(0)
+        self.idx_bg=0
 
         # DropDown preset list
-        self.comboBox_pres = QtWidgets.QComboBox(self)
-        self.comboBox_pres.addItems(self.list_preset)
+        #self.comboBox_pres = QtWidgets.QComboBox(self)
+        #self.comboBox_pres.addItems(self.list_preset)
         #grid.addWidget(self.comboBox_pres, 2, 0, 1, 1)
-        self.comboBox_pres.currentIndexChanged.connect(self.preset)
-        self.comboBox_pres.setCurrentIndex(0)
+        #self.comboBox_pres.currentIndexChanged.connect(self.preset)
+        #self.comboBox_pres.setCurrentIndex(0)
+        self.idx_pres=0
         self.addition = 0
 
         # Fit Button
@@ -209,12 +203,16 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_imp_vms = QtWidgets.QAction('Import &vms', self)
         btn_imp_vms.setShortcut('Ctrl+Shift+V')
         btn_imp_vms.triggered.connect(self.clickOnBtnImpVms)
-        
+
+        btn_open_dir = QtWidgets.QAction('Open directory', self)
+        btn_open_dir.setShortcut('Ctrl+Shift+D')
+        btn_open_dir.triggered.connect(self.clickOnBtnOpenDir)
+
         importSubmenu = fileMenu.addMenu('&Import')
         importSubmenu.addAction(btn_imp_csv)    
         importSubmenu.addAction(btn_imp_txt)
         importSubmenu.addAction(btn_imp_vms)
-
+        importSubmenu.addAction(btn_open_dir)
         ### Export submenu
         btn_exp_results = QtWidgets.QAction('&Results', self)
         btn_exp_results.setShortcut('Ctrl+Shift+R')
@@ -272,6 +270,42 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
 
 
+        bgMenu = menubar.addMenu('&Choose BG')
+        btn_bg_shirley = QtWidgets.QAction('&Shirley BG', self)
+        btn_bg_shirley.setShortcut('Ctrl+Alt+S')
+        btn_bg_shirley.triggered.connect(self.clickOnBtnBGShirley)
+
+        btn_bg_tougaard = QtWidgets.QAction('&Tougaard BG', self)
+        btn_bg_tougaard.setShortcut('Ctrl+Alt+T')
+        btn_bg_tougaard.triggered.connect(self.clickOnBtnBGTougaard)
+
+        btn_bg_polynomial = QtWidgets.QAction('&Polynomial BG', self)
+        btn_bg_polynomial.setShortcut('Ctrl+Alt+P')
+        btn_bg_polynomial.triggered.connect(self.clickOnBtnBGPolynomial)
+
+        btn_bg_fd = QtWidgets.QAction('&Fermi-Dirac BG', self)
+        #btn_bg_fd.setShortcut('Ctrl+Alt+')
+        btn_bg_fd.triggered.connect(self.clickOnBtnBGFermiDirac)
+
+        btn_bg_arctan = QtWidgets.QAction('&Arctan BG', self)
+        #btn_bg_arctan.setShortcut('Ctrl+Alt+')
+        btn_bg_arctan.triggered.connect(self.clickOnBtnBGArctan)
+
+        btn_bg_erf = QtWidgets.QAction('&Erf BG', self)
+        # btn_bg_erf.setShortcut('Ctrl+Alt+')
+        btn_bg_erf.triggered.connect(self.clickOnBtnBGErf)
+
+        btn_bg_vbm = QtWidgets.QAction('&VBM/Cutoff BG', self)
+        # btn_bg_vbm.setShortcut('Ctrl+Alt+')
+        btn_bg_vbm.triggered.connect(self.clickOnBtnBGVBM)
+
+        bgMenu.addAction(btn_bg_shirley)
+        bgMenu.addAction(btn_bg_tougaard)
+        bgMenu.addAction(btn_bg_polynomial)
+        bgMenu.addAction(btn_bg_fd)
+        bgMenu.addAction(btn_bg_arctan)
+        bgMenu.addAction(btn_bg_erf)
+        bgMenu.addAction(btn_bg_vbm)
 
 
         # Add Button
@@ -642,35 +676,35 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     comboBox.setCurrentIndex(index)
     
     def clickOnBtnPresetNew(self):
-        self.comboBox_pres.setCurrentIndex(1)
+        self.idx_pres=1
         self.preset()
     
     def clickOnBtnPresetLoad(self):
-        self.comboBox_pres.setCurrentIndex(2)
+        self.idx_pres=2
         self.preset()
 
     def clickOnBtnPresetAppend(self):
-        self.comboBox_pres.setCurrentIndex(3)
+        self.idx_pres=3
         self.preset()
 
     def clickOnBtnPresetSave(self):
-        self.comboBox_pres.setCurrentIndex(4)
+        self.idx_pres=4
         self.preset()
 
     def clickOnBtnPresetConeS(self):
-        self.comboBox_pres.setCurrentIndex(5)
+        self.idx_pres=5
         self.preset()
 
     def clickOnBtnPresetCKedge(self):
-        self.comboBox_pres.setCurrentIndex(6)
+        self.idx_pres=6
         self.preset()
 
     def clickOnBtnPresetPtable(self):
-        self.comboBox_pres.setCurrentIndex(7)
+        self.idx_pres=7
         self.preset()
 
     def preset(self):
-        index = self.comboBox_pres.currentIndex()
+        index = self.idx_pres
         colPosition = self.fitp1.columnCount()
 
         if index == 1:
@@ -765,14 +799,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.pt.close()
                 self.pt.show()
 
-        self.comboBox_pres.setCurrentIndex(0)
+        self.idx_pres=0
         self.fitp1.resizeColumnsToContents()
         self.fitp1.resizeRowsToContents()
 
     def setPreset(self, index_bg, list_pre_bg, list_pre_pk):
         if len(str(index_bg)) > 0 and self.addition == 0:
             if int(index_bg) < len(self.list_bg):
-                self.comboBox_bg.setCurrentIndex(int(index_bg))
+                #self.comboBox_bg.setCurrentIndex(int(index_bg))
+                self.idx_bg=int(index_bg)
 
         # load preset for bg
         if len(list_pre_bg) != 0 and self.addition == 0:
@@ -857,9 +892,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
             # self.pre = json.loads(self.pre) #json does not work due to the None issue
             # print(self.pre, type(self.pre))
             self.list_preset.append(str(cfilePath))
-            self.comboBox_pres.clear()
-            self.comboBox_pres.addItems(self.list_preset)
-            self.comboBox_pres.setCurrentIndex(0)
+            #self.comboBox_pres.clear()
+            #self.comboBox_pres.addItems(self.list_preset)
+            #self.comboBox_pres.setCurrentIndex(0)
+            self.idx_pres=0
             self.addition = 0
         else:
             self.pre = [[], [], []]
@@ -877,9 +913,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
             # self.pre = json.loads(self.pre) #json does not work due to the None issue
             # print(self.pre, type(self.pre))
             self.list_preset.append(str(cfilePath))
-            self.comboBox_pres.clear()
-            self.comboBox_pres.addItems(self.list_preset)
-            self.comboBox_pres.setCurrentIndex(0)
+            #self.comboBox_pres.clear()
+            #self.comboBox_pres.addItems(self.list_preset)
+            #self.comboBox_pres.setCurrentIndex(0)
+            self.idx_pres=0
             self.addition = 1
         else:
             self.pre = [[], [], []]
@@ -942,7 +979,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # self.parText = self.version + 'parameters\n\n[[Data file]]\n\n' + self.comboBox_file.currentText() + '\n\n[
         # [BG type]]\n\n' + str(self.comboBox_bg.currentIndex()) + '\n\n[[BG parameters]]\n\n' + str(list_pre_bg) +
         # '\n\n[[Peak parameters]]\n\n' + str(list_pre_pk) print(Text)
-        self.parText = [self.comboBox_bg.currentIndex()]
+        self.parText = [self.idx_bg]
         self.parText.append(list_pre_bg)
         self.parText.append(list_pre_pk)
 
@@ -1088,19 +1125,22 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.result.to_csv(cfilePath.rsplit(".", 1)[0] + '.csv', index=False)
                 # print(self.result)
     def clickOnBtnImpCsv(self):
-        self.comboBox_imp.setCurrentIndex(1)
+        self.idx_imp=1
         self.imp()
 
     def clickOnBtnImpTxt(self):
-        self.comboBox_imp.setCurrentIndex(2)
+        self.idx_imp=2
         self.imp()
 
     def clickOnBtnImpVms(self):
-        self.comboBox_imp.setCurrentIndex(3)
+        self.idx_imp=3
+        self.imp()
+    def clickOnBtnOpenDir(self):
+        self.idx_imp=4
         self.imp()
 
     def imp(self):
-        index = self.comboBox_imp.currentIndex()
+        index = self.idx_imp
         if index == 1 or index == 2:
             if index == 1:
                 cfilePath, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open csv file', self.filePath,
@@ -1147,7 +1187,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         self.list_file.append(str(directory + os.sep + entry))
                 self.comboBox_file.clear()
                 self.comboBox_file.addItems(self.list_file)
-        self.comboBox_imp.setCurrentIndex(0)
+        self.idx_imp=0
 
     def plot_pt(self):
         # peak elements from periodic table window selection
@@ -1369,6 +1409,23 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.parameter_history_list.append([pars,self.parText])
             return None
 
+    def clickOnBtnBGShirley(self):
+        self.idx_bg = 0
+    def clickOnBtnBGTougaard(self):
+        self.idx_bg = 1
+    def clickOnBtnBGPolynomial(self):
+        self.idx_bg = 2
+    def clickOnBtnBGFermiDirac(self):
+        self.idx_bg = 3
+    def clickOnBtnBGArctan(self):
+        self.idx_bg = 4
+    def clickOnBtnBGErf(self):
+        self.idx_bg = 5
+    def clickOnBtnBGVBM(self):
+        self.idx_bg = 6
+
+
+
     def ana(self, mode):
         plottitle = self.plottitle.displayText()
         # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
@@ -1440,7 +1497,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         raw_y = y
         # BG model selection and call shirley and tougaard
         # colPosition = self.fitp1.columnCount()
-        index_bg = self.comboBox_bg.currentIndex()
+        index_bg = self.idx_bg
         if index_bg == 0:
             if self.fitp0.item(index_bg + 1, 10).checkState() == 0:
                 shA = float(self.fitp0.item(index_bg + 1, 1).text())
@@ -2548,7 +2605,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # make dataFrame and concat to export
         df_x = pd.DataFrame(x, columns=['x'])
         df_raw_y = pd.DataFrame(raw_y, columns=['raw_y'])
-        if self.fitp0.item(index_bg + 1, 10).checkState() == 2:
+        if self.idx_bg<2 and self.fitp0.item(index_bg + 1, 10).checkState() == 2:
             df_y = pd.DataFrame(raw_y -comps['pg_']-comps['bg_'], columns=['data-bg'])
             df_pks = pd.DataFrame(out.best_fit-comps['pg_']-comps['bg_'], columns=['sum_peaks'])
             df_sum=pd.DataFrame(out.best_fit, columns=['sum_fit'])
