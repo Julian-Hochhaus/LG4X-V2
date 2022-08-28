@@ -193,20 +193,20 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         btn_imp_csv = QtWidgets.QAction('Import &csv', self)
         btn_imp_csv.setShortcut('Ctrl+Shift+C')
-        btn_imp_csv.triggered.connect(self.clickOnBtnImpCsv)
+        btn_imp_csv.triggered.connect(lambda: self.clickOnBtnImp(idx=1))
         
               
         btn_imp_txt = QtWidgets.QAction('Import &txt', self)
         btn_imp_txt.setShortcut('Ctrl+Shift+T')
-        btn_imp_txt.triggered.connect(self.clickOnBtnImpTxt)
+        btn_imp_txt.triggered.connect(lambda: self.clickOnBtnImp(idx=2))
 
         btn_imp_vms = QtWidgets.QAction('Import &vms', self)
         btn_imp_vms.setShortcut('Ctrl+Shift+V')
-        btn_imp_vms.triggered.connect(self.clickOnBtnImpVms)
+        btn_imp_vms.triggered.connect(lambda: self.clickOnBtnImp(idx=3))
 
         btn_open_dir = QtWidgets.QAction('Open directory', self)
         btn_open_dir.setShortcut('Ctrl+Shift+D')
-        btn_open_dir.triggered.connect(self.clickOnBtnOpenDir)
+        btn_open_dir.triggered.connect(lambda: self.clickOnBtnImp(idx=4))
 
         importSubmenu = fileMenu.addMenu('&Import')
         importSubmenu.addAction(btn_imp_csv)    
@@ -234,31 +234,31 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         btn_preset_new = QtWidgets.QAction('&New', self)
         btn_preset_new.setShortcut('Ctrl+Shift+N')
-        btn_preset_new.triggered.connect(self.clickOnBtnPresetNew)
+        btn_preset_new.triggered.connect(lambda: self.clickOnBtnPreset(idx=1))
 
         btn_preset_load = QtWidgets.QAction('&Load', self)
         btn_preset_load.setShortcut('Ctrl+Shift+L')
-        btn_preset_load.triggered.connect(self.clickOnBtnPresetLoad)
+        btn_preset_load.triggered.connect(lambda: self.clickOnBtnPreset(idx=2))
 
         btn_preset_append = QtWidgets.QAction('&Append', self)
         btn_preset_append.setShortcut('Ctrl+Shift+A')
-        btn_preset_append.triggered.connect(self.clickOnBtnPresetAppend)
+        btn_preset_append.triggered.connect(lambda: self.clickOnBtnPreset(idx=3))
 
         btn_preset_save = QtWidgets.QAction('&Save', self)
         #btn_preset_save.setShortcut('Ctrl+Shift+S')
-        btn_preset_save.triggered.connect(self.clickOnBtnPresetSave)
+        btn_preset_save.triggered.connect(lambda: self.clickOnBtnPreset(idx=4))
         
         btn_preset_c1s = QtWidgets.QAction('&C1s', self)
         #btn_preset_c1s.setShortcut('Ctrl+Shift+')
-        btn_preset_c1s.triggered.connect(self.clickOnBtnPresetConeS)
+        btn_preset_c1s.triggered.connect(lambda: self.clickOnBtnPreset(idx=5))
 
         btn_preset_ckedge = QtWidgets.QAction('C &K edge', self)
         #btn_preset_ckedge.setShortcut('Ctrl+Shift+')
-        btn_preset_ckedge.triggered.connect(self.clickOnBtnPresetCKedge)
+        btn_preset_ckedge.triggered.connect(lambda: self.clickOnBtnPreset(idx=6))
 
         btn_preset_ptable = QtWidgets.QAction('&Periodic Table', self)
         # btn_preset_ptable.setShortcut('Ctrl+Shift+')
-        btn_preset_ptable.triggered.connect(self.clickOnBtnPresetPtable)
+        btn_preset_ptable.triggered.connect(lambda: self.clickOnBtnPreset(idx=7))
         
         presetMenu.addAction(btn_preset_new)
         presetMenu.addAction(btn_preset_load)
@@ -273,31 +273,31 @@ class PrettyWidget(QtWidgets.QMainWindow):
         bgMenu = menubar.addMenu('&Choose BG')
         btn_bg_shirley = QtWidgets.QAction('&Shirley BG', self)
         btn_bg_shirley.setShortcut('Ctrl+Alt+S')
-        btn_bg_shirley.triggered.connect(self.clickOnBtnBGShirley)
+        btn_bg_shirley.triggered.connect(lambda: self.clickOnBtnBG(idx=0))
 
         btn_bg_tougaard = QtWidgets.QAction('&Tougaard BG', self)
         btn_bg_tougaard.setShortcut('Ctrl+Alt+T')
-        btn_bg_tougaard.triggered.connect(self.clickOnBtnBGTougaard)
+        btn_bg_tougaard.triggered.connect(lambda: self.clickOnBtnBG(idx=1))
 
         btn_bg_polynomial = QtWidgets.QAction('&Polynomial BG', self)
         btn_bg_polynomial.setShortcut('Ctrl+Alt+P')
-        btn_bg_polynomial.triggered.connect(self.clickOnBtnBGPolynomial)
+        btn_bg_polynomial.triggered.connect(lambda: self.clickOnBtnBG(idx=2))
 
         btn_bg_fd = QtWidgets.QAction('&Fermi-Dirac BG', self)
         #btn_bg_fd.setShortcut('Ctrl+Alt+')
-        btn_bg_fd.triggered.connect(self.clickOnBtnBGFermiDirac)
+        btn_bg_fd.triggered.connect(lambda: self.clickOnBtnBG(idx=3))
 
         btn_bg_arctan = QtWidgets.QAction('&Arctan BG', self)
         #btn_bg_arctan.setShortcut('Ctrl+Alt+')
-        btn_bg_arctan.triggered.connect(self.clickOnBtnBGArctan)
+        btn_bg_arctan.triggered.connect(lambda: self.clickOnBtnBG(idx=4))
 
         btn_bg_erf = QtWidgets.QAction('&Erf BG', self)
         # btn_bg_erf.setShortcut('Ctrl+Alt+')
-        btn_bg_erf.triggered.connect(self.clickOnBtnBGErf)
+        btn_bg_erf.triggered.connect(lambda: self.clickOnBtnBG(idx=5))
 
         btn_bg_vbm = QtWidgets.QAction('&VBM/Cutoff BG', self)
         # btn_bg_vbm.setShortcut('Ctrl+Alt+')
-        btn_bg_vbm.triggered.connect(self.clickOnBtnBGVBM)
+        btn_bg_vbm.triggered.connect(lambda: self.clickOnBtnBG(idx=6))
 
         bgMenu.addAction(btn_bg_shirley)
         bgMenu.addAction(btn_bg_tougaard)
@@ -674,33 +674,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.fitp1.setCellWidget(23, 2 * col + 1, comboBox)
                 if index > 0:
                     comboBox.setCurrentIndex(index)
-    
-    def clickOnBtnPresetNew(self):
-        self.idx_pres=1
-        self.preset()
-    
-    def clickOnBtnPresetLoad(self):
-        self.idx_pres=2
-        self.preset()
 
-    def clickOnBtnPresetAppend(self):
-        self.idx_pres=3
-        self.preset()
-
-    def clickOnBtnPresetSave(self):
-        self.idx_pres=4
-        self.preset()
-
-    def clickOnBtnPresetConeS(self):
-        self.idx_pres=5
-        self.preset()
-
-    def clickOnBtnPresetCKedge(self):
-        self.idx_pres=6
-        self.preset()
-
-    def clickOnBtnPresetPtable(self):
-        self.idx_pres=7
+    def clickOnBtnPreset(self, idx):
+        self.idx_pres=idx
         self.preset()
 
     def preset(self):
@@ -1124,21 +1100,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 else:
                     self.result.to_csv(cfilePath.rsplit(".", 1)[0] + '.csv', index=False)
                 # print(self.result)
-    def clickOnBtnImpCsv(self):
-        self.idx_imp=1
+    def clickOnBtnImp(self, idx):
+        self.idx_imp = idx
         self.imp()
-
-    def clickOnBtnImpTxt(self):
-        self.idx_imp=2
-        self.imp()
-
-    def clickOnBtnImpVms(self):
-        self.idx_imp=3
-        self.imp()
-    def clickOnBtnOpenDir(self):
-        self.idx_imp=4
-        self.imp()
-
     def imp(self):
         index = self.idx_imp
         if index == 1 or index == 2:
@@ -1408,23 +1372,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.savePreset()       
             self.parameter_history_list.append([pars,self.parText])
             return None
-
-    def clickOnBtnBGShirley(self):
-        self.idx_bg = 0
-    def clickOnBtnBGTougaard(self):
-        self.idx_bg = 1
-    def clickOnBtnBGPolynomial(self):
-        self.idx_bg = 2
-    def clickOnBtnBGFermiDirac(self):
-        self.idx_bg = 3
-    def clickOnBtnBGArctan(self):
-        self.idx_bg = 4
-    def clickOnBtnBGErf(self):
-        self.idx_bg = 5
-    def clickOnBtnBGVBM(self):
-        self.idx_bg = 6
-
-
+    def clickOnBtnBG(self,idx):
+        self.idx_bg=idx
 
     def ana(self, mode):
         plottitle = self.plottitle.displayText()
