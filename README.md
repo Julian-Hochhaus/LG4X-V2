@@ -4,7 +4,7 @@
 
 ## Planned features/Improvements
 
-- [ ] redesign the parameter table so that the limits are placed next to the corresponding parameters
+- [ ] redesign the parameter table so that the limits are placed next to the corresponding parameters, redesign clutty GUI [#16](https://github.com/Julian-Hochhaus/LG4X-V2/issues/16)
 - [ ] introduce relative parameter for gamma and coster-kronig factor
 - [ ] rework the export files, so that additional informations such as fwhm and areas are exported in readable format as well
 - [x] save the active background parameter checkbox to the parameter-files.
@@ -13,7 +13,9 @@
      - error handling introduced for errors during file import, parameter import, saving parameters, exporting results (Thanks to [@Hexanders](https://github.com/Hexanders))
 - [ ] Pause/Interrupt fit button [#5](https://github.com/Julian-Hochhaus/LG4X-V2/issues/5)
 - [ ] rewrite the Readme to explain the features introduced in LG4X-V2
-- [ ] Undo button (log of last parameter sets, as suggested in [#13](https://github.com/Julian-Hochhaus/LG4X-V2/issues/13))
+- [ ] Undo button (log of last parameter sets, as suggested in [#13](https://github.com/Julian-Hochhaus/LG4X-V2/issues/13), introduced on [dev branch](https://github.com/Julian-Hochhaus/LG4X-V2/tree/undo-fct))
+- [ ] show only relevant parameter for the used model and grey the others out [#17](https://github.com/Julian-Hochhaus/LG4X-V2/issues/17)
+- [ ] add tooltip info to GUI [#18](https://github.com/Julian-Hochhaus/LG4X-V2/issues/18)
 ## Introduction
 LG4X-V2 is based on the great work of [Hideki NAKAJIMA](https://github.com/hidecode221b) who developed the software LG4X. 
 

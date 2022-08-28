@@ -5,6 +5,7 @@ import ast
 import math
 import os
 import sys
+import pickle
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -32,7 +33,7 @@ import threading
 import traceback  # error handling
 import logging  # error handling
 
-# style.use('ggplot')
+# style.use('ggplot')    
 style.use('seaborn-pastel')
 
 
@@ -87,6 +88,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.floating = None
         self.version = None
         self.df = None
+        self.parameter_history_list = []
+        self.go_back_in_paramaeter_history = False
         self.event_stop = threading.Event()
         self.initUI()
         self.error_dialog = QtWidgets.QErrorMessage()
@@ -174,6 +177,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_fit.resize(btn_fit.sizeHint())
         btn_fit.clicked.connect(self.fit)
         grid.addWidget(btn_fit, 1, 2, 1, 1)
+        
+        # Undo Fit Button
+        btn_undoFit = QtWidgets.QPushButton('undo Fit', self)
+        btn_undoFit.resize(btn_undoFit.sizeHint())
+        btn_undoFit.clicked.connect(self.one_step_back_in_params_history)
+        grid.addWidget(btn_undoFit, 4, 2, 1, 1)
+
 
         # Add Button
         btn_add = QtWidgets.QPushButton('add peak', self)
@@ -860,6 +870,32 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.savePresetDia()
         except Exception as e:
             self.raise_error("Error: could not save parameters / export data.")
+    
+    def export_pickle(self,path_for_export: str):
+        
+        """
+        Exporting all parameters as parText, export_pars and export_out.results as a dictionary in to pickle file.
+            It taks path from exportResults function so path_for_export should end with ".txt"    
+        """
+
+        ### this is an approche to export lmfit_results but  mod = PolynomialModel(3, prefix='pg_') is lockal and causing problems
+        # lmfit_attr_dict = {}
+        # for attr, value in self.export_out.__dict__.items():
+        #     if attr == 'model':
+        #         lmfit_attr_dict[attr] = value._reprstring() # Convert moodel to a string becaus pickle dos not work with local objects. bad: "mod = PolynomialModel(3, prefix='pg_')"
+        #     else:
+        #         lmfit_attr_dict[attr] = value
+        
+        with open(path_for_export.replace('.txt','.pickle'), 'wb') as handle:
+            pickle.dump({
+                'LG4X_parameters':self.parText,
+                'lmfit_parameters':self.export_pars,
+                #'lmfit_report':self.export_out.fit_report(min_correl=0.1)
+                #'lmfit_report': lmfit_attr_dict
+                'lmfit_result': self.export_out.result
+                }, 
+                        handle, 
+                        protocol=pickle.HIGHEST_PROTOCOL)
 
     def exportResults(self):
         if not self.result.empty:
@@ -930,6 +966,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.savePreset()
                 Text += '\n\n[[LG4X parameters]]\n\n' + str(self.parText) + '\n\n[[lmfit parameters]]\n\n' + str(
                     self.export_pars) + '\n\n' + str(self.export_out.fit_report(min_correl=0.1))
+                
+                self.export_pickle(cfilePath) #export las fit parameters as dict int po pickle file 
 
                 with open(cfilePath, 'w') as file:
                     file.write(str(Text))
@@ -1175,6 +1213,42 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 return self.raise_error("Error: Fitting was not successful.")
     def interrupt_fit(self):
         print("does nothing yet")
+
+    def one_step_back_in_params_history(self):
+        """
+        Is called if button undo Fit is prest.
+        """
+        self.go_back_in_paramaeter_history = True
+        self.fit()
+
+    def history_manager(self,pars):
+        """
+        Manages saving of the fit parameters and presets (e.g. how many peaks, aktive backgrounds and so on) in a list.
+        In this approach the insane function ana() must be extended. The ana() should be destroyd! and replaaced by couple of smaller methods for better readability
+        
+        Parameters
+        ----------
+            pars: list:
+                parameters of the fit, whitch have to be saved
+        Returns 
+            list: [self.pars, self.parText]
+            or 
+            None: if self.go_back_in_paramaeter_history is False do nothing
+
+        """
+        if self.go_back_in_paramaeter_history is True:
+                try:
+                    pars,parText = self.parameter_history_list.pop()
+                    self.go_back_in_paramaeter_history = False
+                    return pars, parText
+                except IndexError:
+                    self.go_back_in_paramaeter_history = False
+                    return self.raise_error('No further steps are saved')
+        else:
+            self.savePreset()       
+            self.parameter_history_list.append([pars,self.parText])
+            return None
+
     def ana(self, mode):
         plottitle = self.plottitle.displayText()
         # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
@@ -1911,6 +1985,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if mode == 'eva':
             out = mod.fit(y, pars, x=x, y=y)
         else:
+            try_me_out = self.history_manager(pars)
+            if try_me_out is not None:
+                pars, parText= try_me_out
+                self.setPreset(parText[0],parText[1],parText[2])
             out = mod.fit(y, pars, x=x, weights=1 / np.sqrt(raw_y), y=raw_y)
         comps = out.eval_components(x=x)
         # fit results to be checked
@@ -2269,7 +2347,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             # ax.plot(x, init+bg_mod, 'b--', lw =2, label='initial')
             if plottitle != '':
                 self.ar.set_title(r"{}".format(plottitle), fontsize=11)
-            self.ax.plot(x, out.best_fit + bg_mod, 'k-', lw=2, label='initial')
+            #self.ax.plot(x, out.best_fit + bg_mod, 'k-', lw=2, label='initial')
 
             for index_pk in range(npeak):
                 # print(index_pk, color)
