@@ -5,6 +5,7 @@
 ## Planned features/Improvements
 
 - [ ] redesign the parameter table so that the limits are placed next to the corresponding parameters, redesign clutty GUI [#16](https://github.com/Julian-Hochhaus/LG4X-V2/issues/16)
+- [ ] remove fwhm's and area calculation from the usermodels and instead calculate them after fitting based on the ModelResult() parameters to be able to use error propagation [#27](https://github.com/Julian-Hochhaus/LG4X-V2/issues/27)
 - [ ] introduce relative parameter for gamma and coster-kronig factor
 - [ ] rework the export files, so that additional informations such as fwhm and areas are exported in readable format as well
 - [x] save the active background parameter checkbox to the parameter-files.
