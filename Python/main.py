@@ -1288,7 +1288,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
             self.ax.grid(True)
             if plottitle == '':
-                self.ar.set_title(self.comboBox_file.currentText().split('/')[-1], fontsize=11)
+                short_file_name = self.comboBox_file.currentText().split('/')[-1]
+                self.ar.set_title(short_file_name, fontsize=11)
+                self.plottitle.setText(short_file_name)
             else:
                 self.ar.set_title(r"{}".format(plottitle), fontsize=11)
             self.ax.legend(loc=0)
