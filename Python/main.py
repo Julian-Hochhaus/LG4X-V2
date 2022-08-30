@@ -1101,6 +1101,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.result.to_csv(cfilePath.rsplit(".", 1)[0] + '.csv', index=False)
                 # print(self.result)
     def clickOnBtnImp(self, idx):
+        self.plottitle.setText('') #reset text in plot title QlineEdit, otherwise the old one will remain
         self.idx_imp = idx
         self.imp()
     def imp(self):
@@ -1414,7 +1415,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 # simulation mode
                 self.ar.set_title('Simulation', fontsize=11)
             else:
-                self.ar.set_title(self.comboBox_file.currentText(), fontsize=11)
+                short_file_name = self.comboBox_file.currentText().split('/')[-1]
+                self.ar.set_title(short_file_name, fontsize=11)
+                self.plottitle.setText(short_file_name)
+                self.ar.set_title(short_file_name, fontsize=11)
         else:
             self.ar.set_title(r"{}".format(plottitle), fontsize=11)
         # if no range is specified, fill it from data
