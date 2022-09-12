@@ -32,3 +32,6 @@ def autoscale_y(ax, margin=0.1):
             top = new_top
 
     ax.set_ylim(bot, top)
+
+
+

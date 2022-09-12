@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot
 from lmfit import Model
 from lmfit.models import ExponentialGaussianModel, SkewedGaussianModel, SkewedVoigtModel, DoniachModel, \
@@ -28,7 +27,7 @@ from periodictable import PeriodicTable
 from usrmodel import ConvGaussianDoniachDublett, ConvGaussianDoniachSinglett, FermiEdgeModel, singlett, fft_convolve
 from scipy import integrate
 from scipy import interpolate
-from helpers import *
+from helpers import autoscale_y
 import threading
 
 import traceback  # error handling
@@ -50,13 +49,7 @@ class Fitting(QRunnable):
     @pyqtSlot()
     def run(self):
         self.fn(*self.args)
-class SubWindow(QWidget):
-    def __init__(self, params_tab):
-        super(SubWindow, self).__init__()
-        self.layout = QtWidgets.QGridLayout(self)
-        self.resize(800, 500)
-        self.setWindowTitle("Limits")
-        self.layout.addWidget(params_tab, 0, 0, 5, 4)
+
 class PrettyWidget(QtWidgets.QMainWindow):
     def __init__(self):
         super(PrettyWidget, self).__init__()
@@ -275,13 +268,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         presetMenu.addAction(btn_preset_ckedge)
         presetMenu.addAction(btn_preset_ptable)
 
-        limitMenu=menubar.addMenu('&Limits')
-        btn_limit_info=QtWidgets.QAction('&Show Limits', self)
-        btn_limit_info.triggered.connect(self.showLimits)
-        btn_limit_set = QtWidgets.QAction('&Set Limits', self)
-        btn_limit_set.triggered.connect(self.setLimits)
-        limitMenu.addAction(btn_limit_set)
-        limitMenu.addAction(btn_limit_info)
+
 
         bgMenu = menubar.addMenu('&Choose BG')
         btn_bg_shirley = QtWidgets.QAction('&Shirley BG', self)
@@ -378,22 +365,18 @@ class PrettyWidget(QtWidgets.QMainWindow):
         list_col = ['peak_1']
         list_row = ['model', 'center', 'sigma', 'gamma', 'amp', 'frac', 'skew', 'q', 'kt', 'soc', 'height_ratio',
                     'gaussian_sigma', 'fct_coster_kronig', 'center_ref', 'ctr_diff', 'amp_ref', 'ratio', 'soc_ref',
-                    'soc_ratio', 'height_r_ref', 'ratio', 'g_s_ref', 'gaussian_ratio', 'lrtzn_s_ref', 'lrtzn_ratio']
-
-        self.fitp1 = QtWidgets.QTableWidget(len(list_row), len(list_col) * 2)
-        list_colh = ['', 'peak_1']
-        self.fitp1.setHorizontalHeaderLabels(list_colh)
-        self.fitp1.setVerticalHeaderLabels(list_row)
-        list_row_limits=[
+                    'soc_ratio', 'height_r_ref', 'ratio', 'g_s_ref', 'gaussian_ratio', 'lrtzn_s_ref', 'lrtzn_ratio',
                     'ctr_min', 'ctr_max', 'sig_min', 'sig_max', 'gam_min', 'gam_max', 'amp_min', 'amp_max', 'frac_min',
                     'frac_max', 'skew_min', 'skew_max', 'q_min', 'q_max', 'kt_min', 'kt_max', 'soc_min', 'soc_max',
                     'height_rtio_min', 'height_rtio_max', 'gaussian_s_min', 'gaussian_s_max', "coster-kronig_min",
                     "coster-kronig_max", 'ctr_diff_min', 'ctr_diff_max', 'amp_ratio_min', 'amp_ratio_max',
                     'soc_ratio_min', 'soc_ratio_max', 'height_ref_min', 'height_ref_max', 'gaussian_ratio_min',
                     'gaussian_ratio_max', 'lorentz_ratio_min', 'lorentz_ratio_max']
-        self.fitp1_lims = QtWidgets.QTableWidget(len(list_row_limits), len(list_col) * 2)
-        self.fitp1_lims.setHorizontalHeaderLabels(list_colh)
-        self.fitp1_lims.setVerticalHeaderLabels(list_row_limits)
+        self.fitp1 = QtWidgets.QTableWidget(len(list_row), len(list_col) * 2)
+        list_colh = ['', 'peak_1']
+        self.fitp1.setHorizontalHeaderLabels(list_colh)
+        self.fitp1.setVerticalHeaderLabels(list_row)
+
         # self.list_shape = ['g', 'l', 'v', 'p']
         self.list_shape = ['g: Gaussian', 'l: Lorentzian', 'v: Voigt', 'p: PseudoVoigt', 'e: ExponentialGaussian',
                            's: SkewedGaussian', 'a: SkewedVoigt', 'b: BreitWigner', 'n: Lognormal', 'd: Doniach',
@@ -467,8 +450,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp1.resizeColumnsToContents()
         self.fitp1.resizeRowsToContents()
         grid.addWidget(self.fitp1, 4, 3, 5, 4)
-        self.fitp1_lims.resizeColumnsToContents()
-        self.fitp1_lims.resizeRowsToContents()
         list_res_row = ['gaussian_fwhm', 'lorentzian_fwhm_p1', 'lorentzian_fwhm_p2', 'fwhm_p1', 'fwhm_p2', 'height_p1',
                         'height_p2', 'approx. area_p1', 'approx. area_p2', 'area_total']
         self.res_tab = QtWidgets.QTableWidget(len(list_res_row), len(list_col))
@@ -504,16 +485,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.plottitle = QtWidgets.QLineEdit()
         grid.addWidget(self.plottitle, 4, 7, 1, 2)
         self.show()
-    def setLimits(self):
-        print('setlims')
-    def showLimits(self):
-        self.sub_window = SubWindow(params_tab=self.fitp1_lims)
-        self.sub_window.show()
-        print('showlims')
-
-
-
-
 
     def raise_error(self, windowTitle: str) -> None:
         self.error_dialog.setWindowTitle(windowTitle)
@@ -1720,7 +1691,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if index == 12:
                 pk_mod = FermiEdgeModel(prefix=strind + str(index_pk + 1) + '_')
             pars.update(pk_mod.make_params())
-            print(pars)
             # fit parameters from table
             if self.fitp1.item(1, 2 * index_pk + 1) is not None:
                 if len(self.fitp1.item(1, 2 * index_pk + 1).text()) > 0:
