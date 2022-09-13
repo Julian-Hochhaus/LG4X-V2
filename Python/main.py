@@ -47,9 +47,12 @@ class Fitting(QRunnable):
         super(Fitting, self).__init__()
         self.fn = fn
         self.args = args
+
     @pyqtSlot()
     def run(self):
         self.fn(*self.args)
+
+
 class SubWindow(QWidget):
     def __init__(self, params_tab):
         super(SubWindow, self).__init__()
@@ -57,10 +60,12 @@ class SubWindow(QWidget):
         self.resize(800, 500)
         self.setWindowTitle("Limits")
         self.layout.addWidget(params_tab, 0, 0, 5, 4)
+
+
 class PrettyWidget(QtWidgets.QMainWindow):
     def __init__(self):
         super(PrettyWidget, self).__init__()
-        self.threadpool = QThreadPool() #thread pool for worker/stop execution button
+        self.threadpool = QThreadPool()  # thread pool for worker/stop execution button
         # super(PrettyWidget, self).__init__()
         self.export_out = None
         self.export_pars = None
@@ -73,12 +78,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.parText = None
         self.res_tab = None
         self.fitp0 = None
-        #self.comboBox_pres = None
+        # self.comboBox_pres = None
         self.addition = None
-        #self.comboBox_bg = None
+        # self.comboBox_bg = None
         self.comboBox_file = None
         self.list_preset = None
-        self.list_bg = None
         self.list_file = None
         self.toolbar = None
         self.list_peak = None
@@ -99,7 +103,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.event_stop = threading.Event()
         self.initUI()
         self.error_dialog = QtWidgets.QErrorMessage()
-  
+
     def initUI(self):
         self.version = 'LG4X: LMFit GUI for XPS curve fitting 2.0.2'
         self.floating = '.4f'
@@ -113,8 +117,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.pt.setWindowTitle('Periodic Table')
         self.pt.elementEmitted.connect(self.handleElementClicked)
         self.pt.selectedElements = []
-        
-        
 
         # Grid Layout
         grid = QtWidgets.QGridLayout()
@@ -149,31 +151,18 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # lists of dropdown menus
         self.list_imp = ['Importing data', 'Import csv', 'Import txt', 'Import vms', 'Open directory']
         self.list_file = ['File list', 'Clear list']
-        self.list_bg = ['Shirley BG', 'Tougaard BG', 'Polynomial BG', 'Fermi-Dirac BG', 'Arctan BG', 'Erf BG',
-                        'VBM/Cutoff']
         self.list_preset = ['Fitting preset', 'New', 'Load', 'Append', 'Save', 'C1s', 'C K edge', 'Periodic Table']
 
-        self.idx_imp=0
+        self.idx_imp = 0
         # DropDown file list
         self.comboBox_file = QtWidgets.QComboBox(self)
         self.comboBox_file.addItems(self.list_file)
         grid.addWidget(self.comboBox_file, 2, 0, 1, 3)
         self.comboBox_file.currentIndexChanged.connect(self.plot)
 
-        # DropDown BG list
-        #self.comboBox_bg = QtWidgets.QComboBox(self)
-        #self.comboBox_bg.addItems(self.list_bg)
-        #grid.addWidget(self.comboBox_bg, 0, 1, 1, 1)
-        #self.comboBox_bg.setCurrentIndex(0)
-        self.idx_bg=0
+        self.idx_bg = 0
 
-        # DropDown preset list
-        #self.comboBox_pres = QtWidgets.QComboBox(self)
-        #self.comboBox_pres.addItems(self.list_preset)
-        #grid.addWidget(self.comboBox_pres, 2, 0, 1, 1)
-        #self.comboBox_pres.currentIndexChanged.connect(self.preset)
-        #self.comboBox_pres.setCurrentIndex(0)
-        self.idx_pres=0
+        self.idx_pres = 0
         self.addition = 0
 
         # Fit Button
@@ -181,7 +170,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_fit.resize(btn_fit.sizeHint())
         btn_fit.clicked.connect(self.fit)
         grid.addWidget(btn_fit, 0, 0, 1, 1)
-        
+
         # Undo Fit Button
         btn_undoFit = QtWidgets.QPushButton('undo Fit', self)
         btn_undoFit.resize(btn_undoFit.sizeHint())
@@ -189,11 +178,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
         grid.addWidget(btn_undoFit, 0, 1, 1, 1)
 
         # Menu bar 
-        exitAction = QtWidgets.QAction('E&xit', self)        
+        exitAction = QtWidgets.QAction('E&xit', self)
         exitAction.setShortcut('Ctrl+Q')
         exitAction.setStatusTip('Exit application')
         exitAction.triggered.connect(QtWidgets.qApp.quit)
-        
+
         menubar = self.menuBar()
         ## Import sub menue
         fileMenu = menubar.addMenu('&File')
@@ -201,8 +190,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_imp_csv = QtWidgets.QAction('Import &csv', self)
         btn_imp_csv.setShortcut('Ctrl+Shift+C')
         btn_imp_csv.triggered.connect(lambda: self.clickOnBtnImp(idx=1))
-        
-              
+
         btn_imp_txt = QtWidgets.QAction('Import &txt', self)
         btn_imp_txt.setShortcut('Ctrl+Shift+T')
         btn_imp_txt.triggered.connect(lambda: self.clickOnBtnImp(idx=2))
@@ -216,7 +204,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_open_dir.triggered.connect(lambda: self.clickOnBtnImp(idx=4))
 
         importSubmenu = fileMenu.addMenu('&Import')
-        importSubmenu.addAction(btn_imp_csv)    
+        importSubmenu.addAction(btn_imp_csv)
         importSubmenu.addAction(btn_imp_txt)
         importSubmenu.addAction(btn_imp_vms)
         importSubmenu.addAction(btn_open_dir)
@@ -230,12 +218,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_exp_all_results.triggered.connect(self.export_all)
 
         exportSubmenu = fileMenu.addMenu('&Export')
-        exportSubmenu.addAction(btn_exp_results)    
-        exportSubmenu.addAction(btn_exp_all_results)    
-
+        exportSubmenu.addAction(btn_exp_results)
+        exportSubmenu.addAction(btn_exp_all_results)
 
         fileMenu.addAction(exitAction)
-    
+
         ## Preset sub menue
         presetMenu = menubar.addMenu('&Preset')
 
@@ -252,21 +239,21 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_preset_append.triggered.connect(lambda: self.clickOnBtnPreset(idx=3))
 
         btn_preset_save = QtWidgets.QAction('&Save', self)
-        #btn_preset_save.setShortcut('Ctrl+Shift+S')
+        # btn_preset_save.setShortcut('Ctrl+Shift+S')
         btn_preset_save.triggered.connect(lambda: self.clickOnBtnPreset(idx=4))
-        
+
         btn_preset_c1s = QtWidgets.QAction('&C1s', self)
-        #btn_preset_c1s.setShortcut('Ctrl+Shift+')
+        # btn_preset_c1s.setShortcut('Ctrl+Shift+')
         btn_preset_c1s.triggered.connect(lambda: self.clickOnBtnPreset(idx=5))
 
         btn_preset_ckedge = QtWidgets.QAction('C &K edge', self)
-        #btn_preset_ckedge.setShortcut('Ctrl+Shift+')
+        # btn_preset_ckedge.setShortcut('Ctrl+Shift+')
         btn_preset_ckedge.triggered.connect(lambda: self.clickOnBtnPreset(idx=6))
 
         btn_preset_ptable = QtWidgets.QAction('&Periodic Table', self)
         # btn_preset_ptable.setShortcut('Ctrl+Shift+')
         btn_preset_ptable.triggered.connect(lambda: self.clickOnBtnPreset(idx=7))
-        
+
         presetMenu.addAction(btn_preset_new)
         presetMenu.addAction(btn_preset_load)
         presetMenu.addAction(btn_preset_append)
@@ -275,19 +262,18 @@ class PrettyWidget(QtWidgets.QMainWindow):
         presetMenu.addAction(btn_preset_ckedge)
         presetMenu.addAction(btn_preset_ptable)
 
-        limitMenu=menubar.addMenu('&Limits')
-        btn_limit_info=QtWidgets.QAction('&Show Limits', self)
+        limitMenu = menubar.addMenu('&Limits')
+        btn_limit_info = QtWidgets.QAction('&Show Limits', self)
         btn_limit_info.triggered.connect(self.showLimits)
         btn_limit_set = QtWidgets.QAction('&Set Limits', self)
         btn_limit_set.triggered.connect(self.setLimits)
         limitMenu.addAction(btn_limit_set)
         limitMenu.addAction(btn_limit_info)
 
-        bgMenu = menubar.addMenu('&Choose BG')
+        self.bgMenu = menubar.addMenu('&Choose BG')
         btn_bg_shirley = QtWidgets.QAction('&Shirley BG', self)
         btn_bg_shirley.setShortcut('Ctrl+Alt+S')
         btn_bg_shirley.triggered.connect(lambda: self.clickOnBtnBG(idx=0))
-
         btn_bg_tougaard = QtWidgets.QAction('&Tougaard BG', self)
         btn_bg_tougaard.setShortcut('Ctrl+Alt+T')
         btn_bg_tougaard.triggered.connect(lambda: self.clickOnBtnBG(idx=1))
@@ -297,11 +283,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_bg_polynomial.triggered.connect(lambda: self.clickOnBtnBG(idx=2))
 
         btn_bg_fd = QtWidgets.QAction('&Fermi-Dirac BG', self)
-        #btn_bg_fd.setShortcut('Ctrl+Alt+')
+        # btn_bg_fd.setShortcut('Ctrl+Alt+')
         btn_bg_fd.triggered.connect(lambda: self.clickOnBtnBG(idx=3))
 
         btn_bg_arctan = QtWidgets.QAction('&Arctan BG', self)
-        #btn_bg_arctan.setShortcut('Ctrl+Alt+')
+        # btn_bg_arctan.setShortcut('Ctrl+Alt+')
         btn_bg_arctan.triggered.connect(lambda: self.clickOnBtnBG(idx=4))
 
         btn_bg_erf = QtWidgets.QAction('&Erf BG', self)
@@ -312,14 +298,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # btn_bg_vbm.setShortcut('Ctrl+Alt+')
         btn_bg_vbm.triggered.connect(lambda: self.clickOnBtnBG(idx=6))
 
-        bgMenu.addAction(btn_bg_shirley)
-        bgMenu.addAction(btn_bg_tougaard)
-        bgMenu.addAction(btn_bg_polynomial)
-        bgMenu.addAction(btn_bg_fd)
-        bgMenu.addAction(btn_bg_arctan)
-        bgMenu.addAction(btn_bg_erf)
-        bgMenu.addAction(btn_bg_vbm)
-
+        self.bgMenu.addAction(btn_bg_shirley)
+        self.bgMenu.addAction(btn_bg_tougaard)
+        self.bgMenu.addAction(btn_bg_arctan)
+        self.bgMenu.addAction(btn_bg_fd)
+        self.bgMenu.addAction(btn_bg_polynomial)
+        self.bgMenu.addAction(btn_bg_erf)
+        self.bgMenu.addAction(btn_bg_vbm)
 
         # Add Button
         btn_add = QtWidgets.QPushButton('add peak', self)
@@ -332,13 +317,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_rem.resize(btn_rem.sizeHint())
         btn_rem.clicked.connect(self.rem_col)
         grid.addWidget(btn_rem, 3, 5, 1, 1)
-      
+
         # Evaluate Button
         btn_eva = QtWidgets.QPushButton('Evaluate', self)
         btn_eva.resize(btn_eva.sizeHint())
         btn_eva.clicked.connect(self.eva)
         grid.addWidget(btn_eva, 1, 0, 1, 1)
-        
+
         # Interrupt fit Button
         btn_interrupt = QtWidgets.QPushButton('Interrupt fitting (not implemented)', self)
         btn_interrupt.resize(btn_interrupt.sizeHint())
@@ -376,23 +361,23 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         # set Fit Table
         list_col = ['peak_1']
-        list_row = ['model', 'center', 'sigma', 'gamma', 'amp', 'frac', 'skew', 'q', 'kt', 'soc', 'height_ratio',
-                    'gaussian_sigma', 'fct_coster_kronig', 'center_ref', 'ctr_diff', 'amp_ref', 'ratio', 'soc_ref',
-                    'soc_ratio', 'height_r_ref', 'ratio', 'g_s_ref', 'gaussian_ratio', 'lrtzn_s_ref', 'lrtzn_ratio']
+        list_row = ['model', 'center', 'amplitude', 'lorentzian', 'gaussian', 'gamma', 'frac', 'skew', 'q', 'kt', 'soc',
+                    'height_ratio',
+                    'fct_coster_kronig', 'center_ref', 'ctr_diff', 'amp_ref', 'ratio', 'lorentzian_ref', 'ratio',
+                    'gaussian_ref', 'ratio',
+                    'gamma_ref', 'ratio', 'soc_ref', 'ratio', 'height_ref', 'ratio']
 
         self.fitp1 = QtWidgets.QTableWidget(len(list_row), len(list_col) * 2)
         list_colh = ['', 'peak_1']
         self.fitp1.setHorizontalHeaderLabels(list_colh)
         self.fitp1.setVerticalHeaderLabels(list_row)
-        list_row_limits=[
-                    'ctr_min', 'ctr_max', 'sig_min', 'sig_max', 'gam_min', 'gam_max', 'amp_min', 'amp_max', 'frac_min',
-                    'frac_max', 'skew_min', 'skew_max', 'q_min', 'q_max', 'kt_min', 'kt_max', 'soc_min', 'soc_max',
-                    'height_rtio_min', 'height_rtio_max', 'gaussian_s_min', 'gaussian_s_max', "coster-kronig_min",
-                    "coster-kronig_max", 'ctr_diff_min', 'ctr_diff_max', 'amp_ratio_min', 'amp_ratio_max',
-                    'soc_ratio_min', 'soc_ratio_max', 'height_ref_min', 'height_ref_max', 'gaussian_ratio_min',
-                    'gaussian_ratio_max', 'lorentz_ratio_min', 'lorentz_ratio_max']
+        list_row_limits = [
+            'center', 'amplitude', 'lorentzian', 'gaussian', 'gamma', 'frac', 'skew', 'q', 'kt', 'soc',
+            'height', "fct_coster_kronig", 'ctr_diff', 'amp_ratio', 'lorentzian_ratio', 'gaussian_ratio',
+            'gamma_ratio', 'soc_ratio', 'height_ratio']
+        list_colh_limits = ['peak_1\n min ', 'peak_1\n max ']
         self.fitp1_lims = QtWidgets.QTableWidget(len(list_row_limits), len(list_col) * 2)
-        self.fitp1_lims.setHorizontalHeaderLabels(list_colh)
+        self.fitp1_lims.setHorizontalHeaderLabels(list_colh_limits)
         self.fitp1_lims.setVerticalHeaderLabels(list_row_limits)
         # self.list_shape = ['g', 'l', 'v', 'p']
         self.list_shape = ['g: Gaussian', 'l: Lorentzian', 'v: Voigt', 'p: PseudoVoigt', 'e: ExponentialGaussian',
@@ -408,41 +393,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
             # comboBox.setMaximumWidth(55)
             self.fitp1.setCellWidget(0, 2 * col + 1, comboBox)
         # set DropDown ctr_ref peak selection
-        for col in range(len(list_col)):
-            comboBox = QtWidgets.QComboBox()
-            comboBox.addItems(self.list_peak)
-            comboBox.setMaximumWidth(55)
-            self.fitp1.setCellWidget(13, 2 * col + 1, comboBox)
-        # set DropDown amp_ref peak selection
-        for col in range(len(list_col)):
-            comboBox = QtWidgets.QComboBox()
-            comboBox.addItems(self.list_peak)
-            comboBox.setMaximumWidth(55)
-            self.fitp1.setCellWidget(15, 2 * col + 1, comboBox)
-        # set DropDown soc_ref peak selection
-        for col in range(len(list_col)):
-            comboBox = QtWidgets.QComboBox()
-            comboBox.addItems(self.list_peak)
-            comboBox.setMaximumWidth(55)
-            self.fitp1.setCellWidget(17, 2 * col + 1, comboBox)
-        # set DropDown height_ratio_ref peak selection
-        for col in range(len(list_col)):
-            comboBox = QtWidgets.QComboBox()
-            comboBox.addItems(self.list_peak)
-            comboBox.setMaximumWidth(55)
-            self.fitp1.setCellWidget(19, 2 * col + 1, comboBox)
-        # set DropDown gaussian_sigma_ref peak selection
-        for col in range(len(list_col)):
-            comboBox = QtWidgets.QComboBox()
-            comboBox.addItems(self.list_peak)
-            comboBox.setMaximumWidth(55)
-            self.fitp1.setCellWidget(21, 2 * col + 1, comboBox)
-        # set Dropdown lorentzian_sigma_ref peak selection
-        for col in range(len(list_col)):
-            comboBox = QtWidgets.QComboBox()
-            comboBox.addItems(self.list_peak)
-            comboBox.setMaximumWidth(55)
-            self.fitp1.setCellWidget(23, 2 * col + 1, comboBox)
+        for i in range(7):
+            for col in range(len(list_col)):
+                comboBox = QtWidgets.QComboBox()
+                comboBox.addItems(self.list_peak)
+                comboBox.setMaximumWidth(55)
+                self.fitp1.setCellWidget(13 + 2 * i, 2 * col + 1, comboBox)
+
         # set checkbox in fit table
         for row in range(len(list_row) - 1):
             for col in range(len(list_col)):
@@ -451,10 +408,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if row < 12:
                     item.setCheckState(QtCore.Qt.Checked)
                     self.fitp1.setItem(row + 1, col * 2, item)
-                if row > 23:
-                    item.setCheckState(QtCore.Qt.Unchecked)
-                    self.fitp1.setItem(row + 1, col * 2, item)
-                if 12 <= row <= 23 and row % 2 == 1:
+                if 12 <= row and row % 2 == 1:
                     item.setCheckState(QtCore.Qt.Unchecked)
                     self.fitp1.setItem(row + 1, col * 2, item)
         # load default preset
@@ -504,16 +458,14 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.plottitle = QtWidgets.QLineEdit()
         grid.addWidget(self.plottitle, 4, 7, 1, 2)
         self.show()
+
     def setLimits(self):
         print('setlims')
+
     def showLimits(self):
         self.sub_window = SubWindow(params_tab=self.fitp1_lims)
         self.sub_window.show()
         print('showlims')
-
-
-
-
 
     def raise_error(self, windowTitle: str) -> None:
         self.error_dialog.setWindowTitle(windowTitle)
@@ -524,10 +476,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def add_col(self):
         rowPosition = self.fitp1.rowCount()
         colPosition_fitp1 = self.fitp1.columnCount()
+        colPosition_fitp1_lims = self.fitp1_lims.columnCount()
         colPosition_res = self.res_tab.columnCount()
         self.res_tab.insertColumn(colPosition_res)
         self.fitp1.insertColumn(colPosition_fitp1)
         self.fitp1.insertColumn(colPosition_fitp1 + 1)
+        self.fitp1_lims.insertColumn(colPosition_fitp1_lims)
+        self.fitp1_lims.insertColumn(colPosition_fitp1_lims + 1)
         # add DropDown peak model
         comboBox = QtWidgets.QComboBox()
         comboBox.addItems(self.list_shape)
@@ -552,62 +507,17 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         # add DropDown peak selection for amp_ref and ctr_ref and keep values as it is 
         self.list_peak.append(str(int(1 + colPosition_fitp1 / 2)))
+        for i in range(7):
+            for col in range(int(colPosition_fitp1 / 2) + 1):
+                if col < int(colPosition_fitp1 / 2):
+                    index = self.fitp1.cellWidget(13 + 2 * i, 2 * col + 1).currentIndex()
+                comboBox = QtWidgets.QComboBox()
+                comboBox.addItems(self.list_peak)
+                comboBox.setMaximumWidth(55)
+                if index > 0 and col < int(colPosition_fitp1 / 2):
+                    comboBox.setCurrentIndex(index)
+                self.fitp1.setCellWidget(13 + 2 * i, 2 * col + 1, comboBox)
 
-        for col in range(int(colPosition_fitp1 / 2) + 1):
-            if col < int(colPosition_fitp1 / 2):
-                index = self.fitp1.cellWidget(13, 2 * col + 1).currentIndex()
-            comboBox = QtWidgets.QComboBox()
-            comboBox.addItems(self.list_peak)
-            comboBox.setMaximumWidth(55)
-            self.fitp1.setCellWidget(13, 2 * col + 1, comboBox)
-            if index > 0 and col < int(colPosition_fitp1 / 2):
-                comboBox.setCurrentIndex(index)
-
-        for col in range(int(colPosition_fitp1 / 2) + 1):
-            if col < int(colPosition_fitp1 / 2):
-                index = self.fitp1.cellWidget(15, 2 * col + 1).currentIndex()
-            comboBox = QtWidgets.QComboBox()
-            comboBox.addItems(self.list_peak)
-            comboBox.setMaximumWidth(55)
-            self.fitp1.setCellWidget(15, 2 * col + 1, comboBox)
-            if index > 0 and col < int(colPosition_fitp1 / 2):
-                comboBox.setCurrentIndex(index)
-        for col in range(int(colPosition_fitp1 / 2) + 1):
-            if col < int(colPosition_fitp1 / 2):
-                index = self.fitp1.cellWidget(17, 2 * col + 1).currentIndex()
-            comboBox = QtWidgets.QComboBox()
-            comboBox.addItems(self.list_peak)
-            comboBox.setMaximumWidth(55)
-            self.fitp1.setCellWidget(17, 2 * col + 1, comboBox)
-            if index > 0 and col < int(colPosition_fitp1 / 2):
-                comboBox.setCurrentIndex(index)
-        for col in range(int(colPosition_fitp1 / 2) + 1):
-            if col < int(colPosition_fitp1 / 2):
-                index = self.fitp1.cellWidget(19, 2 * col + 1).currentIndex()
-            comboBox = QtWidgets.QComboBox()
-            comboBox.addItems(self.list_peak)
-            comboBox.setMaximumWidth(55)
-            self.fitp1.setCellWidget(19, 2 * col + 1, comboBox)
-            if index > 0 and col < int(colPosition_fitp1 / 2):
-                comboBox.setCurrentIndex(index)
-        for col in range(int(colPosition_fitp1 / 2) + 1):
-            if col < int(colPosition_fitp1 / 2):
-                index = self.fitp1.cellWidget(21, 2 * col + 1).currentIndex()
-            comboBox = QtWidgets.QComboBox()
-            comboBox.addItems(self.list_peak)
-            comboBox.setMaximumWidth(55)
-            self.fitp1.setCellWidget(21, 2 * col + 1, comboBox)
-            if index > 0 and col < int(colPosition_fitp1 / 2):
-                comboBox.setCurrentIndex(index)
-        for col in range(int(colPosition_fitp1 / 2) + 1):
-            if col < int(colPosition_fitp1 / 2):
-                index = self.fitp1.cellWidget(23, 2 * col + 1).currentIndex()
-            comboBox = QtWidgets.QComboBox()
-            comboBox.addItems(self.list_peak)
-            comboBox.setMaximumWidth(55)
-            self.fitp1.setCellWidget(23, 2 * col + 1, comboBox)
-            if index > 0 and col < int(colPosition_fitp1 / 2):
-                comboBox.setCurrentIndex(index)
         # add checkbox
         for row in range(rowPosition - 1):
             item = QtWidgets.QTableWidgetItem()
@@ -619,14 +529,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 else:
                     item.setCheckState(QtCore.Qt.Unchecked)
                 self.fitp1.setItem(row + 1, colPosition_fitp1, item)
-            if row >= 24:
-                # item.setCheckState(QtCore.Qt.Unchecked)
-                if self.fitp1.item(row + 1, colPosition_fitp1 - 2).checkState() == 2:
-                    item.setCheckState(QtCore.Qt.Checked)
-                else:
-                    item.setCheckState(QtCore.Qt.Unchecked)
-                self.fitp1.setItem(row + 1, colPosition_fitp1, item)
-            if 12 < row <= 23 and row % 2 == 1:
+            if 12 < row and row % 2 == 1:
                 if self.fitp1.item(row + 1, colPosition_fitp1 - 2).checkState() == 2:
                     item.setCheckState(QtCore.Qt.Checked)
                 else:
@@ -642,6 +545,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.res_tab.setHorizontalHeaderItem(colPosition_res, item)
         self.res_tab.resizeColumnsToContents()
         self.res_tab.resizeRowsToContents()
+        item = QtWidgets.QTableWidgetItem('peak_' + str(int(1 + colPosition_fitp1_lims / 2)) + '\n min')
+        self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims, item)
+        item = QtWidgets.QTableWidgetItem('peak_' + str(int(1 + colPosition_fitp1_lims / 2)) + '\n max')
+        self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims + 1, item)
+        self.fitp1_lims.resizeColumnsToContents()
+        self.fitp1_lims.resizeRowsToContents()
         # self.fitp1.setColumnWidth(1, 55)
 
     def rem_col(self):
@@ -652,60 +561,24 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if colPosition > 2:
             self.fitp1.removeColumn(colPosition - 1)
             self.fitp1.removeColumn(colPosition - 2)
+            self.fitp1_lims.removeColumn(colPosition - 1)
+            self.fitp1_lims.removeColumn(colPosition - 2)
             self.list_peak.remove(str(int(colPosition / 2)))
             # remove peak in dropdown menu and keep values as it is
-            for col in range(int(colPosition / 2)):
-                if col < int(colPosition / 2) - 1:
-                    index = self.fitp1.cellWidget(13, 2 * col + 1).currentIndex()
-                comboBox = QtWidgets.QComboBox()
-                comboBox.addItems(self.list_peak)
-                self.fitp1.setCellWidget(13, 2 * col + 1, comboBox)
-                if index > 0:
-                    comboBox.setCurrentIndex(index)
-
-            for col in range(int(colPosition / 2)):
-                if col < int(colPosition / 2) - 1:
-                    index = self.fitp1.cellWidget(15, 2 * col + 1).currentIndex()
-                comboBox = QtWidgets.QComboBox()
-                comboBox.addItems(self.list_peak)
-                self.fitp1.setCellWidget(15, 2 * col + 1, comboBox)
-                if index > 0:
-                    comboBox.setCurrentIndex(index)
-            for col in range(int(colPosition / 2)):
-                if col < int(colPosition / 2) - 1:
-                    index = self.fitp1.cellWidget(17, 2 * col + 1).currentIndex()
-                comboBox = QtWidgets.QComboBox()
-                comboBox.addItems(self.list_peak)
-                self.fitp1.setCellWidget(17, 2 * col + 1, comboBox)
-                if index > 0:
-                    comboBox.setCurrentIndex(index)
-            for col in range(int(colPosition / 2)):
-                if col < int(colPosition / 2) - 1:
-                    index = self.fitp1.cellWidget(19, 2 * col + 1).currentIndex()
-                comboBox = QtWidgets.QComboBox()
-                comboBox.addItems(self.list_peak)
-                self.fitp1.setCellWidget(19, 2 * col + 1, comboBox)
-                if index > 0:
-                    comboBox.setCurrentIndex(index)
-            for col in range(int(colPosition / 2)):
-                if col < int(colPosition / 2) - 1:
-                    index = self.fitp1.cellWidget(21, 2 * col + 1).currentIndex()
-                comboBox = QtWidgets.QComboBox()
-                comboBox.addItems(self.list_peak)
-                self.fitp1.setCellWidget(21, 2 * col + 1, comboBox)
-                if index > 0:
-                    comboBox.setCurrentIndex(index)
-            for col in range(int(colPosition / 2)):
-                if col < int(colPosition / 2) - 1:
-                    index = self.fitp1.cellWidget(23, 2 * col + 1).currentIndex()
-                comboBox = QtWidgets.QComboBox()
-                comboBox.addItems(self.list_peak)
-                self.fitp1.setCellWidget(23, 2 * col + 1, comboBox)
-                if index > 0:
-                    comboBox.setCurrentIndex(index)
+            for i in range(7):
+                for col in range(int(colPosition / 2) - 1):
+                    print(col)
+                    if col < int(colPosition / 2):
+                        index = self.fitp1.cellWidget(13 + 2 * i, 2 * col + 1).currentIndex()
+                    comboBox = QtWidgets.QComboBox()
+                    comboBox.addItems(self.list_peak)
+                    comboBox.setMaximumWidth(55)
+                    if index > 0 and col < int(colPosition / 2):
+                        comboBox.setCurrentIndex(index)
+                    self.fitp1.setCellWidget(13 + 2 * i, 2 * col + 1, comboBox)
 
     def clickOnBtnPreset(self, idx):
-        self.idx_pres=idx
+        self.idx_pres = idx
         self.preset()
 
     def preset(self):
@@ -804,15 +677,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.pt.close()
                 self.pt.show()
 
-        self.idx_pres=0
+        self.idx_pres = 0
         self.fitp1.resizeColumnsToContents()
         self.fitp1.resizeRowsToContents()
 
     def setPreset(self, index_bg, list_pre_bg, list_pre_pk):
         if len(str(index_bg)) > 0 and self.addition == 0:
-            if int(index_bg) < len(self.list_bg):
-                #self.comboBox_bg.setCurrentIndex(int(index_bg))
-                self.idx_bg=int(index_bg)
+            if int(index_bg) < len(self.bgMenu.actions()):
+                # self.comboBox_bg.setCurrentIndex(int(index_bg))
+                self.idx_bg = int(index_bg)
 
         # load preset for bg
         if len(list_pre_bg) != 0 and self.addition == 0:
@@ -897,10 +770,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
             # self.pre = json.loads(self.pre) #json does not work due to the None issue
             # print(self.pre, type(self.pre))
             self.list_preset.append(str(cfilePath))
-            #self.comboBox_pres.clear()
-            #self.comboBox_pres.addItems(self.list_preset)
-            #self.comboBox_pres.setCurrentIndex(0)
-            self.idx_pres=0
+            # self.comboBox_pres.clear()
+            # self.comboBox_pres.addItems(self.list_preset)
+            # self.comboBox_pres.setCurrentIndex(0)
+            self.idx_pres = 0
             self.addition = 0
         else:
             self.pre = [[], [], []]
@@ -918,10 +791,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
             # self.pre = json.loads(self.pre) #json does not work due to the None issue
             # print(self.pre, type(self.pre))
             self.list_preset.append(str(cfilePath))
-            #self.comboBox_pres.clear()
-            #self.comboBox_pres.addItems(self.list_preset)
-            #self.comboBox_pres.setCurrentIndex(0)
-            self.idx_pres=0
+            # self.comboBox_pres.clear()
+            # self.comboBox_pres.addItems(self.list_preset)
+            # self.comboBox_pres.setCurrentIndex(0)
+            self.idx_pres = 0
             self.addition = 1
         else:
             self.pre = [[], [], []]
@@ -1021,9 +894,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.savePresetDia()
         except Exception as e:
             self.raise_error("Error: could not save parameters / export data.")
-    
-    def export_pickle(self,path_for_export: str):
-        
+
+    def export_pickle(self, path_for_export: str):
+
         """
         Exporting all parameters as parText, export_pars and export_out.results as a dictionary in to pickle file.
             It taks path from exportResults function so path_for_export should end with ".txt"    
@@ -1036,17 +909,17 @@ class PrettyWidget(QtWidgets.QMainWindow):
         #         lmfit_attr_dict[attr] = value._reprstring() # Convert moodel to a string becaus pickle dos not work with local objects. bad: "mod = PolynomialModel(3, prefix='pg_')"
         #     else:
         #         lmfit_attr_dict[attr] = value
-        
-        with open(path_for_export.replace('.txt','.pickle'), 'wb') as handle:
+
+        with open(path_for_export.replace('.txt', '.pickle'), 'wb') as handle:
             pickle.dump({
-                'LG4X_parameters':self.parText,
-                'lmfit_parameters':self.export_pars,
-                #'lmfit_report':self.export_out.fit_report(min_correl=0.1)
-                #'lmfit_report': lmfit_attr_dict
+                'LG4X_parameters': self.parText,
+                'lmfit_parameters': self.export_pars,
+                # 'lmfit_report':self.export_out.fit_report(min_correl=0.1)
+                # 'lmfit_report': lmfit_attr_dict
                 'lmfit_result': self.export_out.result
-                }, 
-                        handle, 
-                        protocol=pickle.HIGHEST_PROTOCOL)
+            },
+                handle,
+                protocol=pickle.HIGHEST_PROTOCOL)
 
     def exportResults(self):
         if not self.result.empty:
@@ -1062,7 +935,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 fileName = 'sample'
 
             # S_File will get the directory path and extension.
-            cfilePath, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Fit file',cfilePath + os.sep + fileName + '_fit.txt', "Text Files (*.txt)")
+            cfilePath, _ = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Fit file',
+                                                                 cfilePath + os.sep + fileName + '_fit.txt',
+                                                                 "Text Files (*.txt)")
             if cfilePath != "":
                 self.filePath = cfilePath
                 if self.comboBox_file.currentIndex() == 0:
@@ -1117,22 +992,24 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.savePreset()
                 Text += '\n\n[[LG4X parameters]]\n\n' + str(self.parText) + '\n\n[[lmfit parameters]]\n\n' + str(
                     self.export_pars) + '\n\n' + str(self.export_out.fit_report(min_correl=0.1))
-                
-                self.export_pickle(cfilePath) #export las fit parameters as dict int po pickle file 
+
+                self.export_pickle(cfilePath)  # export las fit parameters as dict int po pickle file
 
                 with open(cfilePath, 'w') as file:
                     file.write(str(Text))
                 file.close()
                 # print(filePath)
-                if cfilePath.split("_")[-1]== "fit.txt":
-                    self.result.to_csv(cfilePath.rsplit("_",1)[0] + '_fit.csv', index=False)
+                if cfilePath.split("_")[-1] == "fit.txt":
+                    self.result.to_csv(cfilePath.rsplit("_", 1)[0] + '_fit.csv', index=False)
                 else:
                     self.result.to_csv(cfilePath.rsplit(".", 1)[0] + '.csv', index=False)
                 # print(self.result)
+
     def clickOnBtnImp(self, idx):
-        self.plottitle.setText('') #reset text in plot title QlineEdit, otherwise the old one will remain
+        self.plottitle.setText('')  # reset text in plot title QlineEdit, otherwise the old one will remain
         self.idx_imp = idx
         self.imp()
+
     def imp(self):
         index = self.idx_imp
         if index == 1 or index == 2:
@@ -1181,7 +1058,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         self.list_file.append(str(directory + os.sep + entry))
                 self.comboBox_file.clear()
                 self.comboBox_file.addItems(self.list_file)
-        self.idx_imp=0
+        self.idx_imp = 0
 
     def plot_pt(self):
         # peak elements from periodic table window selection
@@ -1267,7 +1144,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
                     # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1,
                     # header=None)
-                    strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter=',', usecols=1, max_rows=1)
+                    strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter=',', usecols=1,
+                                       max_rows=1)
                 except Exception as e:
                     return self.raise_error("Error: The input .csv is not in the correct format!")
 
@@ -1277,7 +1155,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1,
                     # header=None, delimiter = '\t')
                     strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter='\t', usecols=1,
-                                   max_rows=1)
+                                       max_rows=1)
                 except Exception as e:
                     return self.raise_error("Error: The input file is not in the correct format!")
 
@@ -1294,7 +1172,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 y0 = self.df[:, 1]
             except Exception as e:
                 return self.raise_error("Error: could not load csv file.")
-            #print(strpe)
+            # print(strpe)
             strpe = (str(strpe).split())
             # print(pe)
             if strpe[0] == 'PE:' and strpe[2] == 'eV':
@@ -1363,10 +1241,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if self.comboBox_file.currentIndex() > 0:
             try:
                 self.ana("fit")
-                #self.fitter = Fitting(self.ana, "fit")
-                #self.threadpool.start(self.fitter)
+                # self.fitter = Fitting(self.ana, "fit")
+                # self.threadpool.start(self.fitter)
             except Exception as e:
                 return self.raise_error("Error: Fitting was not successful.")
+
     def interrupt_fit(self):
         print("does nothing yet")
 
@@ -1377,7 +1256,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.go_back_in_paramaeter_history = True
         self.fit()
 
-    def history_manager(self,pars):
+    def history_manager(self, pars):
         """
         Manages saving of the fit parameters and presets (e.g. how many peaks, aktive backgrounds and so on) in a list.
         In this approach the insane function ana() must be extended. The ana() should be destroyd! and replaaced by couple of smaller methods for better readability
@@ -1393,101 +1272,38 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         """
         if self.go_back_in_paramaeter_history is True:
-                try:
-                    pars,parText = self.parameter_history_list.pop()
-                    self.go_back_in_paramaeter_history = False
-                    return pars, parText
-                except IndexError:
-                    self.go_back_in_paramaeter_history = False
-                    return self.raise_error('No further steps are saved')
+            try:
+                pars, parText = self.parameter_history_list.pop()
+                self.go_back_in_paramaeter_history = False
+                return pars, parText
+            except IndexError:
+                self.go_back_in_paramaeter_history = False
+                return self.raise_error('No further steps are saved')
         else:
-            self.savePreset()       
-            self.parameter_history_list.append([pars,self.parText])
+            self.savePreset()
+            self.parameter_history_list.append([pars, self.parText])
             return None
-    def clickOnBtnBG(self,idx):
-        self.idx_bg=idx
 
-    def ana(self, mode):
-        plottitle = self.plottitle.displayText()
-        # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
-        x0 = self.df[:, 0]
-        y0 = self.df[:, 1]
-        # print(x0[0], x0[len(x0)-1])
+    def clickOnBtnBG(self, idx):
+        self.idx_bg = idx
 
-        # plot graph after selection data from popup
-        # plt.clf()
-        # plt.cla()
-        self.ax.cla()
-        self.ar.cla()
-        # ax = self.figure.add_subplot(211)
-        if mode == 'fit':
-            self.ax.plot(x0, y0, 'o', color='b', label='raw')
-        else:
-            # simulation mode
-            if self.comboBox_file.currentIndex() == 0:
-                pass
-                # self.ax.plot(x0, y0, ',', color='b', label='raw')
-            # evaluation mode
-            else:
-                self.ax.plot(x0, y0, 'o', mfc='none', color='b', label='raw')
+    def readBGParams(self, pars):
 
-        if x0[0] > x0[-1]:
-            self.ax.set_xlabel('Binding energy (eV)', fontsize=11)
-        else:
-            self.ax.set_xlabel('Energy (eV)', fontsize=11)
-        plt.xlim(x0[0], x0[-1])
-        self.ax.grid(True)
-        self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
-        if plottitle == "":
+        return pars
 
-            if self.comboBox_file.currentIndex() == 0:
-                # simulation mode
-                self.ar.set_title('Simulation', fontsize=11)
-            else:
-                short_file_name = self.comboBox_file.currentText().split('/')[-1]
-                self.ar.set_title(short_file_name, fontsize=11)
-                self.plottitle.setText(short_file_name)
-                self.ar.set_title(short_file_name, fontsize=11)
-        else:
-            self.ar.set_title(r"{}".format(plottitle), fontsize=11)
-        # if no range is specified, fill it from data
-        if self.fitp0.item(0, 1) is None or len(self.fitp0.item(0, 1).text()) == 0:
-            item = QtWidgets.QTableWidgetItem(str(x0[0]))
-            self.fitp0.setItem(0, 1, item)
-        if self.fitp0.item(0, 3) is None or len(self.fitp0.item(0, 3).text()) == 0:
-            item = QtWidgets.QTableWidgetItem(str(x0[len(x0) - 1]))
-            self.fitp0.setItem(0, 3, item)
-        # fit or simulation range. If range is incorrect, back to default
-        if self.fitp0.item(0, 0).checkState() == 2:
-            x1 = float(self.fitp0.item(0, 1).text())
-            if ((x1 > x0[0] or x1 < x0[len(x0) - 1]) and x0[0] > x0[-1]) or (
-                    (x1 < x0[0] or x1 > x0[len(x0) - 1]) and x0[0] < x0[-1]):
-                x1 = x0[0]
-                item = QtWidgets.QTableWidgetItem(str(x0[0]))
-                self.fitp0.setItem(0, 1, item)
-        else:
-            x1 = x0[0]
-        if self.fitp0.item(0, 2).checkState() == 2:
-            x2 = float(self.fitp0.item(0, 3).text())
-            if ((x2 < x0[len(x0) - 1] or x2 > x1) and x0[0] > x0[-1]) or (
-                    (x2 > x0[len(x0) - 1] or x2 < x1) and x0[0] < x0[-1]):
-                x2 = x0[len(x0) - 1]
-                item = QtWidgets.QTableWidgetItem(str(x0[len(x0) - 1]))
-                self.fitp0.setItem(0, 3, item)
-        else:
-            x2 = x0[len(x0) - 1]
+    def readParams(self, pars):
+        pars = self.readBGParams(self, pars)
+        return pars
 
-        [x, y] = xpy.fit_range(x0, y0, x1, x2)
-        raw_y = y
-        # BG model selection and call shirley and tougaard
-        # colPosition = self.fitp1.columnCount()
+    def write_pars(self, pars):
+        return None
+    def bgSelector(self, x, y, mode):
         index_bg = self.idx_bg
         if index_bg == 0:
             if self.fitp0.item(index_bg + 1, 10).checkState() == 0:
                 shA = float(self.fitp0.item(index_bg + 1, 1).text())
                 shB = float(self.fitp0.item(index_bg + 1, 3).text())
                 bg_mod = xpy.shirley_calculate(x, y, shA, shB)
-                y = y - bg_mod
             else:
                 mod = Model(xpy.shirley, independent_vars=["y"], prefix='bg_')
                 k = float(self.fitp0.item(index_bg + 1, 5).text())
@@ -1521,10 +1337,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.fitp0.setItem(index_bg + 1, 1, item)
             y = y - bg_mod
         if index_bg == 1 and self.fitp0.item(index_bg + 1, 10).checkState() == 2:
-            toB = float(self.fitp0.item(index_bg + 1, 1).text())
-            toC = float(self.fitp0.item(index_bg + 1, 3).text())
-            toCd = float(self.fitp0.item(index_bg + 1, 5).text())
-            toD = float(self.fitp0.item(index_bg + 1, 7).text())
             mod = Model(xpy.tougaard2, independent_vars=["x", "y"], prefix='bg_')
             if self.fitp0.item(index_bg + 1, 1) is None or self.fitp0.item(index_bg + 1, 3) is None or self.fitp0.item(
                     index_bg + 1, 5) is None or self.fitp0.item(index_bg + 1, 7) is None:
@@ -1684,8 +1496,85 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         pars['pg_c' + str(index)].value = float(self.fitp0.item(3, 2 * index + 1).text())
                 pars['pg_c0'].min = 0
             mod += modp
+            return mod, bg_mod, pars
+    def ana(self, mode):
+        plottitle = self.plottitle.displayText()
+        # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
+        x0 = self.df[:, 0]
+        y0 = self.df[:, 1]
+        # print(x0[0], x0[len(x0)-1])
 
+        # plot graph after selection data from popup
+        # plt.clf()
+        # plt.cla()
+        self.ax.cla()
+        self.ar.cla()
+        # ax = self.figure.add_subplot(211)
+        if mode == 'fit':
+            self.ax.plot(x0, y0, 'o', color='b', label='raw')
+        else:
+            # simulation mode
+            if self.comboBox_file.currentIndex() == 0:
+                pass
+                # self.ax.plot(x0, y0, ',', color='b', label='raw')
+            # evaluation mode
+            else:
+                self.ax.plot(x0, y0, 'o', mfc='none', color='b', label='raw')
+
+        if x0[0] > x0[-1]:
+            self.ax.set_xlabel('Binding energy (eV)', fontsize=11)
+        else:
+            self.ax.set_xlabel('Energy (eV)', fontsize=11)
+        plt.xlim(x0[0], x0[-1])
+        self.ax.grid(True)
+        self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
+        if plottitle == "":
+
+            if self.comboBox_file.currentIndex() == 0:
+                # simulation mode
+                self.ar.set_title('Simulation', fontsize=11)
+            else:
+                short_file_name = self.comboBox_file.currentText().split('/')[-1]
+                self.ar.set_title(short_file_name, fontsize=11)
+                self.plottitle.setText(short_file_name)
+                self.ar.set_title(short_file_name, fontsize=11)
+        else:
+            self.ar.set_title(r"{}".format(plottitle), fontsize=11)
+        # if no range is specified, fill it from data
+        if self.fitp0.item(0, 1) is None or len(self.fitp0.item(0, 1).text()) == 0:
+            item = QtWidgets.QTableWidgetItem(str(x0[0]))
+            self.fitp0.setItem(0, 1, item)
+        if self.fitp0.item(0, 3) is None or len(self.fitp0.item(0, 3).text()) == 0:
+            item = QtWidgets.QTableWidgetItem(str(x0[len(x0) - 1]))
+            self.fitp0.setItem(0, 3, item)
+        # fit or simulation range. If range is incorrect, back to default
+        if self.fitp0.item(0, 0).checkState() == 2:
+            x1 = float(self.fitp0.item(0, 1).text())
+            if ((x1 > x0[0] or x1 < x0[len(x0) - 1]) and x0[0] > x0[-1]) or (
+                    (x1 < x0[0] or x1 > x0[len(x0) - 1]) and x0[0] < x0[-1]):
+                x1 = x0[0]
+                item = QtWidgets.QTableWidgetItem(str(x0[0]))
+                self.fitp0.setItem(0, 1, item)
+        else:
+            x1 = x0[0]
+        if self.fitp0.item(0, 2).checkState() == 2:
+            x2 = float(self.fitp0.item(0, 3).text())
+            if ((x2 < x0[len(x0) - 1] or x2 > x1) and x0[0] > x0[-1]) or (
+                    (x2 > x0[len(x0) - 1] or x2 < x1) and x0[0] < x0[-1]):
+                x2 = x0[len(x0) - 1]
+                item = QtWidgets.QTableWidgetItem(str(x0[len(x0) - 1]))
+                self.fitp0.setItem(0, 3, item)
+        else:
+            x2 = x0[len(x0) - 1]
+
+        [x, y] = xpy.fit_range(x0, y0, x1, x2)
+        raw_y = y
+        # BG model selection and call shirley and tougaard
+        # colPosition = self.fitp1.columnCount()
+
+        mod, bg_mod, pars=self.bgSelector(x, y, mode=mode)
         # peak model selection and construction
+        y-=bg_mod
         npeak = self.fitp1.columnCount()
         npeak = int(npeak / 2)
 
@@ -1693,32 +1582,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             index = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentIndex()
             strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
             strind = strind.split(":", 1)[0]
-            if index == 0:
-                pk_mod = GaussianModel(prefix=strind + str(index_pk + 1) + '_')
-            if index == 1:
-                pk_mod = LorentzianModel(prefix=strind + str(index_pk + 1) + '_')
-            if index == 2:
-                pk_mod = VoigtModel(prefix=strind + str(index_pk + 1) + '_')
-            if index == 3:
-                pk_mod = PseudoVoigtModel(prefix=strind + str(index_pk + 1) + '_')
-            if index == 4:
-                pk_mod = ExponentialGaussianModel(prefix=strind + str(index_pk + 1) + '_')
-            if index == 5:
-                pk_mod = SkewedGaussianModel(prefix=strind + str(index_pk + 1) + '_')
-            if index == 6:
-                pk_mod = SkewedVoigtModel(prefix=strind + str(index_pk + 1) + '_')
-            if index == 7:
-                pk_mod = BreitWignerModel(prefix=strind + str(index_pk + 1) + '_')
-            if index == 8:
-                pk_mod = LognormalModel(prefix=strind + str(index_pk + 1) + '_')
-            if index == 9:
-                pk_mod = DoniachModel(prefix=strind + str(index_pk + 1) + '_')
-            if index == 10:
-                pk_mod = ConvGaussianDoniachDublett(prefix=strind + str(index_pk + 1) + '_')
-            if index == 11:
-                pk_mod = ConvGaussianDoniachSinglett(prefix=strind + str(index_pk + 1) + '_')
-            if index == 12:
-                pk_mod = FermiEdgeModel(prefix=strind + str(index_pk + 1) + '_')
+            pk_mod = modelSelector(index, strind, index_pk)
             pars.update(pk_mod.make_params())
             print(pars)
             # fit parameters from table
@@ -2149,8 +2013,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         else:
             try_me_out = self.history_manager(pars)
             if try_me_out is not None:
-                pars, parText= try_me_out
-                self.setPreset(parText[0],parText[1],parText[2])
+                pars, parText = try_me_out
+                self.setPreset(parText[0], parText[1], parText[2])
             out = mod.fit(y, pars, x=x, weights=1 / np.sqrt(raw_y), y=raw_y)
         comps = out.eval_components(x=x)
         # fit results to be checked
@@ -2509,7 +2373,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             # ax.plot(x, init+bg_mod, 'b--', lw =2, label='initial')
             if plottitle != '':
                 self.ar.set_title(r"{}".format(plottitle), fontsize=11)
-            #self.ax.plot(x, out.best_fit + bg_mod, 'k-', lw=2, label='initial')
+            # self.ax.plot(x, out.best_fit + bg_mod, 'k-', lw=2, label='initial')
 
             for index_pk in range(npeak):
                 # print(index_pk, color)
@@ -2590,17 +2454,17 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # make dataFrame and concat to export
         df_x = pd.DataFrame(x, columns=['x'])
         df_raw_y = pd.DataFrame(raw_y, columns=['raw_y'])
-        if self.idx_bg<2 and self.fitp0.item(index_bg + 1, 10).checkState() == 2:
-            df_y = pd.DataFrame(raw_y -comps['pg_']-comps['bg_'], columns=['data-bg'])
-            df_pks = pd.DataFrame(out.best_fit-comps['pg_']-comps['bg_'], columns=['sum_peaks'])
-            df_sum=pd.DataFrame(out.best_fit, columns=['sum_fit'])
+        if self.idx_bg < 2 and self.fitp0.item(index_bg + 1, 10).checkState() == 2:
+            df_y = pd.DataFrame(raw_y - comps['pg_'] - comps['bg_'], columns=['data-bg'])
+            df_pks = pd.DataFrame(out.best_fit - comps['pg_'] - comps['bg_'], columns=['sum_peaks'])
+            df_sum = pd.DataFrame(out.best_fit, columns=['sum_fit'])
         else:
-            df_y = pd.DataFrame(raw_y-bg_mod-comps['pg_'], columns=['data-bg'])
-            df_pks = pd.DataFrame(out.best_fit-comps['pg_'], columns=['sum_peaks'])
-            df_sum = pd.DataFrame(out.best_fit+bg_mod, columns=['sum_fit'])
+            df_y = pd.DataFrame(raw_y - bg_mod - comps['pg_'], columns=['data-bg'])
+            df_pks = pd.DataFrame(out.best_fit - comps['pg_'], columns=['sum_peaks'])
+            df_sum = pd.DataFrame(out.best_fit + bg_mod, columns=['sum_fit'])
         if index_bg < 2:
             if self.fitp0.item(index_bg + 1, 10).checkState() == 2:
-                df_b = pd.DataFrame(comps['pg_']+comps['bg_'], columns=['bg'])
+                df_b = pd.DataFrame(comps['pg_'] + comps['bg_'], columns=['bg'])
             else:
                 df_b = pd.DataFrame(bg_mod + comps['pg_'], columns=['bg'])
         if index_bg == 2:
@@ -2608,7 +2472,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if index_bg > 2:
             df_b = pd.DataFrame(comps['bg_'] + comps['pg_'], columns=['bg'])
         df_b_pg = pd.DataFrame(comps['pg_'], columns=['pg'])
-        self.result = pd.concat([df_x, df_raw_y,df_y, df_pks, df_b, df_b_pg,df_sum], axis=1)
+        self.result = pd.concat([df_x, df_raw_y, df_y, df_pks, df_b, df_b_pg, df_sum], axis=1)
         for index_pk in range(npeak):
             strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
             strind = strind.split(":", 1)[0]
