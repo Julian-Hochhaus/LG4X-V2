@@ -17,6 +17,9 @@
 - [ ] Undo button (log of last parameter sets, as suggested in [#13](https://github.com/Julian-Hochhaus/LG4X-V2/issues/13), introduced on [dev branch](https://github.com/Julian-Hochhaus/LG4X-V2/tree/undo-fct))
 - [ ] show only relevant parameter for the used model and grey the others out [#17](https://github.com/Julian-Hochhaus/LG4X-V2/issues/17)
 - [ ] add tooltip info to GUI [#18](https://github.com/Julian-Hochhaus/LG4X-V2/issues/18)
+- [ ] add asymmetry ratio
+- [ ] add limits for all parameters
+- [ ] introduce class/function which converts .dat export/internal preset array to lmfit parameter set and vice versa 
 ## Introduction
 LG4X-V2 is based on the great work of [Hideki NAKAJIMA](https://github.com/hidecode221b) who developed the software LG4X. 
 
