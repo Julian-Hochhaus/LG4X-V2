@@ -38,20 +38,6 @@ import logging  # error handling
 style.use('seaborn-pastel')
 
 
-class Fitting(QRunnable):
-    '''
-    Worker thread for fitting process
-    '''
-
-    def __init__(self, fn, *args):
-        super(Fitting, self).__init__()
-        self.fn = fn
-        self.args = args
-
-    @pyqtSlot()
-    def run(self):
-        self.fn(*self.args)
-
 
 class SubWindow(QWidget):
     def __init__(self, params_tab):
@@ -65,7 +51,6 @@ class SubWindow(QWidget):
 class PrettyWidget(QtWidgets.QMainWindow):
     def __init__(self):
         super(PrettyWidget, self).__init__()
-        self.threadpool = QThreadPool()  # thread pool for worker/stop execution button
         # super(PrettyWidget, self).__init__()
         self.export_out = None
         self.export_pars = None
@@ -78,9 +63,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.parText = None
         self.res_tab = None
         self.fitp0 = None
-        # self.comboBox_pres = None
         self.addition = None
-        # self.comboBox_bg = None
         self.comboBox_file = None
         self.list_preset = None
         self.list_file = None
@@ -105,14 +88,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.error_dialog = QtWidgets.QErrorMessage()
 
     def initUI(self):
-        self.version = 'LG4X: LMFit GUI for XPS curve fitting 2.0.2'
+        self.version = 'LG4X: LMFit GUI for XPS curve fitting experimental version'
         self.floating = '.4f'
         self.setGeometry(700, 500, 1600, 900)
         self.center()
         self.setWindowTitle(self.version)
         self.statusBar().showMessage(
-            'Copyright (C) 2022, Julian Hochhaus, TU Dortmund University; adapted from Hideki NAKAJIMA Hideki '
-            'NAKAJIMA, Synchrotron Light Research Institute, Nakhon Ratchasima, Thailand ')
+            'Copyright (C) 2022, Julian Hochhaus, TU Dortmund University')
         self.pt = PeriodicTable()
         self.pt.setWindowTitle('Periodic Table')
         self.pt.elementEmitted.connect(self.handleElementClicked)
@@ -129,10 +111,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         # Home directory
         self.filePath = QtCore.QDir.homePath()
-        # self.filePath = '/Users/hidekinakajima/Desktop/WFH2021_2/lg4x/LG4X-master/Python/'
 
-        # Figure: Canvas and Toolbar
-        # self.figure = plt.figure(figsize=(6.7,5))
         self.figure, (self.ar, self.ax) = plt.subplots(2, sharex=True,
                                                        gridspec_kw={'height_ratios': [1, 5], 'hspace': 0})
         self.canvas = FigureCanvas(self.figure)
@@ -271,12 +250,20 @@ class PrettyWidget(QtWidgets.QMainWindow):
         limitMenu.addAction(btn_limit_info)
 
         self.bgMenu = menubar.addMenu('&Choose BG')
-        btn_bg_shirley = QtWidgets.QAction('&Shirley BG', self)
-        btn_bg_shirley.setShortcut('Ctrl+Alt+S')
-        btn_bg_shirley.triggered.connect(lambda: self.clickOnBtnBG(idx=0))
-        btn_bg_tougaard = QtWidgets.QAction('&Tougaard BG', self)
-        btn_bg_tougaard.setShortcut('Ctrl+Alt+T')
-        btn_bg_tougaard.triggered.connect(lambda: self.clickOnBtnBG(idx=1))
+        self.submenu_shirley = self.bgMenu.addMenu('&Shirley BG')
+        btn_bg_shirley_act = QtWidgets.QAction('&Active approach', self)
+        btn_bg_shirley_act.triggered.connect(lambda: self.clickOnBtnBG(idx=0, activeBG=True))
+        btn_bg_shirley_static = QtWidgets.QAction('&Static approach', self)
+        btn_bg_shirley_static.triggered.connect(lambda: self.clickOnBtnBG(idx=0, activeBG=False))
+        self.submenu_shirley.addAction(btn_bg_shirley_act)
+        self.submenu_shirley.addAction(btn_bg_shirley_static)
+        self.submenu_tougaard=self.bgMenu.addMenu('&Tougaard BG')
+        btn_bg_tougaard_act = QtWidgets.QAction('&Active approach', self)
+        btn_bg_tougaard_act.triggered.connect(lambda: self.clickOnBtnBG(idx=1, activeBG=True))
+        btn_bg_tougaard_static = QtWidgets.QAction('&Static approach', self)
+        btn_bg_tougaard_static.triggered.connect(lambda: self.clickOnBtnBG(idx=1, activeBG=False))
+        self.submenu_tougaard.addAction(btn_bg_tougaard_act)
+        self.submenu_tougaard.addAction(btn_bg_tougaard_static)
 
         btn_bg_polynomial = QtWidgets.QAction('&Polynomial BG', self)
         btn_bg_polynomial.setShortcut('Ctrl+Alt+P')
@@ -298,8 +285,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # btn_bg_vbm.setShortcut('Ctrl+Alt+')
         btn_bg_vbm.triggered.connect(lambda: self.clickOnBtnBG(idx=6))
 
-        self.bgMenu.addAction(btn_bg_shirley)
-        self.bgMenu.addAction(btn_bg_tougaard)
         self.bgMenu.addAction(btn_bg_arctan)
         self.bgMenu.addAction(btn_bg_fd)
         self.bgMenu.addAction(btn_bg_polynomial)
@@ -331,10 +316,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
         grid.addWidget(btn_interrupt, 0, 2, 1, 1)
         # PolyBG Table
         list_bg_col = ['bg_c0', 'bg_c1', 'bg_c2', 'bg_c3', 'bg_c4']
-        list_bg_row = ['Range (x0,x1), pt, hn, wf', 'Shirley', 'Tougaard', 'Polynomial', 'FD (amp, ctr, kt)',
-                       'arctan (amp, ctr, sig)', 'erf (amp, ctr, sig)', 'cutoff (ctr, d1-4)']
+        list_bg_row = [ 'Shirley', 'Tougaard', 'Polynomial']
         self.fitp0 = QtWidgets.QTableWidget(len(list_bg_row), len(list_bg_col) * 2 + 1)
-        list_bg_colh = ['', 'bg_c0', '', 'bg_c1', '', 'bg_c2', '', 'bg_c3', '', 'bg_c4', ' active bg']
+        list_bg_colh = ['', 'bg_c0', '', 'bg_c1', '', 'bg_c2', '', 'bg_c3', '', 'bg_c4']
         self.fitp0.setHorizontalHeaderLabels(list_bg_colh)
         self.fitp0.setVerticalHeaderLabels(list_bg_row)
         # set BG table checkbox
@@ -1284,8 +1268,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.parameter_history_list.append([pars, self.parText])
             return None
 
-    def clickOnBtnBG(self, idx):
+    def clickOnBtnBG(self, idx, activeBG=False):
         self.idx_bg = idx
+        self.activeBG=activeBG
 
     def readBGParams(self, pars):
 
@@ -1299,7 +1284,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         return None
     def bgSelector(self, x, y, mode):
         index_bg = self.idx_bg
-        if index_bg == 0:
+        if self.index_bg == 0:
             if self.fitp0.item(index_bg + 1, 10).checkState() == 0:
                 shA = float(self.fitp0.item(index_bg + 1, 1).text())
                 shB = float(self.fitp0.item(index_bg + 1, 3).text())
