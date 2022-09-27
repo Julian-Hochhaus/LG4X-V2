@@ -16,7 +16,7 @@ def fwhm_expr(model):
     return fmt.format(factor=model.fwhm_factor, prefix=model.prefix)
 
 
-def dublett(x, amplitude, sigma, gamma, gaussian_sigma, center, soc, height_ratio, coster_kronig_factor):
+def dublett(x, amplitude, sigma, gamma, gaussian_sigma, center, soc, height_ratio, fct_coster_kronig):
     """
     Calculates the convolution of a Doniach-Sunjic Dublett with a Gaussian. Thereby, the Gaussian acts as the
     convolution kernel.
@@ -42,7 +42,7 @@ def dublett(x, amplitude, sigma, gamma, gaussian_sigma, center, soc, height_rati
     height_ratio: float
         height ratio of the second-highest peak (higher-bound-orbital) of the spectrum in relation to the maximum of
         the spectrum (the lower-bound orbital)
-    coster_kronig_factor: float
+    fct_coster_kronig: float
         ratio of the lorentzian-sigma of the second-highest peak (higher-bound-orbital) of the spectrum in relation to
         the maximum of the spectrum (the lower-bound orbital)
     Returns
@@ -52,7 +52,7 @@ def dublett(x, amplitude, sigma, gamma, gaussian_sigma, center, soc, height_rati
     """
     conv_temp = fft_convolve(
         doniach(x, amplitude=1, center=center, sigma=sigma, gamma=gamma) + doniach(x, height_ratio, center - soc,
-                                                                                   coster_kronig_factor * sigma, gamma),
+                                                                                   fct_coster_kronig * sigma, gamma),
         1 / (np.sqrt(2 * np.pi) * gaussian_sigma) * gaussian(x, amplitude=1, center=np.mean(x), sigma=gaussian_sigma))
     return amplitude * conv_temp / max(conv_temp)
 
@@ -249,11 +249,11 @@ class ConvGaussianDoniachDublett(lmfit.model.Model):
         self.set_param_hint('center', value=285)
         self.set_param_hint('soc', value=2.0)
         self.set_param_hint('height_ratio', value=0.75, min=0)
-        self.set_param_hint('coster_kronig_factor', value=1, min=0)
+        self.set_param_hint('fct_coster_kronig', value=1, min=0)
         g_fwhm_expr = '2*{pre:s}gaussian_sigma*1.1774'
         self.set_param_hint('gaussian_fwhm', expr=g_fwhm_expr.format(pre=self.prefix))
         l_p1_fwhm_expr = '{pre:s}sigma*(2+{pre:s}gamma*2.5135+({pre:s}gamma*3.6398)**4)'
-        l_p2_fwhm_expr = '{pre:s}sigma*(2+{pre:s}gamma*2.5135+({pre:s}gamma*3.6398)**4)*{pre:s}coster_kronig_factor'
+        l_p2_fwhm_expr = '{pre:s}sigma*(2+{pre:s}gamma*2.5135+({pre:s}gamma*3.6398)**4)*{pre:s}fct_coster_kronig'
         self.set_param_hint('lorentzian_fwhm_p1', expr=l_p1_fwhm_expr.format(pre=self.prefix))
         self.set_param_hint('lorentzian_fwhm_p2', expr=l_p2_fwhm_expr.format(pre=self.prefix))
         fwhm_p1_expr = ("0.5346*{pre:s}lorentzian_fwhm_p1+" +

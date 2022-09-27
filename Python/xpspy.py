@@ -4,6 +4,7 @@ import numpy as np
 
 
 def fit_range(x, y, xmin, xmax):
+    print(x, y)
     # print(xmin, xmax)
     if xmin > xmax:
         xmin0 = xmin
