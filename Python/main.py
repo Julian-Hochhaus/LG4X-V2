@@ -544,6 +544,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.show()
 
     def activeParameters(self):
+        """
+
+        """
         nrows = self.fitp0.rowCount()
         ncols = self.fitp0.columnCount()
         for col in range(ncols):
@@ -554,8 +557,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
         idx = self.idx_bg
         for col in range(ncols):
             for row in range(nrows):
+                if idx == 0:
+                    if row == 0 and col <4:
+                        self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
+                                                                           col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
                 if idx == 100:
                     if row == 0:
+                        self.fitp0.item(row, col).setFlags(self.fitp0.item(row,col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+                if idx == 1:
+                    if row == 1:
                         self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
                                                                            col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
                 if idx == 101:
@@ -1845,9 +1855,14 @@ class PrettyWidget(QtWidgets.QMainWindow):
             else:
                 pars = mod.make_params()
                 for index in range(5):
+                    print('test')
+                    print(self.pre[1])
                     pars['bg_c' + str(index)].value = self.pre[1][2][2 * index + 1]
                     if self.pre[1][2][2 * index] == 2:
                         pars['bg_c' + str(index)].vary = False
+            if self.fixedBG.isChecked():
+                for par in pars:
+                    pars[par].vary = False
             return [mod, bg_mod, pars]
         # Polynomial BG to be added for all BG
         modp = PolynomialModel(4, prefix='pg_')
@@ -1856,6 +1871,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 or len(str(self.pre[1][2][3])) == 0 or len(str(self.pre[1][2][5])) == 0 \
                 or len(str(self.pre[1][2][7])) == 0 or len(str(self.pre[1][2][9])) == 0:
             if pars is None:
+                print('test')
                 pars = modp.make_params()
                 mod = modp
                 for index in range(5):
@@ -1863,6 +1879,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 # make all poly bg parameters fixed
                 for col in range(5):
                     self.pre[1][2][2 * col] = 0
+                if self.fixedBG.isChecked():
+                    for par in pars:
+                        pars[par].vary = False
                 return [mod, bg_mod, pars]
 
             else:
@@ -1875,13 +1894,16 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         else:
             if pars is None:
+                print('case 2')
                 pars = modp.make_params()
                 mod = modp
                 for index in range(5):
-                    pars['pg_c' + str(index)].value = 0
-                # make all poly bg parameters fixed
-                for col in range(5):
-                    self.pre[1][2][2 * col] = 0
+                    pars['pg_c' + str(index)].value = self.pre[1][2][2*index +1]
+                    if self.pre[1][2][2*index]==2:
+                        pars['pg_c' + str(index)].vary = False
+                if self.fixedBG.isChecked():
+                    for par in pars:
+                        pars[par].vary = False
                 return [mod, bg_mod, pars]
             else:
                 pars.update(modp.make_params())
@@ -2318,8 +2340,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if self.idx_bg == 2:
             for index in range(5):
                 self.pre[1][self.idx_bg][2 * index + 1] = out_params['bg_c' + str(index)].value
-        for index in range(5):
-            self.pre[1][2][2 * index + 1] = out_params['pg_c' + str(index)].value
+        if self.idx_bg !=2:
+            for index in range(5):
+                self.pre[1][2][2 * index + 1] = out_params['pg_c' + str(index)].value
+        print('results', self.pre[1])
 
     def peakResult2Pre(self, out_params):
         ncomponent = self.fitp1.columnCount()
@@ -2373,7 +2397,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         y_components = [0 for idx in range(len(y))]
         nrows = len(self.pre[2])
         ncols = int(len(self.pre[2][0]) / 2)
-        print(nrows, ncols)
         for index_pk in range(int(len(self.pre[2][0]) / 2)):
             index = self.pre[2][0][2 * index_pk + 1]
             strind = self.list_shape[index]
@@ -2609,6 +2632,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         mod = temp_res[0]
         bg_mod = temp_res[1]
         pars = temp_res[2]
+        print(self.pre)
         self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
         # component model selection and construction
         y -= bg_mod
@@ -2638,6 +2662,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if try_me_out is not None:
                 pars, pre = try_me_out
                 self.pre=pre
+                print('hist_manager', self.pre)
                 self.setPreset(pre[0], pre[1], pre[2], pre[3])
             out = mod.fit(y, pars, x=x, weights=1 / np.sqrt(raw_y), y=raw_y)
         comps = out.eval_components(x=x)
@@ -2714,7 +2739,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
                 strind = strind.split(":", 1)[0]
                 if self.idx_bg < 2:
-                    print(self.xmin, self.xmax)
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'],
                                  label='C_' + str(index_pk + 1))
                 if self.idx_bg == 2:
@@ -2727,7 +2751,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.ar.set_xlim(left=self.xmin)
             self.ax.set_xlim(right=self.xmax)
             self.ar.set_xlim(right=self.xmax)
-            print(y)
             autoscale_y(self.ax)
 
         else:
@@ -2745,7 +2768,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'],
                                              bg_mod + comps['pg_'], label='C_' + str(index_pk + 1))
                 if self.idx_bg == 2:
-                    self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['pg_'], comps['pg_'],
+                    self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'], comps['bg_'],
                                          label='C_' + str(index_pk + 1))
                 if 100>self.idx_bg > 2:
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
@@ -2756,7 +2779,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if self.idx_bg>=100:
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
                 if self.idx_bg == 2:
-                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['pg_'], comps['pg_'])
+                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'], comps['bg_'])
                 if 100>self.idx_bg > 2:
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
                 #
@@ -2784,6 +2807,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
             df_y = pd.DataFrame(raw_y - comps['pg_'] - comps['bg_'], columns=['data-bg'])
             df_pks = pd.DataFrame(out.best_fit - comps['pg_'] - comps['bg_'], columns=['sum_components'])
             df_sum = pd.DataFrame(out.best_fit, columns=['sum_fit'])
+        elif self.idx_bg==2:
+            df_y = pd.DataFrame(raw_y - bg_mod - comps['bg_'], columns=['data-bg'])
+            df_pks = pd.DataFrame(out.best_fit - comps['bg_'], columns=['sum_components'])
+            df_sum = pd.DataFrame(out.best_fit + comps['bg_'], columns=['sum_fit'])
         else:
             df_y = pd.DataFrame(raw_y - bg_mod - comps['pg_'], columns=['data-bg'])
             df_pks = pd.DataFrame(out.best_fit - comps['pg_'], columns=['sum_components'])
@@ -2793,10 +2820,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if self.idx_bg<2:
             df_b = pd.DataFrame(bg_mod + comps['pg_'], columns=['bg'])
         if self.idx_bg == 2:
-            df_b = pd.DataFrame(comps['pg_'], columns=['bg'])
+            df_b = pd.DataFrame(comps['bg_'], columns=['bg'])
         if 100>self.idx_bg > 2:
             df_b = pd.DataFrame(comps['bg_'] + comps['pg_'], columns=['bg'])
-        df_b_pg = pd.DataFrame(comps['pg_'], columns=['pg'])
+        if self.idx_bg==2:
+            df_b_pg = pd.DataFrame(comps['bg_'], columns=['pg'])
+        else:
+            df_b_pg = pd.DataFrame(comps['pg_'], columns=['pg'])
         self.result = pd.concat([df_x, df_raw_y, df_y, df_pks, df_b, df_b_pg, df_sum], axis=1)
         for index_pk in range(int(self.fitp1.columnCount() / 2)):
             strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
