@@ -138,7 +138,23 @@ class Window_CrossSection(QtWidgets.QWidget):
                     self.dataset_cross_sections.append(temp)
         return(temp_elements)
     def addCrossSection(self):
-        print('test')
+        dirPath = os.path.dirname(os.path.abspath(__file__))
+        temp_elements = []
+        for i in range(self.tougaard_tab.columnCount()):
+            temp_elements.append(self.tougaard_tab.item(0,i).text())
+        if not temp_elements[0] in self.list_elements:
+            str_temp_elements=''
+            for i in range(len(temp_elements)-1):
+                str_temp_elements+=str(temp_elements[i]+', ')
+            str_temp_elements+= str(temp_elements[-1]+'\n')
+            with open(dirPath + '/../CrossSections/cross_sections.csv', 'a') as f:
+                f.write(str_temp_elements)
+            self.list_elements = self.load_elements()
+            self.elements.clear()
+            self.elements.addItems((self.list_elements))
+        else:
+            print(temp_elements[0]+ ' is already part of the database, please choose a different name!')
+
     def choosenElement(self):
         idx=self.elements.currentIndex()
         for j in range(6):
@@ -146,7 +162,6 @@ class Window_CrossSection(QtWidgets.QWidget):
              self.tougaard_params[j]=self.dataset_cross_sections[idx][j+2]
             item = QtWidgets.QTableWidgetItem(str(self.dataset_cross_sections[idx][j]))
             self.tougaard_tab.setItem(0,j, item)
-        print(self.tougaard_params)
         self.tougaard_tab.resizeColumnsToContents()
         self.tougaard_tab.resizeRowsToContents()
 
