@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot
 from lmfit import Model
 from lmfit.models import ExponentialGaussianModel, SkewedGaussianModel, SkewedVoigtModel, DoniachModel, \
@@ -49,7 +48,7 @@ dictBG = {
 }
 
 
-class SubWindow(QWidget):
+class SubWindow(QtWidgets.QWidget):
     def __init__(self, params_tab):
         super(SubWindow, self).__init__()
         self.layout = QtWidgets.QGridLayout(self)
@@ -214,11 +213,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         presetMenu.addAction(btn_preset_ckedge)
         presetMenu.addAction(btn_preset_ptable)
 
-        limitMenu = menubar.addMenu('&Limits')
-        btn_limit_set = QtWidgets.QAction('&Set/Show Limits', self)
-        btn_limit_set.triggered.connect(self.setLimits)
-        limitMenu.addAction(btn_limit_set)
-
         self.bgMenu = menubar.addMenu('&Choose BG')
         self.submenu_shirley = self.bgMenu.addMenu('&Shirley BG')
         btn_bg_shirley_act = QtWidgets.QAction('&Active approach', self)
@@ -247,11 +241,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_bg_vbm = QtWidgets.QAction('&VBM/Cutoff BG', self)
         btn_bg_vbm.triggered.connect(lambda: self.clickOnBtnBG(idx=5))
 
+        btn_tougaard_cross_section = QtWidgets.QAction('Tougaard &Cross Section ', self)
+        btn_tougaard_cross_section.triggered.connect(self.clicked_cross_section)
+
         self.bgMenu.addAction(btn_bg_polynomial)
         self.bgMenu.addAction(btn_bg_arctan)
         self.bgMenu.addAction(btn_bg_erf)
         self.bgMenu.addAction(btn_bg_vbm)
-
+        self.bgMenu.addSeparator()
+        self.bgMenu.addAction(btn_tougaard_cross_section)
         # central widget layout
         widget = QtWidgets.QWidget(self)
         self.setCentralWidget(widget)
@@ -375,7 +373,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         pre_bg = [['', 1e-06, '', 10, 2, 0.0003, 2, 1000, '', ''],
                   [2, 2866.0, '', 1643.0, '', 1.0, '', 1.0, '', ''],
                   [2, 0, 2, 0, 2, 0, 2, 0, 2, 0]]
-        self.setPreset([0], pre_bg, [])
+        #self.setPreset([0], pre_bg, [])
 
         self.fitp0.resizeColumnsToContents()
         self.fitp0.resizeRowsToContents()
@@ -402,6 +400,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_rem.resize(btn_rem.sizeHint())
         btn_rem.clicked.connect(self.rem_col)
         componentbuttons_layout.addWidget(btn_rem)
+
+
+        btn_limit_set = QtWidgets.QPushButton('&Set/Show Limits', self)
+        btn_limit_set.resize(btn_limit_set.sizeHint())
+        btn_limit_set.clicked.connect(self.setLimits)
+        componentbuttons_layout.addWidget(btn_limit_set)
 
         layout_bottom_mid.addLayout(componentbuttons_layout)
 
@@ -494,7 +498,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         pre_pk = [[0, 0], [2, 284.6], [0, 20000], [2, 0.2], [2, 0.2], [2, 0.02], [2, 0], [2, 0], [2, 0.0], [2, 0.026],
                   [2, 1], [2, 0.7], [2, 1], [0, 0], [2, 0.1], [0, 0], [2, 0.5], [0, 0], [2, 1], [0, 0], [2, 1],
                   [0, 0], [2, 1], [0, 0], [2, 1], [0, 0], [2, 1]]
-        self.setPreset([0], [], pre_pk)
+        self.pre=[[self.idx_bg,self.xmin,self.xmax, self.hv, self.wf],pre_bg,pre_pk,[[0, '', '']] * 19]
+        self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
 
         self.fitp1.resizeColumnsToContents()
         self.fitp1.resizeRowsToContents()
@@ -539,10 +544,24 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.res_label = QtWidgets.QLabel()
         self.res_label.setText("Fit results:")
         self.res_label.setStyleSheet("font-weight: bold; font-size:12pt")
+        print(self.pre)
         # grid..addWidget(self.res_label, 7, 7, 1, 1)
         self.activeParameters()
-        self.show()
 
+        self.show()
+    def clicked_cross_section(self):
+        window_cross_section = Window_CrossSection()
+
+        window_cross_section.show()
+        window_cross_section.btn_cc.clicked.connect(lambda: self.setCrossSection(window_cross_section))
+    def setCrossSection(self,window):
+        window.choosenElement()
+        tougaard=window.tougaard_params
+        for idx in range(4):
+            print(tougaard[idx])
+            self.pre[1][1][2*idx+1]=tougaard[idx]
+        print(self.pre[1][1])
+        self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
     def activeParameters(self):
         """
 
@@ -2738,15 +2757,27 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 # print(index_pk, color)
                 strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
                 strind = strind.split(":", 1)[0]
+                if self.idx_bg >= 100:
+                    self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
+                                         comps['bg_'] + comps['pg_'], label='C_' + str(index_pk + 1))
                 if self.idx_bg < 2:
-                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'],
-                                 label='C_' + str(index_pk + 1))
+                    self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'],
+                                         bg_mod + comps['pg_'], label='C_' + str(index_pk + 1))
                 if self.idx_bg == 2:
-                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['pg_'],
-                                 label='C_' + str(index_pk + 1))
-                if self.idx_bg > 2:
-                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
-                                 label='C_' + str(index_pk + 1))
+                    self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'], comps['bg_'],
+                                         label='C_' + str(index_pk + 1))
+                if 100 > self.idx_bg > 2:
+                    self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
+                                         comps['bg_'] + comps['pg_'], label='C_' + str(index_pk + 1))
+                    # Philipp: 14-07-2022
+                if self.idx_bg < 2:
+                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'])
+                if self.idx_bg >= 100:
+                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
+                if self.idx_bg == 2:
+                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'], comps['bg_'])
+                if 100 > self.idx_bg > 2:
+                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
             self.ax.set_xlim(left=self.xmin)
             self.ar.set_xlim(left=self.xmin)
             self.ax.set_xlim(right=self.xmax)

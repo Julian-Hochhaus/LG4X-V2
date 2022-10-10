@@ -3,6 +3,9 @@ from lmfit.models import ExponentialGaussianModel, SkewedGaussianModel, SkewedVo
 from lmfit.models import GaussianModel, LorentzianModel, VoigtModel, PseudoVoigtModel, ThermalDistributionModel, \
     PolynomialModel, StepModel
 from usrmodel import ConvGaussianDoniachDublett, ConvGaussianDoniachSinglett, FermiEdgeModel, singlett, fft_convolve
+from PyQt5 import QtWidgets, QtCore
+import numpy as np
+import os
 def autoscale_y(ax, margin=0.1):
     """This function rescales the y-axis based on the data that is visible given the current xlim of the axis.
     ax -- a matplotlib axes object
@@ -76,3 +79,86 @@ def modelSelector(index, strind, index_pk):
 
     return pk_mod
 
+class Window_CrossSection(QtWidgets.QWidget):
+    dataset_cross_sections=[]
+    tougaard_params=['standard value', 0,2886,1643,1,1]
+    def __init__(self):
+        super(Window_CrossSection, self).__init__()
+        self.layout = QtWidgets.QVBoxLayout(self)
+        #self.resize(800, 500)
+        self.setWindowTitle("Cross Section")
+        self.resize(400,120)
+        list_col=['name', 'atomic_number','B', 'C', 'C*', 'D']
+        list_row = ['']
+        layout_top=QtWidgets.QHBoxLayout()
+        self.elements=QtWidgets.QComboBox()
+
+        self.list_elements=self.load_elements()
+        self.elements.addItems((self.list_elements))
+        self.elements.currentIndexChanged.connect(self.choosenElement)
+        #btn_add.clicked.connect(self.save)
+        self.tougaard_tab = QtWidgets.QTableWidget(len(list_row), len(list_col))
+        self.tougaard_tab.setHorizontalHeaderLabels(list_col)
+        self.tougaard_tab.setVerticalHeaderLabels(list_row)
+        #init_vals
+        init_vals=['standard value', 0,2886,1643,1,1]
+        for i in range(6):
+            item = QtWidgets.QTableWidgetItem(str(init_vals[i]))
+            self.tougaard_tab.setItem(0, i, item)
+        self.tougaard_tab.resizeColumnsToContents()
+        self.tougaard_tab.resizeRowsToContents()
+        layout_top.addWidget(self.elements)
+        layout_top.addWidget(self.tougaard_tab)
+
+
+        layout_bottom=QtWidgets.QHBoxLayout()
+        btn_add = QtWidgets.QPushButton('Add cross section', self)
+        btn_add.resize(btn_add.sizeHint())
+        btn_add.clicked.connect(self.addCrossSection)
+        layout_bottom.addWidget(btn_add)
+        #btn_load = QtWidgets.QPushButton('Load cross section', self)
+        #btn_load.resize(btn_load.sizeHint())
+        #btn_load.clicked.connect(self.addCrossSection)
+        self.btn_cc = QtWidgets.QPushButton('Use current cross-section', self)
+        self.btn_cc.resize(self.btn_cc.sizeHint())
+        #self.btn_cc.clicked.connect(self.pushToMain)
+        layout_bottom.addWidget(self.btn_cc)
+        self.layout.addLayout(layout_top)
+        self.layout.addLayout(layout_bottom)
+    def load_elements(self):
+        dirPath = os.path.dirname(os.path.abspath(__file__))
+        temp_elements=[]
+        with open (dirPath+'/../CrossSections/cross_sections.csv') as f:
+            next(f)
+            lines=f.read().splitlines()
+            for line in lines:
+                temp_elements.append(line.split(',')[0])
+                temp=[elem for elem in line.split(',')]
+                if temp not in self.dataset_cross_sections:
+                    self.dataset_cross_sections.append(temp)
+        return(temp_elements)
+    def addCrossSection(self):
+        print('test')
+    def choosenElement(self):
+        idx=self.elements.currentIndex()
+        for j in range(6):
+            if j<4:
+             self.tougaard_params[j]=self.dataset_cross_sections[idx][j+2]
+            item = QtWidgets.QTableWidgetItem(str(self.dataset_cross_sections[idx][j]))
+            self.tougaard_tab.setItem(0,j, item)
+        print(self.tougaard_params)
+        self.tougaard_tab.resizeColumnsToContents()
+        self.tougaard_tab.resizeRowsToContents()
+
+class Element:
+    def __init__(self, name,atomic_number, tb, tc, tcd, td):
+        self.name = name if name is not None else 'standard value'
+        self.atomic_number = atomic_number if atomic_number is not None else 0
+        self.tb = tb if tb is not None else 2866
+        self.tc = tc if tc is not None else 1643
+        self.tcd = tcd if tcd is not None else 1
+        self.td = td if td is not None else 1
+        self.tougaard_params = [self.atomic_number,self.tb, self.tc, self.tcd, self.td]
+def cross_section():
+    window_cross_section = Window_CrossSection()
+    window_cross_section.show()
