@@ -1582,7 +1582,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # print('new', len(self.ax.texts))
 
     def plot(self):
-        plottitle = self.plottitle.displayText()
+        plottitle = self.comboBox_file.currentText().split('/')[-1]
         # when file list is selected
         if self.comboBox_file.currentIndex() == 1:
             self.comboBox_file.clear()
@@ -1649,10 +1649,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
             self.ax.grid(True)
             if plottitle == '':
+                print('l1652')
                 short_file_name = self.comboBox_file.currentText().split('/')[-1]
                 self.ar.set_title(short_file_name, fontsize=11)
                 self.plottitle.setText(short_file_name)
             else:
+                print('l1657')
                 self.ar.set_title(r"{}".format(plottitle), fontsize=11)
             self.ax.legend(loc=0)
             self.canvas.draw()
@@ -1773,6 +1775,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             toC = self.pre[1][1][3]
             toCd = self.pre[1][1][5]
             toD = self.pre[1][1][7]
+            toT0=self.pre[1][1][9]
             pars = None
             if mode == 'fit':
                 toM = self.pre[1][0][3]
@@ -1913,7 +1916,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         else:
             if pars is None:
-                print('case 2')
                 pars = modp.make_params()
                 mod = modp
                 for index in range(5):
@@ -1930,6 +1932,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 pars['pg_c' + str(index)].value = self.pre[1][2][2 * index + 1]
                 if self.pre[1][2][2 * index] == 2:
                     pars['pg_c' + str(index)].vary = False
+            pars['pg_c0'].min=0
         mod += modp
         if self.fixedBG.isChecked():
             for par in pars:
@@ -2584,7 +2587,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
     def ana(self, mode):
         self.savePreset()
-        plottitle = self.plottitle.displayText()
+        plottitle = self.comboBox_file.currentText().split('/')[-1]
+        print('l2591', plottitle)
         # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
         x0 = self.df[:, 0]
         y0 = self.df[:, 1]
@@ -2620,12 +2624,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 # simulation mode
                 self.ar.set_title('Simulation', fontsize=11)
             else:
+                print('l2627')
                 short_file_name = self.comboBox_file.currentText().split('/')[-1]
                 self.ar.set_title(short_file_name, fontsize=11)
                 self.plottitle.setText(short_file_name)
                 self.ar.set_title(short_file_name, fontsize=11)
         else:
             self.ar.set_title(r"{}".format(plottitle), fontsize=11)
+            print('l2634')
+
         # if no range is specified, fill it from data
         if self.pre[0][1] is None or len(str(self.pre[0][1])) == 0:
             self.pre[0][1] = x0[0]
@@ -2747,7 +2754,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.stats_tab.resizeColumnsToContents()
         self.stats_tab.resizeRowsToContents()
         if mode == 'eva':
-            plottitle = self.plottitle.displayText()
+            plottitle = self.comboBox_file.currentText().split('/')[-1]
             # ax.plot(x, init+bg_mod, 'b--', lw =2, label='initial')
             if plottitle != '':
                 self.ar.set_title(r"{}".format(plottitle), fontsize=11)
@@ -2786,7 +2793,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         else:
             # ax.plot(x, init+bg_mod, 'k:', label='initial')
-            plottitle = self.plottitle.displayText()
+            plottitle = self.comboBox_file.currentText().split('/')[-1]
+            print('l2797')
             if plottitle != '':
                 self.ar.set_title(r"{}".format(plottitle), fontsize=11)
             for index_pk in range(int(self.fitp1.columnCount() / 2)):
