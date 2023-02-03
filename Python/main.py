@@ -2169,10 +2169,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if row == 12 and self.pre[3][row][3 * index_pk] == 2:
                     if self.pre[3][row][3 * index_pk + 1] is not None and len(
                             str(self.pre[3][row][3 * index_pk + 1])) > 0:
-                        pars[strind + str(index_pk + 1) + '_ctr_diff'].min = self.pre[3][row][3 * index_pk + 1]
+                        pars[strind + str(index_pk + 1) + '_center_diff'].min = self.pre[3][row][3 * index_pk + 1]
                     if self.pre[3][row][3 * index_pk + 2] is not None and len(
                             str(self.pre[3][row][3 * index_pk + 2])) > 0:
-                        pars[strind + str(index_pk + 1) + '_ctr_diff'].max = self.pre[3][row][3 * index_pk + 2]
+                        pars[strind + str(index_pk + 1) + '_center_diff'].max = self.pre[3][row][3 * index_pk + 2]
                 if row == 13 and self.pre[3][row][3 * index_pk] == 2:
                     if self.pre[3][row][3 * index_pk + 1] is not None and len(
                             str(self.pre[3][row][3 * index_pk + 1])) > 0:
