@@ -883,7 +883,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp1.setHorizontalHeaderItem(colPosition_fitp1, item)
         item = QtWidgets.QTableWidgetItem('C_' + str(int(1 + colPosition_fitp1 / 2)))
         self.fitp1.setHorizontalHeaderItem(colPosition_fitp1 + 1, item)
-        self.fitp1.resizeColumnsToContents()
+        self.fitp1.resizeColumnsgitrToContents()
         item = QtWidgets.QTableWidgetItem('C_' + str(int(1 + colPosition_res)))
         self.res_tab.setHorizontalHeaderItem(colPosition_res, item)
         self.res_tab.resizeColumnsToContents()
@@ -2340,10 +2340,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                 3 * index_pk + 2]
         return pars
 
-    def bgResult2Pre(self, out_params):
+    def bgResult2Pre(self, out_params, mode):
         if self.idx_bg == 100:
-            self.pre[1][0][5] = out_params['bg_k'].value
-            self.pre[1][0][7] = out_params['bg_const'].value
+            if mode != "eva":
+                self.pre[1][0][5] = out_params['bg_k'].value
+                self.pre[1][0][7] = out_params['bg_const'].value
         if self.idx_bg == 101:
             self.pre[1][1][1] = out_params['bg_B'].value
             self.pre[1][1][3] = out_params['bg_C'].value
@@ -2367,7 +2368,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.pre[1][2][2 * index + 1] = out_params['pg_c' + str(index)].value
         print('results', self.pre[1])
 
-    def peakResult2Pre(self, out_params):
+    def peakResult2Pre(self, out_params, mode):
         ncomponent = self.fitp1.columnCount()
         nrows = self.fitp1.rowCount()
         ncomponent = int(ncomponent / 2)
@@ -2411,9 +2412,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.pre[2][26][2 * index_pk + 1] = out_params[strind + str(index_pk + 1) + '_rel_height_ratio'].value
                 self.pre[2][12][2 * index_pk + 1] = out_params[strind + str(index_pk + 1) + '_fct_coster_kronig'].value
 
-    def result2Par(self, out_params):
-        self.bgResult2Pre(out_params)
-        self.peakResult2Pre(out_params)
+    def result2Par(self, out_params, mode):
+        self.bgResult2Pre(out_params, mode)
+        self.peakResult2Pre(out_params, mode)
 
     def fillTabResults(self, x, y, out):
         y_components = [0 for idx in range(len(y))]
@@ -2704,7 +2705,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.statusBar().showMessage(results)
 
         # component results into table
-        self.result2Par(out.params)
+        self.result2Par(out.params, mode)
         self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
         self.fillTabResults(x, y, out)
         # Fit stats to GUI:
@@ -2764,27 +2765,32 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 # print(index_pk, color)
                 strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
                 strind = strind.split(":", 1)[0]
-                if self.idx_bg >= 100:
+                if self.idx_bg > 100:
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
                                          comps['bg_'] + comps['pg_'], label='C_' + str(index_pk + 1))
-                if self.idx_bg < 2:
+                if self.idx_bg < 2 or self.idx_bg==100:
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'],
                                          bg_mod + comps['pg_'], label='C_' + str(index_pk + 1))
                 if self.idx_bg == 2:
+                    print('test')
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'], comps['bg_'],
                                          label='C_' + str(index_pk + 1))
                 if 100 > self.idx_bg > 2:
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
                                          comps['bg_'] + comps['pg_'], label='C_' + str(index_pk + 1))
                     # Philipp: 14-07-2022
-                if self.idx_bg < 2:
+                if self.idx_bg < 2 or self.idx_bg==100:
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'])
-                if self.idx_bg >= 100:
+                    self.ax.plot(x, bg_mod + comps['pg_'], label='BG')
+                if self.idx_bg > 100:
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
+                    self.ax.plot(x, comps['bg_']  + comps['pg_'], label='BG')
                 if self.idx_bg == 2:
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'], comps['bg_'])
+                    self.ax.plot(x, comps['bg_'], label='BG')
                 if 100 > self.idx_bg > 2:
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
+                    self.ax.plot(x, comps['bg_'] + comps['pg_'], label='BG')
             self.ax.set_xlim(left=self.xmin)
             self.ar.set_xlim(left=self.xmin)
             self.ax.set_xlim(right=self.xmax)
@@ -2815,12 +2821,16 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 # Philipp: 14-07-2022
                 if self.idx_bg <2:
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'])
+                    self.ax.plot(x, bg_mod + comps['pg_'],  label="BG")
                 if self.idx_bg>=100:
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
+                    self.ax.plot(x, comps['bg_'] + comps['pg_'], label="BG")
                 if self.idx_bg == 2:
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'], comps['bg_'])
+                    self.ax.plot(x, comps['bg_'], comps['bg_'],  label="BG")
                 if 100>self.idx_bg > 2:
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
+                    self.ax.plot(x, comps['bg_'] + comps['pg_'],  label="BG")
                 #
             self.ax.set_xlim(left=self.xmin)
             self.ar.set_xlim(left=self.xmin)
@@ -2842,10 +2852,20 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # make dataFrame and concat to export
         df_x = pd.DataFrame(x, columns=['x'])
         df_raw_y = pd.DataFrame(raw_y, columns=['raw_y'])
-        if self.idx_bg>=100:
+        if self.idx_bg>100:
             df_y = pd.DataFrame(raw_y - comps['pg_'] - comps['bg_'], columns=['data-bg'])
             df_pks = pd.DataFrame(out.best_fit - comps['pg_'] - comps['bg_'], columns=['sum_components'])
             df_sum = pd.DataFrame(out.best_fit, columns=['sum_fit'])
+        elif self.idx_bg==100:
+            if mode == 'eva':
+                df_y = pd.DataFrame(raw_y - comps['pg_'] - bg_mod, columns=['data-bg'])
+                df_pks = pd.DataFrame(out.best_fit - comps['pg_'] - bg_mod, columns=['sum_components'])
+                df_sum = pd.DataFrame(out.best_fit, columns=['sum_fit'])
+            else:
+                df_y = pd.DataFrame(raw_y - comps['pg_'] - comps['bg_'], columns=['data-bg'])
+                df_pks = pd.DataFrame(out.best_fit - comps['pg_'] - comps['bg_'], columns=['sum_components'])
+                df_sum = pd.DataFrame(out.best_fit, columns=['sum_fit'])
+
         elif self.idx_bg==2:
             df_y = pd.DataFrame(raw_y - bg_mod - comps['bg_'], columns=['data-bg'])
             df_pks = pd.DataFrame(out.best_fit - comps['bg_'], columns=['sum_components'])
@@ -2854,7 +2874,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             df_y = pd.DataFrame(raw_y - bg_mod - comps['pg_'], columns=['data-bg'])
             df_pks = pd.DataFrame(out.best_fit - comps['pg_'], columns=['sum_components'])
             df_sum = pd.DataFrame(out.best_fit + bg_mod, columns=['sum_fit'])
-        if self.idx_bg>=100:
+        if self.idx_bg>100:
             df_b = pd.DataFrame(comps['pg_'] + comps['bg_'], columns=['bg'])
         if self.idx_bg<2:
             df_b = pd.DataFrame(bg_mod + comps['pg_'], columns=['bg'])
@@ -2862,6 +2882,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
             df_b = pd.DataFrame(comps['bg_'], columns=['bg'])
         if 100>self.idx_bg > 2:
             df_b = pd.DataFrame(comps['bg_'] + comps['pg_'], columns=['bg'])
+        if self.idx_bg == 100:
+            df_b = pd.DataFrame(bg_mod + comps['pg_'], columns=['bg'])
         if self.idx_bg==2:
             df_b_pg = pd.DataFrame(comps['bg_'], columns=['pg'])
         else:
