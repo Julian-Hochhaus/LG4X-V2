@@ -883,7 +883,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp1.setHorizontalHeaderItem(colPosition_fitp1, item)
         item = QtWidgets.QTableWidgetItem('C_' + str(int(1 + colPosition_fitp1 / 2)))
         self.fitp1.setHorizontalHeaderItem(colPosition_fitp1 + 1, item)
-        self.fitp1.resizeColumnsgitrToContents()
+        self.fitp1.resizeColumnsToContents()
         item = QtWidgets.QTableWidgetItem('C_' + str(int(1 + colPosition_res)))
         self.res_tab.setHorizontalHeaderItem(colPosition_res, item)
         self.res_tab.resizeColumnsToContents()
