@@ -2091,17 +2091,30 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     pktar) + '_center + ' + str(strind + str(index_pk + 1) + '_center_diff')
 
         # lorentzian sigma ref setup
+
         if self.pre[2][17][2 * index_pk + 1] > 0:
             pktar = self.pre[2][17][2 * index_pk + 1]
             strtar = self.list_shape[self.pre[2][0][2 * pktar - 1]]
             strtar = strtar.split(":", 1)[0]
+            print("pktar, strtar=",pktar, strtar)
+            print('index_pk, strind, index=', index_pk, strind, index)
             if self.pre[2][18][2 * index_pk + 1] is not None and len(str(self.pre[2][18][2 * index_pk + 1])) > 0:
                 if index == 1 or index == 3 or index == 9 or index == 10 or index == 11:
-                    pars[strind + str(index_pk + 1) + '_sigma'].expr = strtar + str(
-                        pktar) + '_sigma * ' + str(strind + str(index_pk + 1) + '_lorentzian_ratio')
+                    if strtar in ['v', 'a']:
+                        pars[strind + str(index_pk + 1) + '_sigma'].expr = strtar + str(
+                            pktar) + '_gamma * ' + str(strind + str(index_pk + 1) + '_lorentzian_ratio')
+                    else:
+
+                        pars[strind + str(index_pk + 1) + '_sigma'].expr = strtar + str(
+                            pktar) + '_sigma * ' + str(strind + str(index_pk + 1) + '_lorentzian_ratio')
                 if index == 2 or index == 6:
-                    pars[strind + str(index_pk + 1) + '_gamma'].expr = strtar + str(
-                        pktar) + '_gamma * ' + str(strind + str(index_pk + 1) + '_lorentzian_ratio')
+                    if strtar not  in ['v', 'a']:
+                        pars[strind + str(index_pk + 1) + '_gamma'].expr = strtar + str(
+                            pktar) + '_sigma * ' + str(strind + str(index_pk + 1) + '_lorentzian_ratio')
+                    else:
+                        pars[strind + str(index_pk + 1) + '_gamma'].expr = strtar + str(
+                            pktar) + '_gamma * ' + str(strind + str(index_pk + 1) + '_lorentzian_ratio')
+
 
         # gaussian sigma ref setup
         if self.pre[2][19][2 * index_pk + 1] > 0:
@@ -2110,11 +2123,19 @@ class PrettyWidget(QtWidgets.QMainWindow):
             strtar = strtar.split(":", 1)[0]
             if self.pre[2][20][2 * index_pk + 1] is not None and len(str(self.pre[2][20][2 * index_pk + 1])) > 0:
                 if index == 0 or index == 2 or index == 4 or index == 5 or index == 6 or index == 7 or index == 8 or index == 12:
-                    pars[strind + str(index_pk + 1) + '_sigma'].expr = strtar + str(
-                        pktar) + '_sigma * ' + str(strind + str(index_pk + 1) + '_gaussian_ratio')
+                    if strtar in ['gds', 'gdd']:
+                        pars[strind + str(index_pk + 1) + '_sigma'].expr = strtar + str(
+                            pktar) + '_gaussian_sigma * ' + str(strind + str(index_pk + 1) + '_gaussian_ratio')
+                    else:
+                        pars[strind + str(index_pk + 1) + '_sigma'].expr = strtar + str(
+                            pktar) + '_sigma * ' + str(strind + str(index_pk + 1) + '_gaussian_ratio')
                 if index == 10 or index == 11:
-                    pars[strind + str(index_pk + 1) + '_gaussian_sigma'].expr = strtar + str(
-                        pktar) + '_gaussian_sigma * ' + str(strind + str(index_pk + 1) + '_gaussian_ratio')
+                    if strtar not in ['gds', 'gdd']:
+                        pars[strind + str(index_pk + 1) + '_gaussian_sigma'].expr = strtar + str(
+                            pktar) + '_sigma * ' + str(strind + str(index_pk + 1) + '_gaussian_ratio')
+                    else:
+                        pars[strind + str(index_pk + 1) + '_gaussian_sigma'].expr = strtar + str(
+                            pktar) + '_gaussian_sigma * ' + str(strind + str(index_pk + 1) + '_gaussian_ratio')
 
         # gamma ref setup
         if self.pre[2][21][2 * index_pk + 1] > 0:
@@ -2122,10 +2143,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
             strtar = self.list_shape[self.pre[2][0][2 * pktar - 1]]
             strtar = strtar.split(":", 1)[0]
             if self.pre[2][22][2 * index_pk + 1] is not None and len(str(self.pre[2][22][2 * index_pk + 1])) > 0:
-                if index == 4 or index == 5 or index == 9 or index == 10 or index == 11:
+                if (index == 9 or index == 10 or index == 11) and (strtar in ['d', 'gdd', 'gds']):
                     pars[strind + str(index_pk + 1) + '_gamma'].expr = strtar + str(pktar) + '_gamma * ' + str(
                         strind + str(index_pk + 1) + '_gamma_ratio')
-
+                if index==4 and strtar=='e':
+                    pars[strind + str(index_pk + 1) + '_gamma'].expr = strtar + str(pktar) + '_gamma * ' + str(
+                        strind + str(index_pk + 1) + '_gamma_ratio')
+                if index==5 and strtar=='s':
+                    pars[strind + str(index_pk + 1) + '_gamma'].expr = strtar + str(pktar) + '_gamma * ' + str(
+                        strind + str(index_pk + 1) + '_gamma_ratio')
         # soc ref and height ratio ref setup
         if index == 10:
             if self.pre[2][23][2 * index_pk + 1] > 0:
