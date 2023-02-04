@@ -312,5 +312,4 @@ class FermiEdgeModel(lmfit.model.Model):
         self.set_param_hint('amplitude', value=(max(data) - min(data)) / 10, min=0, max=(max(data) - min(data)))
         self.set_param_hint('sigma', value=(max(x) - min(x)) / len(x), min=0, max=2)
         params = self.make_params()
-        print(params)
         return lmfit.models.update_param_vals(params, self.prefix, **kwargs)

@@ -18,9 +18,6 @@ def autoscale_y(ax, margin=0.1):
         yd = line.get_ydata()
         lo, hi = ax.get_xlim()
         if not np.max(yd) == np.min(yd):
-            print(yd)
-            print(xd)
-            print(lo,hi)
             if lo<hi:
                 y_displayed = yd[((xd > lo) & (xd < hi))]
             else:

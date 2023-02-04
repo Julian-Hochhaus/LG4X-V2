@@ -373,7 +373,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         pre_bg = [['', 1e-06, '', 10, 2, 0.0003, 2, 1000, '', ''],
                   [2, 2866.0, '', 1643.0, '', 1.0, '', 1.0, '', ''],
                   [2, 0, 2, 0, 2, 0, 2, 0, 2, 0]]
-        #self.setPreset([0], pre_bg, [])
+        # self.setPreset([0], pre_bg, [])
 
         self.fitp0.resizeColumnsToContents()
         self.fitp0.resizeRowsToContents()
@@ -400,7 +400,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_rem.resize(btn_rem.sizeHint())
         btn_rem.clicked.connect(self.rem_col)
         componentbuttons_layout.addWidget(btn_rem)
-
 
         btn_limit_set = QtWidgets.QPushButton('&Set/Show Limits', self)
         btn_limit_set.resize(btn_limit_set.sizeHint())
@@ -498,7 +497,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         pre_pk = [[0, 0], [2, 284.6], [0, 20000], [2, 0.2], [2, 0.2], [2, 0.02], [2, 0], [2, 0], [2, 0.0], [2, 0.026],
                   [2, 1], [2, 0.7], [2, 1], [0, 0], [2, 0.1], [0, 0], [2, 0.5], [0, 0], [2, 1], [0, 0], [2, 1],
                   [0, 0], [2, 1], [0, 0], [2, 1], [0, 0], [2, 1]]
-        self.pre=[[self.idx_bg,self.xmin,self.xmax, self.hv, self.wf],pre_bg,pre_pk,[[0, '', '']] * 19]
+        self.pre = [[self.idx_bg, self.xmin, self.xmax, self.hv, self.wf], pre_bg, pre_pk, [[0, '', '']] * 19]
         self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
 
         self.fitp1.resizeColumnsToContents()
@@ -544,24 +543,24 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.res_label = QtWidgets.QLabel()
         self.res_label.setText("Fit results:")
         self.res_label.setStyleSheet("font-weight: bold; font-size:12pt")
-        print(self.pre)
         # grid..addWidget(self.res_label, 7, 7, 1, 1)
         self.activeParameters()
 
         self.show()
+
     def clicked_cross_section(self):
         window_cross_section = Window_CrossSection()
 
         window_cross_section.show()
         window_cross_section.btn_cc.clicked.connect(lambda: self.setCrossSection(window_cross_section))
-    def setCrossSection(self,window):
+
+    def setCrossSection(self, window):
         window.choosenElement()
-        tougaard=window.tougaard_params
+        tougaard = window.tougaard_params
         for idx in range(4):
-            print(tougaard[idx])
-            self.pre[1][1][2*idx+1]=tougaard[idx]
-        print(self.pre[1][1])
+            self.pre[1][1][2 * idx + 1] = tougaard[idx]
         self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
+
     def activeParameters(self):
         """
 
@@ -577,12 +576,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
         for col in range(ncols):
             for row in range(nrows):
                 if idx == 0:
-                    if row == 0 and col <4:
+                    if row == 0 and col < 4:
                         self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
                                                                            col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
                 if idx == 100:
                     if row == 0:
-                        self.fitp0.item(row, col).setFlags(self.fitp0.item(row,col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+                        self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
+                                                                           col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
                 if idx == 1:
                     if row == 1:
                         self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
@@ -992,9 +992,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 # self.df = np.loadtxt(str(self.comboBox_file.currentText()),	delimiter=',', skiprows=1)
                 x0 = self.df[:, 0]
                 y0 = self.df[:, 1]
-                pre_pk = [[0, 0], [0, x0[abs(y0 - y0.max()).argmin()]],[0,y0[abs(y0 - y0.max()).argmin()]],[2,0], [0, abs(x0[0] - x0[-1]) /(0.2*len(x0))], [2, 0], [2, 0], [2, 0], [2, 0], [2, 0], [2, 0], [2, 0], [2, 0]]
+                pre_pk = [[0, 0], [0, x0[abs(y0 - y0.max()).argmin()]], [0, y0[abs(y0 - y0.max()).argmin()]], [2, 0],
+                          [0, abs(x0[0] - x0[-1]) / (0.2 * len(x0))], [2, 0], [2, 0], [2, 0], [2, 0], [2, 0], [2, 0],
+                          [2, 0], [2, 0]]
             else:
-                pre_pk = [[0, 0], [0, 285], [0, 20000], [2, 0], [0, 0.2], [2, 0],[2, 0], [2, 0], [2, 0], [2, 0], [2, 0], [2, 0], [2,0]]
+                pre_pk = [[0, 0], [0, 285], [0, 20000], [2, 0], [0, 0.2], [2, 0], [2, 0], [2, 0], [2, 0], [2, 0],
+                          [2, 0], [2, 0], [2, 0]]
             self.setPreset([0], [], pre_pk)
         if index == 2:
             try:
@@ -1033,7 +1036,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.savePresetDia()
             except Exception as e:
                 return self.raise_error("Error: could not save data")
-        if index == 5: #reformat inputs [bug]
+        if index == 5:  # reformat inputs [bug]
             # load C1s component preset
             pre_bg = [[2, 295, 2, 275, '', '', '', '', '', ''], ['cv', 1e-06, 'it', 10, '', '', '', '', '', ''],
                       ['B', 2866.0, 'C', 1643.0, 'C*', 1.0, 'D', 1.0, 'Keep fixed?', 0],
@@ -1053,7 +1056,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                           [2, 0.85, 2, 0.85, 2, 1.28, 2, 1.28], [2, 0.85, 2, 0.85, 2, 1.28, 2, 1.28],
                           [0, 20000, 0, 2000, 0, 750, 0, 750], [2, 0.5, 2, 0.5, 2, 0.5, 2, 0.5]]
             self.setPreset([0], pre_bg, pre_pk)
-        if index == 6: #reformat inputs [bug]
+        if index == 6:  # reformat inputs [bug]
             # load C K edge preset
             pre_bg = [[2, 270.7, 2, 320.7, '', '', '', '', '', ''], ['cv', 1e-06, 'it', 10.0, '', '', '', '', '', ''],
                       ['B', 2866.0, 'C', 1643.0, 'C*', 1.0, 'D', 1.0, 'Keep fixed?', 0],
@@ -1515,15 +1518,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
     def plot_pt(self):
         # component elements from periodic table window selection
-        # print('before', len(self.ax.texts))
-
         while len(self.ax.texts) > 0:
             for txt in self.ax.texts:
                 txt.remove()
             self.canvas.draw()
             self.repaint()
             # self.ax.texts.remove()
-        # print('after', len(self.ax.texts))
         if self.pt.selectedElements:
             if self.fitp0.item(0, 7).text() is not None and self.fitp0.item(0, 9).text() is not None:
                 if len(self.fitp0.item(0, 7).text()) > 0 and len(self.fitp0.item(0, 9).text()) > 0:
@@ -1545,9 +1545,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.fitp0.setItem(0, 9, item)
             ymin, ymax = self.ax.get_ylim()
             xmin, xmax = self.ax.get_xlim()
-            # print(xmin,xmax)
             for obj in self.pt.selectedElements:
-                # print(obj.symbol, obj.alka)
                 if len(obj.alka['trans']) > 0:
                     for orb in range(len(obj.alka['trans'])):
                         if xmin > xmax:
@@ -1558,7 +1556,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             elem_x = np.asarray([en])
                             elem_y = np.asarray([float(obj.alka['rsf'][orb])])
                             elem_z = obj.alka['trans'][orb]
-                            # print(elem_x, elem_y, elem_z) self.ax.text(elem_x, ymin+(ymax-ymin)*elem_y/60,
                             # obj.symbol+elem_z, color="r", rotation="vertical")
                             self.ax.text(elem_x, ymin + (ymax - ymin) * math.log(elem_y + 1, 10) / 2,
                                          obj.symbol + elem_z, color="r", rotation="vertical")
@@ -1572,14 +1569,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             elem_x = np.asarray([en])
                             elem_y = np.asarray([float(obj.aes['rsf'][orb])])
                             elem_z = obj.aes['trans'][orb]
-                            # print(elem_x, elem_y, elem_z) self.ax.text(elem_x, ymin+(ymax-ymin)*elem_y/6,
                             # obj.symbol+elem_z, color="g", rotation="vertical")
                             self.ax.text(elem_x, ymin + (ymax - ymin) * math.log(elem_y + 1, 10), obj.symbol + elem_z,
                                          color="g", rotation="vertical")
 
             self.canvas.draw()
             self.repaint()
-        # print('new', len(self.ax.texts))
 
     def plot(self):
         plottitle = self.comboBox_file.currentText().split('/')[-1]
@@ -1625,12 +1620,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 y0 = self.df[:, 1]
             except Exception as e:
                 return self.raise_error("Error: could not load csv file.")
-            # print(strpe)
             strpe = (str(strpe).split())
-            # print(pe)
             if strpe[0] == 'PE:' and strpe[2] == 'eV':
                 pe = float(strpe[1])
-                # print(pe)
                 item = QtWidgets.QTableWidgetItem(str(pe))
                 self.fitp0.setItem(0, 7, item)
             # plt.cla()
@@ -1649,12 +1641,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
             self.ax.grid(True)
             if plottitle == '':
-                print('l1652')
                 short_file_name = self.comboBox_file.currentText().split('/')[-1]
                 self.ar.set_title(short_file_name, fontsize=11)
                 self.plottitle.setText(short_file_name)
             else:
-                print('l1657')
                 self.ar.set_title(r"{}".format(plottitle), fontsize=11)
             self.ax.legend(loc=0)
             self.canvas.draw()
@@ -1683,7 +1673,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 points = 999
                 self.df = np.array([[0] * 2] * points, dtype='f')
                 self.df[:, 0] = np.linspace(x1, x2, points)
-
 
         self.ana('eva')
 
@@ -1775,7 +1764,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             toC = self.pre[1][1][3]
             toCd = self.pre[1][1][5]
             toD = self.pre[1][1][7]
-            toT0=self.pre[1][1][9]
+            toT0 = self.pre[1][1][9]
             pars = None
             if mode == 'fit':
                 toM = self.pre[1][0][3]
@@ -1877,8 +1866,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
             else:
                 pars = mod.make_params()
                 for index in range(5):
-                    print('test')
-                    print(self.pre[1])
                     pars['bg_c' + str(index)].value = self.pre[1][2][2 * index + 1]
                     if self.pre[1][2][2 * index] == 2:
                         pars['bg_c' + str(index)].vary = False
@@ -1893,7 +1880,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 or len(str(self.pre[1][2][3])) == 0 or len(str(self.pre[1][2][5])) == 0 \
                 or len(str(self.pre[1][2][7])) == 0 or len(str(self.pre[1][2][9])) == 0:
             if pars is None:
-                print('test')
                 pars = modp.make_params()
                 mod = modp
                 for index in range(5):
@@ -1919,8 +1905,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 pars = modp.make_params()
                 mod = modp
                 for index in range(5):
-                    pars['pg_c' + str(index)].value = self.pre[1][2][2*index +1]
-                    if self.pre[1][2][2*index]==2:
+                    pars['pg_c' + str(index)].value = self.pre[1][2][2 * index + 1]
+                    if self.pre[1][2][2 * index] == 2:
                         pars['pg_c' + str(index)].vary = False
                 if self.fixedBG.isChecked():
                     for par in pars:
@@ -1932,7 +1918,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 pars['pg_c' + str(index)].value = self.pre[1][2][2 * index + 1]
                 if self.pre[1][2][2 * index] == 2:
                     pars['pg_c' + str(index)].vary = False
-            pars['pg_c0'].min=0
+            pars['pg_c0'].min = 0
         mod += modp
         if self.fixedBG.isChecked():
             for par in pars:
@@ -2096,8 +2082,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
             pktar = self.pre[2][17][2 * index_pk + 1]
             strtar = self.list_shape[self.pre[2][0][2 * pktar - 1]]
             strtar = strtar.split(":", 1)[0]
-            print("pktar, strtar=",pktar, strtar)
-            print('index_pk, strind, index=', index_pk, strind, index)
             if self.pre[2][18][2 * index_pk + 1] is not None and len(str(self.pre[2][18][2 * index_pk + 1])) > 0:
                 if index == 1 or index == 3 or index == 9 or index == 10 or index == 11:
                     if strtar in ['v', 'a']:
@@ -2108,13 +2092,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         pars[strind + str(index_pk + 1) + '_sigma'].expr = strtar + str(
                             pktar) + '_sigma * ' + str(strind + str(index_pk + 1) + '_lorentzian_ratio')
                 if index == 2 or index == 6:
-                    if strtar not  in ['v', 'a']:
+                    if strtar not in ['v', 'a']:
                         pars[strind + str(index_pk + 1) + '_gamma'].expr = strtar + str(
                             pktar) + '_sigma * ' + str(strind + str(index_pk + 1) + '_lorentzian_ratio')
                     else:
                         pars[strind + str(index_pk + 1) + '_gamma'].expr = strtar + str(
                             pktar) + '_gamma * ' + str(strind + str(index_pk + 1) + '_lorentzian_ratio')
-
 
         # gaussian sigma ref setup
         if self.pre[2][19][2 * index_pk + 1] > 0:
@@ -2146,10 +2129,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if (index == 9 or index == 10 or index == 11) and (strtar in ['d', 'gdd', 'gds']):
                     pars[strind + str(index_pk + 1) + '_gamma'].expr = strtar + str(pktar) + '_gamma * ' + str(
                         strind + str(index_pk + 1) + '_gamma_ratio')
-                if index==4 and strtar=='e':
+                if index == 4 and strtar == 'e':
                     pars[strind + str(index_pk + 1) + '_gamma'].expr = strtar + str(pktar) + '_gamma * ' + str(
                         strind + str(index_pk + 1) + '_gamma_ratio')
-                if index==5 and strtar=='s':
+                if index == 5 and strtar == 's':
                     pars[strind + str(index_pk + 1) + '_gamma'].expr = strtar + str(pktar) + '_gamma * ' + str(
                         strind + str(index_pk + 1) + '_gamma_ratio')
         # soc ref and height ratio ref setup
@@ -2391,10 +2374,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if self.idx_bg == 2:
             for index in range(5):
                 self.pre[1][self.idx_bg][2 * index + 1] = out_params['bg_c' + str(index)].value
-        if self.idx_bg !=2:
+        if self.idx_bg != 2:
             for index in range(5):
                 self.pre[1][2][2 * index + 1] = out_params['pg_c' + str(index)].value
-        print('results', self.pre[1])
 
     def peakResult2Pre(self, out_params, mode):
         ncomponent = self.fitp1.columnCount()
@@ -2537,10 +2519,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 # included area
                 area = integrate.simps([y for y, x in zip(y_area, x)])
                 item = QtWidgets.QTableWidgetItem(
-                        str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f'))))
+                    str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f'))))
                 self.res_tab.setItem(7, index_pk, item)
                 item = QtWidgets.QTableWidgetItem(
-                        str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f'))))
+                    str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f'))))
                 self.res_tab.setItem(9, index_pk, item)
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_height'].value, self.floating)))
@@ -2593,15 +2575,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 area_p2 = integrate.simps([y for y, x in zip(y_area_p2, x)])
                 area_ges = area_p1 + area_p2
                 item = QtWidgets.QTableWidgetItem(
-                        str(format(area_p1, '.1f') + r' ({}%)'.format(format(area_p1 / area_ges * 100, '.2f'))))
+                    str(format(area_p1, '.1f') + r' ({}%)'.format(format(area_p1 / area_ges * 100, '.2f'))))
                 self.res_tab.setItem(7, index_pk, item)
                 item = QtWidgets.QTableWidgetItem(
-                        str(format(area_p2, '.1f') + r' ({}%)'.format(format(area_p2 / area_ges * 100, '.2f'))))
+                    str(format(area_p2, '.1f') + r' ({}%)'.format(format(area_p2 / area_ges * 100, '.2f'))))
                 self.res_tab.setItem(8, index_pk, item)
                 y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
                 area = integrate.simps([y for y, x in zip(y_area, x)])
                 item = QtWidgets.QTableWidgetItem(
-                        str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f'))))
+                    str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f'))))
                 self.res_tab.setItem(9, index_pk, item)
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_height_p1'].value, self.floating)))
@@ -2617,7 +2599,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def ana(self, mode):
         self.savePreset()
         plottitle = self.comboBox_file.currentText().split('/')[-1]
-        print('l2591', plottitle)
         # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
         x0 = self.df[:, 0]
         y0 = self.df[:, 1]
@@ -2653,14 +2634,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 # simulation mode
                 self.ar.set_title('Simulation', fontsize=11)
             else:
-                print('l2627')
                 short_file_name = self.comboBox_file.currentText().split('/')[-1]
                 self.ar.set_title(short_file_name, fontsize=11)
                 self.plottitle.setText(short_file_name)
                 self.ar.set_title(short_file_name, fontsize=11)
         else:
             self.ar.set_title(r"{}".format(plottitle), fontsize=11)
-            print('l2634')
 
         # if no range is specified, fill it from data
         if self.pre[0][1] is None or len(str(self.pre[0][1])) == 0:
@@ -2687,7 +2666,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         mod = temp_res[0]
         bg_mod = temp_res[1]
         pars = temp_res[2]
-        print(self.pre)
         self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
         # component model selection and construction
         y -= bg_mod
@@ -2711,13 +2689,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.statusBar().showMessage(strmode + ' running.')
         init = mod.eval(pars, x=x, y=y)
         if mode == 'eva':
-            out = mod.fit(y, pars, x=x, y=y)
+            out = mod.fit(y, pars, x=x, weights=1 / np.sqrt(y), y=y)
         else:
             try_me_out = self.history_manager(pars)
             if try_me_out is not None:
                 pars, pre = try_me_out
-                self.pre=pre
-                print('hist_manager', self.pre)
+                self.pre = pre
                 self.setPreset(pre[0], pre[1], pre[2], pre[3])
             out = mod.fit(y, pars, x=x, weights=1 / np.sqrt(raw_y), y=raw_y)
         comps = out.eval_components(x=x)
@@ -2788,41 +2765,41 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if plottitle != '':
                 self.ar.set_title(r"{}".format(plottitle), fontsize=11)
             # self.ax.plot(x, out.best_fit + bg_mod, 'k-', lw=2, label='initial')
-
-            for index_pk in range(int(self.fitp1.columnCount() / 2)):
+            len_idx_pk=int(self.fitp1.columnCount() / 2)
+            for index_pk in range(len_idx_pk):
                 # print(index_pk, color)
                 strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
                 strind = strind.split(":", 1)[0]
                 if self.idx_bg > 100:
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
                                          comps['bg_'] + comps['pg_'], label='C_' + str(index_pk + 1))
-                if self.idx_bg < 2 or self.idx_bg==100:
+                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
+                    if index_pk==len_idx_pk-1:
+                        self.ax.plot(x, comps['bg_'] + comps['pg_'], label='BG')
+                if self.idx_bg < 2 or self.idx_bg == 100:
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'],
                                          bg_mod + comps['pg_'], label='C_' + str(index_pk + 1))
+                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'])
+                    if index_pk==len_idx_pk-1:
+                        self.ax.plot(x, bg_mod + comps['pg_'], label='BG')
                 if self.idx_bg == 2:
-                    print('test')
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'], comps['bg_'],
                                          label='C_' + str(index_pk + 1))
+                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'], comps['bg_'])
+                    if index_pk==len_idx_pk-1:
+                        self.ax.plot(x, comps['bg_'], label='BG')
                 if 100 > self.idx_bg > 2:
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
                                          comps['bg_'] + comps['pg_'], label='C_' + str(index_pk + 1))
-                    # Philipp: 14-07-2022
-                if self.idx_bg < 2 or self.idx_bg==100:
-                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'])
-                    self.ax.plot(x, bg_mod + comps['pg_'], label='BG')
-                if self.idx_bg > 100:
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
-                    self.ax.plot(x, comps['bg_']  + comps['pg_'], label='BG')
-                if self.idx_bg == 2:
-                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'], comps['bg_'])
-                    self.ax.plot(x, comps['bg_'], label='BG')
-                if 100 > self.idx_bg > 2:
-                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
-                    self.ax.plot(x, comps['bg_'] + comps['pg_'], label='BG')
+                    if index_pk==len_idx_pk-1:
+                        self.ax.plot(x, comps['bg_'] + comps['pg_'], label='BG')
             self.ax.set_xlim(left=self.xmin)
             self.ar.set_xlim(left=self.xmin)
             self.ax.set_xlim(right=self.xmax)
             self.ar.set_xlim(right=self.xmax)
+            self.ax.plot(x, out.best_fit + bg_mod, 'r-', lw=2, label='sum')
+            self.ar.plot(x, out.residual, 'g.', label='residual')
             autoscale_y(self.ax)
 
         else:
@@ -2830,34 +2807,36 @@ class PrettyWidget(QtWidgets.QMainWindow):
             plottitle = self.comboBox_file.currentText().split('/')[-1]
             if plottitle != '':
                 self.ar.set_title(r"{}".format(plottitle), fontsize=11)
-            for index_pk in range(int(self.fitp1.columnCount() / 2)):
+            len_idx_pk = int(self.fitp1.columnCount() / 2)
+            for index_pk in range(len_idx_pk):
                 strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
                 strind = strind.split(":", 1)[0]
                 if self.idx_bg >= 100:
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
-                                             comps['bg_'] + comps['pg_'], label='C_' + str(index_pk + 1))
-                if self.idx_bg<2:
+                                         comps['bg_'] + comps['pg_'], label='C_' + str(index_pk + 1))
+                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
+                    if index_pk == len_idx_pk - 1:
+                        self.ax.plot(x, comps['bg_'] + comps['pg_'], label="BG")
+                if self.idx_bg < 2:
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'],
-                                             bg_mod + comps['pg_'], label='C_' + str(index_pk + 1))
+                                         bg_mod + comps['pg_'], label='C_' + str(index_pk + 1))
+                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'])
+                    if index_pk==len_idx_pk-1:
+                        self.ax.plot(x, bg_mod + comps['pg_'], label="BG")
                 if self.idx_bg == 2:
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'], comps['bg_'],
                                          label='C_' + str(index_pk + 1))
-                if 100>self.idx_bg > 2:
+                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'])
+                    if index_pk==len_idx_pk-1:
+                        self.ax.plot(x, comps['bg_'], label="BG")
+                if 100 > self.idx_bg > 2:
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
                                          comps['bg_'] + comps['pg_'], label='C_' + str(index_pk + 1))
-                # Philipp: 14-07-2022
-                if self.idx_bg <2:
-                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'])
-                    self.ax.plot(x, bg_mod + comps['pg_'],  label="BG")
-                if self.idx_bg>=100:
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
-                    self.ax.plot(x, comps['bg_'] + comps['pg_'], label="BG")
-                if self.idx_bg == 2:
-                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'], comps['bg_'])
-                    self.ax.plot(x, comps['bg_'], comps['bg_'],  label="BG")
-                if 100>self.idx_bg > 2:
-                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
-                    self.ax.plot(x, comps['bg_'] + comps['pg_'],  label="BG")
+                    if index_pk==len_idx_pk-1:
+                        self.ax.plot(x, comps['bg_'] + comps['pg_'], label="BG")
+
+
                 #
             self.ax.set_xlim(left=self.xmin)
             self.ar.set_xlim(left=self.xmin)
@@ -2879,11 +2858,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # make dataFrame and concat to export
         df_x = pd.DataFrame(x, columns=['x'])
         df_raw_y = pd.DataFrame(raw_y, columns=['raw_y'])
-        if self.idx_bg>100:
+        if self.idx_bg > 100:
             df_y = pd.DataFrame(raw_y - comps['pg_'] - comps['bg_'], columns=['data-bg'])
             df_pks = pd.DataFrame(out.best_fit - comps['pg_'] - comps['bg_'], columns=['sum_components'])
             df_sum = pd.DataFrame(out.best_fit, columns=['sum_fit'])
-        elif self.idx_bg==100:
+        elif self.idx_bg == 100:
             if mode == 'eva':
                 df_y = pd.DataFrame(raw_y - comps['pg_'] - bg_mod, columns=['data-bg'])
                 df_pks = pd.DataFrame(out.best_fit - comps['pg_'] - bg_mod, columns=['sum_components'])
@@ -2893,7 +2872,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 df_pks = pd.DataFrame(out.best_fit - comps['pg_'] - comps['bg_'], columns=['sum_components'])
                 df_sum = pd.DataFrame(out.best_fit, columns=['sum_fit'])
 
-        elif self.idx_bg==2:
+        elif self.idx_bg == 2:
             df_y = pd.DataFrame(raw_y - bg_mod - comps['bg_'], columns=['data-bg'])
             df_pks = pd.DataFrame(out.best_fit - comps['bg_'], columns=['sum_components'])
             df_sum = pd.DataFrame(out.best_fit + comps['bg_'], columns=['sum_fit'])
@@ -2901,17 +2880,17 @@ class PrettyWidget(QtWidgets.QMainWindow):
             df_y = pd.DataFrame(raw_y - bg_mod - comps['pg_'], columns=['data-bg'])
             df_pks = pd.DataFrame(out.best_fit - comps['pg_'], columns=['sum_components'])
             df_sum = pd.DataFrame(out.best_fit + bg_mod, columns=['sum_fit'])
-        if self.idx_bg>100:
+        if self.idx_bg > 100:
             df_b = pd.DataFrame(comps['pg_'] + comps['bg_'], columns=['bg'])
-        if self.idx_bg<2:
+        if self.idx_bg < 2:
             df_b = pd.DataFrame(bg_mod + comps['pg_'], columns=['bg'])
         if self.idx_bg == 2:
             df_b = pd.DataFrame(comps['bg_'], columns=['bg'])
-        if 100>self.idx_bg > 2:
+        if 100 > self.idx_bg > 2:
             df_b = pd.DataFrame(comps['bg_'] + comps['pg_'], columns=['bg'])
         if self.idx_bg == 100:
             df_b = pd.DataFrame(bg_mod + comps['pg_'], columns=['bg'])
-        if self.idx_bg==2:
+        if self.idx_bg == 2:
             df_b_pg = pd.DataFrame(comps['bg_'], columns=['pg'])
         else:
             df_b_pg = pd.DataFrame(comps['pg_'], columns=['pg'])
