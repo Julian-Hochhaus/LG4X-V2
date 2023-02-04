@@ -2070,6 +2070,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         return [mod, pars]
 
     def ratio_setup(self, pars, index_pk, strind, index):
+        if index == 2 or index == 6:  # unset default expression which sets sigma and gamma for the voigt and skewed-voigt always to the same value
+            pars[strind + str(index_pk + 1) + '_gamma'].expr = ''
         # amp ratio setup
         if self.pre[2][15][2 * index_pk + 1] > 0:
             pktar = self.pre[2][15][2 * index_pk + 1]
@@ -2800,7 +2802,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         else:
             # ax.plot(x, init+bg_mod, 'k:', label='initial')
             plottitle = self.comboBox_file.currentText().split('/')[-1]
-            print('l2797')
             if plottitle != '':
                 self.ar.set_title(r"{}".format(plottitle), fontsize=11)
             for index_pk in range(int(self.fitp1.columnCount() / 2)):
