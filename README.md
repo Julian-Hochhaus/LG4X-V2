@@ -4,22 +4,26 @@
 
 ## Planned features/Improvements
 
-- [ ] redesign the parameter table so that the limits are placed next to the corresponding parameters, redesign clutty GUI [#16](https://github.com/Julian-Hochhaus/LG4X-V2/issues/16)
-- [ ] remove fwhm's and area calculation from the usermodels and instead calculate them after fitting based on the ModelResult() parameters to be able to use error propagation [#27](https://github.com/Julian-Hochhaus/LG4X-V2/issues/27)
-- [ ] introduce relative parameter for gamma and coster-kronig factor
+- [ ] redesign the parameter table so that the limits are placed next to the corresponding parameters, redesign clutty GUI [#16](https://github.com/Julian-Hochhaus/LG4X-V2/issues/16) e.g. by using tabs for parameters, limits, results etc. (Add Tab indicator for the user as a reminder that limits were set)
+- [ ] add tooltip info to GUI [#18](https://github.com/Julian-Hochhaus/LG4X-V2/issues/18)
 - [ ] rework the export files, so that additional informations such as fwhm and areas are exported in readable format as well
-- [x] save the active background parameter checkbox to the parameter-files.
 - [ ] check lmfit version and catch UserWarning for independent vars as described in [#10](https://github.com/Julian-Hochhaus/LG4X-V2/issues/10)
-- [x] keep the programm running if an error occurs in the fitting procedure
-     - error handling introduced for errors during file import, parameter import, saving parameters, exporting results (Thanks to [@Hexanders](https://github.com/Hexanders))
 - [ ] Pause/Interrupt fit button [#5](https://github.com/Julian-Hochhaus/LG4X-V2/issues/5)
 - [ ] rewrite the Readme to explain the features introduced in LG4X-V2
-- [ ] Undo button (log of last parameter sets, as suggested in [#13](https://github.com/Julian-Hochhaus/LG4X-V2/issues/13), introduced on [dev branch](https://github.com/Julian-Hochhaus/LG4X-V2/tree/undo-fct))
-- [ ] show only relevant parameter for the used model and grey the others out [#17](https://github.com/Julian-Hochhaus/LG4X-V2/issues/17)
-- [ ] add tooltip info to GUI [#18](https://github.com/Julian-Hochhaus/LG4X-V2/issues/18)
-- [ ] add asymmetry ratio
-- [ ] add limits for all parameters
-- [ ] introduce class/function which converts .dat export/internal preset array to lmfit parameter set and vice versa 
+- [ ] Undo button (log of last parameter sets, as suggested in [#13](https://github.com/Julian-Hochhaus/LG4X-V2/issues/13), introduced on [dev branch]
+(https://github.com/Julian-Hochhaus/LG4X-V2/tree/undo-fct))
+- [ ] Export fit parameters as readable table to be able to use them in e.g. a presentation
+- [ ] Introduce 'Clear all' button for clearing all parameters/limits etc.
+- [x] remove fwhm's and area calculation from the usermodels and instead calculate them after fitting based on the ModelResult() parameters to be able to use error propagation [#27](https://github.com/Julian-Hochhaus/LG4X-V2/issues/27)
+- [x] introduce relative parameter for gamma and coster-kronig factor
+- [x] save the active background parameter checkbox to the parameter-files.
+- [x] keep the programm running if an error occurs in the fitting procedure
+     - error handling introduced for errors during file import, parameter import, saving parameters, exporting results (Thanks to [@Hexanders](https://github.com/Hexanders))
+
+- [x] show only relevant parameter for the used model and grey the others out [#17](https://github.com/Julian-Hochhaus/LG4X-V2/issues/17)
+- [x] add asymmetry ratio
+- [x] add limits for all parameters
+- [x] introduce class/function which converts .dat export/internal preset array to lmfit parameter set and vice versa 
 ## Introduction
 LG4X-V2 is based on the great work of [Hideki NAKAJIMA](https://github.com/hidecode221b) who developed the software LG4X. 
 
