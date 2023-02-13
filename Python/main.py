@@ -68,6 +68,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def __init__(self):
         super(PrettyWidget, self).__init__()
         # super(PrettyWidget, self).__init__()
+        self.rows_lightened=1
         self.idx_bg = None
         self.export_out = None
         self.export_pars = None
@@ -1594,6 +1595,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     # header=None)
                     strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter=',', usecols=1,
                                        max_rows=1)
+                    f = open(str(self.comboBox_file.currentText()), 'r')
+                    header_line = str(f.readline())
+                    if 'rows_lightened' in header_line:
+                        self.rows_lightened = int(header_line.split('=')[1])
+                    else:
+                        self.rows_lightened = 1
+
                 except Exception as e:
                     return self.raise_error("Error: The input .csv is not in the correct format!")
 
@@ -1604,6 +1612,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     # header=None, delimiter = '\t')
                     strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter='\t', usecols=1,
                                        max_rows=1)
+                    f = open(str(self.comboBox_file.currentText()), 'r')
+                    header_line = str(f.readline())
+                    if 'rows_lightened' in header_line:
+                        self.rows_lightened = int(header_line.split('=')[1])
+                    else:
+                        self.rows_lightened = 1
                 except Exception as e:
                     return self.raise_error("Error: The input file is not in the correct format!")
 
@@ -2689,15 +2703,16 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.statusBar().showMessage(strmode + ' running.')
         init = mod.eval(pars, x=x, y=y)
         if mode == 'eva':
-            out = mod.fit(y, pars, x=x, weights=1 / np.sqrt(y), y=y)
+            out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(y)*np.sqrt(self.rows_lightened)), y=y)
         else:
             try_me_out = self.history_manager(pars)
             if try_me_out is not None:
                 pars, pre = try_me_out
                 self.pre = pre
                 self.setPreset(pre[0], pre[1], pre[2], pre[3])
-            out = mod.fit(y, pars, x=x, weights=1 / np.sqrt(raw_y), y=raw_y)
+            out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y)*np.sqrt(self.rows_lightened)), y=raw_y)
         comps = out.eval_components(x=x)
+        print('rows_lightened:', self.rows_lightened)
         # fit results to be checked
         for key in out.params:
             print(key, "=", out.params[key].value)
@@ -2765,7 +2780,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if plottitle != '':
                 self.ar.set_title(r"{}".format(plottitle), fontsize=11)
             # self.ax.plot(x, out.best_fit + bg_mod, 'k-', lw=2, label='initial')
-            len_idx_pk=int(self.fitp1.columnCount() / 2)
+            len_idx_pk = int(self.fitp1.columnCount() / 2)
             for index_pk in range(len_idx_pk):
                 # print(index_pk, color)
                 strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
@@ -2774,25 +2789,25 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
                                          comps['bg_'] + comps['pg_'], label='C_' + str(index_pk + 1))
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
-                    if index_pk==len_idx_pk-1:
+                    if index_pk == len_idx_pk - 1:
                         self.ax.plot(x, comps['bg_'] + comps['pg_'], label='BG')
                 if self.idx_bg < 2 or self.idx_bg == 100:
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'],
                                          bg_mod + comps['pg_'], label='C_' + str(index_pk + 1))
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'])
-                    if index_pk==len_idx_pk-1:
+                    if index_pk == len_idx_pk - 1:
                         self.ax.plot(x, bg_mod + comps['pg_'], label='BG')
                 if self.idx_bg == 2:
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'], comps['bg_'],
                                          label='C_' + str(index_pk + 1))
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'], comps['bg_'])
-                    if index_pk==len_idx_pk-1:
+                    if index_pk == len_idx_pk - 1:
                         self.ax.plot(x, comps['bg_'], label='BG')
                 if 100 > self.idx_bg > 2:
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
                                          comps['bg_'] + comps['pg_'], label='C_' + str(index_pk + 1))
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
-                    if index_pk==len_idx_pk-1:
+                    if index_pk == len_idx_pk - 1:
                         self.ax.plot(x, comps['bg_'] + comps['pg_'], label='BG')
             self.ax.set_xlim(left=self.xmin)
             self.ar.set_xlim(left=self.xmin)
@@ -2821,21 +2836,20 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'],
                                          bg_mod + comps['pg_'], label='C_' + str(index_pk + 1))
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'])
-                    if index_pk==len_idx_pk-1:
+                    if index_pk == len_idx_pk - 1:
                         self.ax.plot(x, bg_mod + comps['pg_'], label="BG")
                 if self.idx_bg == 2:
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'], comps['bg_'],
                                          label='C_' + str(index_pk + 1))
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'])
-                    if index_pk==len_idx_pk-1:
+                    if index_pk == len_idx_pk - 1:
                         self.ax.plot(x, comps['bg_'], label="BG")
                 if 100 > self.idx_bg > 2:
                     self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
                                          comps['bg_'] + comps['pg_'], label='C_' + str(index_pk + 1))
                     self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
-                    if index_pk==len_idx_pk-1:
+                    if index_pk == len_idx_pk - 1:
                         self.ax.plot(x, comps['bg_'] + comps['pg_'], label="BG")
-
 
                 #
             self.ax.set_xlim(left=self.xmin)
