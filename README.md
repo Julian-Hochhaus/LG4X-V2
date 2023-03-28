@@ -1,34 +1,4 @@
-
-
-# LG4X-V2: lmfit GUI for XPS
-
-## Planned features/Improvements
-
-- [ ] redesign the parameter table so that the limits are placed next to the corresponding parameters, redesign clutty GUI [#16](https://github.com/Julian-Hochhaus/LG4X-V2/issues/16) e.g. by using tabs for parameters, limits, results etc. (Add Tab indicator for the user as a reminder that limits were set)
-- [ ] add tooltip info to GUI [#18](https://github.com/Julian-Hochhaus/LG4X-V2/issues/18)
-- [ ] rework the export files, so that additional informations such as fwhm and areas are exported in readable format as well
-- [ ] check lmfit version and catch UserWarning for independent vars as described in [#10](https://github.com/Julian-Hochhaus/LG4X-V2/issues/10)
-- [ ] Pause/Interrupt fit button [#5](https://github.com/Julian-Hochhaus/LG4X-V2/issues/5)
-- [ ] rewrite the Readme to explain the features introduced in LG4X-V2
-- [ ] Undo button (log of last parameter sets, as suggested in [#13](https://github.com/Julian-Hochhaus/LG4X-V2/issues/13), introduced on [dev branch]
-(https://github.com/Julian-Hochhaus/LG4X-V2/tree/undo-fct))
-- [ ] Export fit parameters as readable table to be able to use them in e.g. a presentation
-- [ ] Introduce 'Clear all' button for clearing all parameters/limits etc.
-- [x] remove fwhm's and area calculation from the usermodels and instead calculate them after fitting based on the ModelResult() parameters to be able to use error propagation [#27](https://github.com/Julian-Hochhaus/LG4X-V2/issues/27)
-- [x] introduce relative parameter for gamma and coster-kronig factor
-- [x] save the active background parameter checkbox to the parameter-files.
-- [x] keep the programm running if an error occurs in the fitting procedure
-     - error handling introduced for errors during file import, parameter import, saving parameters, exporting results (Thanks to [@Hexanders](https://github.com/Hexanders))
-
-- [x] show only relevant parameter for the used model and grey the others out [#17](https://github.com/Julian-Hochhaus/LG4X-V2/issues/17)
-- [x] add asymmetry ratio
-- [x] add limits for all parameters
-- [x] introduce class/function which converts .dat export/internal preset array to lmfit parameter set and vice versa 
-## Introduction
-LG4X-V2 is based on the great work of [Hideki NAKAJIMA](https://github.com/hidecode221b) who developed the software [LG4X](https://github.com/hidecode221b/LG4X). LGX4 was published under the MIT License. For more information please refer to the License of [LG4X-V2](https://github.com/Julian-Hochhaus/LG4X-V2/blob/638f548e9daca3363f4a7f898de0cc8c1303c80b/LICENSE).
-
-LG4X provides a graphical user interface for [XPS](https://en.wikipedia.org/wiki/X-ray_photoelectron_spectroscopy) curve fitting analysis based on the [lmfit](https://pypi.org/project/lmfit/) package, which is the non-linear least-square minimization method on python platform. LG4X facilitates the curve fitting analysis for python beginners. LG4X was developed on [Python 3](https://www.python.org/), and [PyQt5](https://pypi.org/project/PyQt5/) was used for its graphical interface design. [Shirley](https://doi.org/10.1103/PhysRevB.5.4709) and [Tougaard](https://doi.org/10.1002/sia.740110902) iterated methods are implemented as a supplementary code for XPS background subtraction. LG4X tidies up all fitting parameters with their bound conditions in table forms. Fitting parameters can be imported and exported as a preset file before and after analysis to streamline the fitting procedures. Fitting results are also exported as a text for parameters and csv file for spectral data. In addition, LG4X simulates the curve without importing data and evaluates the initial parameters over the data plot prior to optimization.
-
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7777423.svg)](https://doi.org/10.5281/zenodo.7777423)
 
 ## Methods
 ### Installation
@@ -288,5 +258,33 @@ A comprehensive review on XPS technique and analytical procedures is available i
 
 You can find the VAMAS format data of various spectra from [Spectroscopy Hub](https://spectroscopyhub.com/measurements).
 
+# LG4X-V2: lmfit GUI for XPS
+
+## Planned features/Improvements
+
+- [ ] redesign the parameter table so that the limits are placed next to the corresponding parameters, redesign clutty GUI [#16](https://github.com/Julian-Hochhaus/LG4X-V2/issues/16) e.g. by using tabs for parameters, limits, results etc. (Add Tab indicator for the user as a reminder that limits were set)
+- [ ] add tooltip info to GUI [#18](https://github.com/Julian-Hochhaus/LG4X-V2/issues/18)
+- [ ] rework the export files, so that additional informations such as fwhm and areas are exported in readable format as well
+- [ ] check lmfit version and catch UserWarning for independent vars as described in [#10](https://github.com/Julian-Hochhaus/LG4X-V2/issues/10)
+- [ ] Pause/Interrupt fit button [#5](https://github.com/Julian-Hochhaus/LG4X-V2/issues/5)
+- [ ] rewrite the Readme to explain the features introduced in LG4X-V2
+- [ ] Undo button (log of last parameter sets, as suggested in [#13](https://github.com/Julian-Hochhaus/LG4X-V2/issues/13), introduced on [dev branch]
+(https://github.com/Julian-Hochhaus/LG4X-V2/tree/undo-fct))
+- [ ] Export fit parameters as readable table to be able to use them in e.g. a presentation
+- [ ] Introduce 'Clear all' button for clearing all parameters/limits etc.
+- [x] remove fwhm's and area calculation from the usermodels and instead calculate them after fitting based on the ModelResult() parameters to be able to use error propagation [#27](https://github.com/Julian-Hochhaus/LG4X-V2/issues/27)
+- [x] introduce relative parameter for gamma and coster-kronig factor
+- [x] save the active background parameter checkbox to the parameter-files.
+- [x] keep the programm running if an error occurs in the fitting procedure
+     - error handling introduced for errors during file import, parameter import, saving parameters, exporting results (Thanks to [@Hexanders](https://github.com/Hexanders))
+
+- [x] show only relevant parameter for the used model and grey the others out [#17](https://github.com/Julian-Hochhaus/LG4X-V2/issues/17)
+- [x] add asymmetry ratio
+- [x] add limits for all parameters
+- [x] introduce class/function which converts .dat export/internal preset array to lmfit parameter set and vice versa 
+## Introduction
+LG4X-V2 is based on the great work of [Hideki NAKAJIMA](https://github.com/hidecode221b) who developed the software [LG4X](https://github.com/hidecode221b/LG4X). LGX4 was published under the MIT License. For more information please refer to the License of [LG4X-V2](https://github.com/Julian-Hochhaus/LG4X-V2/blob/638f548e9daca3363f4a7f898de0cc8c1303c80b/LICENSE).
+
+LG4X provides a graphical user interface for [XPS](https://en.wikipedia.org/wiki/X-ray_photoelectron_spectroscopy) curve fitting analysis based on the [lmfit](https://pypi.org/project/lmfit/) package, which is the non-linear least-square minimization method on python platform. LG4X facilitates the curve fitting analysis for python beginners. LG4X was developed on [Python 3](https://www.python.org/), and [PyQt5](https://pypi.org/project/PyQt5/) was used for its graphical interface design. [Shirley](https://doi.org/10.1103/PhysRevB.5.4709) and [Tougaard](https://doi.org/10.1002/sia.740110902) iterated methods are implemented as a supplementary code for XPS background subtraction. LG4X tidies up all fitting parameters with their bound conditions in table forms. Fitting parameters can be imported and exported as a preset file before and after analysis to streamline the fitting procedures. Fitting results are also exported as a text for parameters and csv file for spectral data. In addition, LG4X simulates the curve without importing data and evaluates the initial parameters over the data plot prior to optimization.
 
 
