@@ -1,4 +1,4 @@
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7777423.svg)](https://doi.org/10.5281/zenodo.7777423)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7777422.svg)](https://doi.org/10.5281/zenodo.7777422)
 
 ## Methods
 ### Installation
