@@ -15,5 +15,9 @@ authors:
     orcid: 'https://orcid.org/0000-0002-8328-607X'
   - given-names: 'Hideki '
     family-names: Nakajima
+    affiliation: >-
+      Synchrotron Light Research Institute (Public
+      Organization)
+    orcid: 'https://orcid.org/0000-0001-9167-1288'
 repository-code: 'https://github.com/Julian-Hochhaus/LG4X-V2'
 license: MIT
