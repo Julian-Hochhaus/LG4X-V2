@@ -1,0 +1,19 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: LG4X-V2
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Julian Andreas
+    family-names: Hochhaus
+    email: julian.hochhaus@tu-dortmund.de
+    affiliation: TU Dortmund University
+    orcid: 'https://orcid.org/0000-0002-8328-607X'
+  - given-names: 'Hideki '
+    family-names: Nakajima
+repository-code: 'https://github.com/Julian-Hochhaus/LG4X-V2'
+license: MIT
