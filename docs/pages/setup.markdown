@@ -1,7 +1,7 @@
 ---
 layout: page
 title: Setup
-permalink: /setup/
+permalink: /pages/setup/
 order : 1
 ---
 

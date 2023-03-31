@@ -22,13 +22,42 @@ title: LG4X-V2
 author: Julian Hochhaus
 email: julian.hochhaus@tu-dortmund.de
 description: >- # this means to ignore newlines until "baseurl:"
-  Write an awesome description for your new site here. You can edit this
-  line in _config.yml. It will appear in your document head meta (for
-  Google search results) and in your feed.xml site description.
+  LG4X-V2 is an open-source GUI for X-ray photoemission spectroscopy (XPS) curve fitting based on the python lmfit package. It streamlines the fitting process for easier validation and consistency. It is inspired by its predecessor software LG4X by Hideki Nakajima.
 #baseurl: "" # the subpath of your site, e.g. /blog
 #url: "" # the base hostname & protocol for your site, e.g. http://example.com
-twitter_username: jekyllrb
-github_username:  jekyll
+linkedin: julian-hochhaus
+ORCID: 0000-0002-8328-607X
+github_username:  Julian-Hochhaus
+
+
+toc:
+  - title: Group 1
+    subfolderitems:
+      - page: Thing 1
+        url: /thing1.html
+      - page: Thing 2
+        url: /thing2.html
+      - page: Thing 3
+        url: /thing3.html
+  - title: Group 2
+    subfolderitems:
+      - page: Piece 1
+        url: /piece1.html
+      - page: Piece 2
+        url: /piece2.html
+      - page: Piece 3
+        url: /piece3.html
+  - title: Group 3
+    subfolderitems:
+      - page: Widget 1
+        url: /widget1.html
+      - page: Widget 2
+        url: /widget2.html
+      - page: Widget 3
+        url: /widget3.html
+
+# The keywords to associate with your website, for SEO purposes
+keywords: "XPS,lmfit,GUI,open-source, curve fitting, spectra analysis, XAS, open-source software, graphical user interface, X-ray photoemission spectroscopy, XPS curve fitting, fitting procedure, data analysis, Julian Hochhaus, Hideki Nakajima "
 
 # Build settings
 theme: minima
