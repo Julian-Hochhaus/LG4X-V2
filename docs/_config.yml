@@ -30,31 +30,6 @@ ORCID: 0000-0002-8328-607X
 github_username:  Julian-Hochhaus
 
 
-toc:
-  - title: Group 1
-    subfolderitems:
-      - page: Thing 1
-        url: /thing1.html
-      - page: Thing 2
-        url: /thing2.html
-      - page: Thing 3
-        url: /thing3.html
-  - title: Group 2
-    subfolderitems:
-      - page: Piece 1
-        url: /piece1.html
-      - page: Piece 2
-        url: /piece2.html
-      - page: Piece 3
-        url: /piece3.html
-  - title: Group 3
-    subfolderitems:
-      - page: Widget 1
-        url: /widget1.html
-      - page: Widget 2
-        url: /widget2.html
-      - page: Widget 3
-        url: /widget3.html
 
 # The keywords to associate with your website, for SEO purposes
 keywords: "XPS,lmfit,GUI,open-source, curve fitting, spectra analysis, XAS, open-source software, graphical user interface, X-ray photoemission spectroscopy, XPS curve fitting, fitting procedure, data analysis, Julian Hochhaus, Hideki Nakajima "
@@ -63,7 +38,20 @@ keywords: "XPS,lmfit,GUI,open-source, curve fitting, spectra analysis, XAS, open
 theme: minima
 plugins:
   - jekyll-feed
-  
+  - jekyll-seo-tag
+
+# Theme-specific settings
+
+minima:
+
+
+header_pages:
+ - pages/setup.markdown
+ - pages/guide.markdown
+ - pages/about.markdown
+
+
+
 markdown: kramdown
 
 # Exclude from processing.
