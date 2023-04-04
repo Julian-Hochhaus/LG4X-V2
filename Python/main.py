@@ -91,7 +91,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.result = None
         self.canvas = None
         self.figure = None
-        self.df = None
+        self.df = pd.DataFrame()
         self.filePath = None
         self.pt = None
         self.floating = None
@@ -300,7 +300,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # DropDown file list
         self.comboBox_file = QtWidgets.QComboBox(self)
         self.comboBox_file.addItems(self.list_file)
-        self.comboBox_file.currentIndexChanged.connect(self.plot)
+        self.comboBox_file.currentIndexChanged.connect(self.plot_data)
         layout_top_left.addWidget(self.comboBox_file)
         layout_top_left.addWidget(LayoutHline())
         plottitle_form = QtWidgets.QFormLayout()
@@ -989,7 +989,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.rem_col()
             # load default preset
             if self.comboBox_file.currentIndex() > 0:
-                # self.df = np.loadtxt(str(self.comboBox_file.currentText()),	delimiter=',', skiprows=1)
                 x0 = self.df[:, 0]
                 y0 = self.df[:, 1]
                 pre_pk = [[0, 0], [0, x0[abs(y0 - y0.max()).argmin()]], [0, y0[abs(y0 - y0.max()).argmin()]], [2, 0],
@@ -1004,7 +1003,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.loadPreset()
             except Exception as e:
                 return self.raise_error(windowTitle="Error: Could not load parameters!")
-            # print(self.df[0], self.df[1], self.df[2])
             if len(str(self.pre[0])) != 0 and len(self.pre[1]) != 0 and len(self.pre[2]) != 0 and len(self.pre) == 3:
                 # old format, reorder data!
                 self.reformat_pre()
@@ -1018,7 +1016,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.addPreset()
             except Exception as e:
                 return self.raise_error("Error: could not add parameters")
-            # print(self.df[0], self.df[1], self.df[2])
             if len(str(self.pre[0])) != 0 and len(self.pre[1]) != 0 and len(self.pre[2]) != 0 and len(self.pre) == 3:
                 # old format, reorder data!
                 self.reformat_pre()
@@ -1042,8 +1039,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                       ['B', 2866.0, 'C', 1643.0, 'C*', 1.0, 'D', 1.0, 'Keep fixed?', 0],
                       [2, 0, 2, 0, 2, 0, 2, 0, '', '']]
             if self.comboBox_file.currentIndex() > 0:
-                # self.df = np.loadtxt(str(self.comboBox_file.currentText()),	delimiter=',', skiprows=1)
-                # x0 = self.df[:, 0]
                 y0 = self.df[:, 1]
                 pre_pk = [[0, 0, 0, 0, 0, 0, 0, 0], [2, 284.6, 2, 286.5, 2, 288.0, 2, 291.0],
                           [2, 0.85, 2, 0.85, 2, 1.28, 2, 1.28], [2, 0.85, 2, 0.85, 2, 1.28, 2, 1.28],
@@ -1484,7 +1479,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 index = self.comboBox_file.findText(str(cfilePath), QtCore.Qt.MatchFixedString)
                 if index >= 0:
                     self.comboBox_file.setCurrentIndex(index)
-                self.plot()
+                self.plot_data()
         if index == 3:
             cfilePath, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open VAMAS file', self.filePath,
                                                                  'VMS Files (*.vms *.npl)')
@@ -1502,7 +1497,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 index = self.comboBox_file.findText(str(self.list_vamas[0]), QtCore.Qt.MatchFixedString)
                 if index > 0:
                     self.comboBox_file.setCurrentIndex(index)
-                self.plot()
+                self.plot_data()
         if index == 4:
             directory = QtWidgets.QFileDialog.getExistingDirectory(self, "Open Directory", self.filePath,
                                                                    QtWidgets.QFileDialog.ShowDirsOnly)
@@ -1575,23 +1570,17 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
             self.canvas.draw()
             self.repaint()
-
-    def plot(self):
-        plottitle = self.comboBox_file.currentText().split('/')[-1]
-        # when file list is selected
+    def load_file(self):
         if self.comboBox_file.currentIndex() == 1:
             self.comboBox_file.clear()
             self.list_file = ['File list', 'Clear list']
             self.comboBox_file.addItems(self.list_file)
             self.comboBox_file.setCurrentIndex(0)
         elif self.comboBox_file.currentIndex() > 1:
-            # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
             fileName = os.path.basename(self.comboBox_file.currentText())
             if os.path.splitext(fileName)[1] == '.csv':
                 try:
                     self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
-                    # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1,
-                    # header=None)
                     strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter=',', usecols=1,
                                        max_rows=1)
                 except Exception as e:
@@ -1600,17 +1589,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
             else:
                 try:
                     self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter='\t', skiprows=1)
-                    # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1,
-                    # header=None, delimiter = '\t')
                     strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter='\t', usecols=1,
                                        max_rows=1)
                 except Exception as e:
                     return self.raise_error("Error: The input file is not in the correct format!")
-
-            # I have moved the error handling here directly to the import, there may exist situations, where already the
-            # Import would fail. I still left the following error handling there, but I am not sure if there are cases
-            # where this second error handling still will be necessary. However, we should check, if x0 and y0 have same
-            # lenght I think
 
             try:
                 x0 = self.df[:, 0]
@@ -1625,29 +1607,43 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 pe = float(strpe[1])
                 item = QtWidgets.QTableWidgetItem(str(pe))
                 self.fitp0.setItem(0, 7, item)
+            return x0,y0
             # plt.cla()
-            self.ar.cla()
-            self.ax.cla()
-            # ax = self.figure.add_subplot(221)
-            # self.ax.plot(x0, y0, 'o', color="b", label="raw")
-            self.ax.plot(x0, y0, linestyle='-', color="b", label="raw")
-            if x0[0] > x0[-1]:
-                # self.ax.invert_xaxis()
-                self.ax.set_xlabel('Binding energy (eV)', fontsize=11)
-            else:
-                self.ax.set_xlabel('Energy (eV)', fontsize=11)
-
-            plt.xlim(x0[0], x0[-1])
-            self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
-            self.ax.grid(True)
-            if plottitle == '':
-                short_file_name = self.comboBox_file.currentText().split('/')[-1]
-                self.ar.set_title(short_file_name, fontsize=11)
-                self.plottitle.setText(short_file_name)
-            else:
-                self.ar.set_title(r"{}".format(plottitle), fontsize=11)
-            self.ax.legend(loc=0)
-            self.canvas.draw()
+    def plot_data(self):
+        plottitle = self.comboBox_file.currentText().split('/')[-1]
+        # when file list is selected
+        print(self.comboBox_file.currentIndex())
+        if self.comboBox_file.currentIndex() == -1:
+            print("sim")
+            self.df['x']=np.linspace(270,300,100)
+            self.df['y']=[0]*100
+            print(self.df)
+            x0 = self.df[:,0]
+            y0 = self.df[:, 1]
+            #option for adding simulation property?!
+            pass
+        elif self.comboBox_file.currentIndex() >= 0:
+            print('test')
+            x0,y0=self.load_file()
+        self.ar.cla()
+        self.ax.cla()
+        self.ax.plot(x0, y0, linestyle='-', color="b", label="raw")
+        if x0[0] > x0[-1]:
+            # self.ax.invert_xaxis()
+            self.ax.set_xlabel('Binding energy (eV)', fontsize=11)
+        else:
+            self.ax.set_xlabel('Energy (eV)', fontsize=11)
+        plt.xlim(x0[0], x0[-1])
+        self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
+        self.ax.grid(True)
+        if plottitle == '':
+            short_file_name = self.comboBox_file.currentText().split('/')[-1]
+            self.ar.set_title(short_file_name, fontsize=11)
+            self.plottitle.setText(short_file_name)
+        else:
+            self.ar.set_title(r"{}".format(plottitle), fontsize=11)
+        self.ax.legend(loc=0)
+        self.canvas.draw()
 
             # item = QtWidgets.QTableWidgetItem(str(x0[0]))
             # self.fitp0.setItem(0, 1, item)
@@ -1665,16 +1661,20 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.repaint()
 
     def eva(self):
+        try:
+            if self.comboBox_file.currentIndex() == 0:
+                if self.xmin is not None and self.xmax is not None and len(str(self.xmin)) > 0 and len(
+                        str(self.xmax)) > 0:
+                    x1 = float(self.xmin)
+                    x2 = float(self.xmax)
+                    points=999
+                    self.df = np.vstack([np.linspace(x1, x2,points), np.linspace(0,0,points)])
+                    print(self.df)
+                    self.plot_data()
+            self.ana("eva")
+        except Exception as e:
+            return self.raise_error("Error: Fitting was not successful.")
         # simulation mode if no data in file list, otherwise evaluation mode
-        if self.comboBox_file.currentIndex() == 0:
-            if self.xmin is not None and self.xmax is not None and len(str(self.xmin)) > 0 and len(str(self.xmax)) > 0:
-                x1 = float(self.xmin)
-                x2 = float(self.xmax)
-                points = 999
-                self.df = np.array([[0] * 2] * points, dtype='f')
-                self.df[:, 0] = np.linspace(x1, x2, points)
-
-        self.ana('eva')
 
     def fit(self):
         if self.comboBox_file.currentIndex() > 0:
@@ -2595,21 +2595,31 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.res_tab.resizeRowsToContents()
             self.fitp1.resizeColumnsToContents()
             self.fitp1.resizeRowsToContents()
+    def plot_results(self, mode):
 
-    def ana(self, mode):
-        self.savePreset()
         plottitle = self.comboBox_file.currentText().split('/')[-1]
-        # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
         x0 = self.df[:, 0]
         y0 = self.df[:, 1]
-        # print(x0[0], x0[len(x0)-1])
+        # if no range is specified, fill it from data
+        if self.pre[0][1] is None or len(str(self.pre[0][1])) == 0:
+            self.pre[0][1] = x0[0]
+        if self.pre[0][2] is None or len(str(self.pre[0][2])) == 0:
+            self.pre[0][2] = x0[-1]
+        # check if limits are out of of data range, If incorrect, back to default
+        x1 = self.pre[0][1]
+        if ((x1 > x0[0] or x1 < x0[-1]) and x0[0] > x0[-1]) or (
+                (x1 < x0[0] or x1 > x0[-1]) and x0[0] < x0[-1]):
+            x1 = x0[0]
+            self.pre[0][1] = x1
+        x2 = self.pre[0][2]
+        if ((x2 < x0[-1] or x2 > x1) and x0[0] > x0[-1]) or (
+                (x2 > x0[-1] or x2 < x1) and x0[0] < x0[-1]):
+            x2 = x0[-1]
+            self.pre[0][2] = x2
 
-        # plot graph after selection data from popup
-        # plt.clf()
-        # plt.cla()
+        [x, y] = xpy.fit_range(x0, y0, x1, x2)
         self.ax.cla()
         self.ar.cla()
-        # ax = self.figure.add_subplot(211)
         if mode == 'fit':
             self.ax.plot(x0, y0, 'o', color='b', label='raw')
         else:
@@ -2641,6 +2651,98 @@ class PrettyWidget(QtWidgets.QMainWindow):
         else:
             self.ar.set_title(r"{}".format(plottitle), fontsize=11)
 
+        if mode == 'eva':
+            plottitle = self.comboBox_file.currentText().split('/')[-1]
+            if plottitle != '':
+                self.ar.set_title(r"{}".format(plottitle), fontsize=11)
+            len_idx_pk = int(self.fitp1.columnCount() / 2)
+            for index_pk in range(len_idx_pk):
+                # print(index_pk, color)
+                strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
+                strind = strind.split(":", 1)[0]
+                if self.idx_bg > 100:
+                    self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
+                                         comps['bg_'] + comps['pg_'], label='C_' + str(index_pk + 1))
+                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
+                    if index_pk == len_idx_pk - 1:
+                        self.ax.plot(x, comps['bg_'] + comps['pg_'], label='BG')
+                if self.idx_bg < 2 or self.idx_bg == 100:
+                    self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'],
+                                         bg_mod + comps['pg_'], label='C_' + str(index_pk + 1))
+                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'])
+                    if index_pk == len_idx_pk - 1:
+                        self.ax.plot(x, bg_mod + comps['pg_'], label='BG')
+                if self.idx_bg == 2:
+                    self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'], comps['bg_'],
+                                         label='C_' + str(index_pk + 1))
+                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'], comps['bg_'])
+                    if index_pk == len_idx_pk - 1:
+                        self.ax.plot(x, comps['bg_'], label='BG')
+                if 100 > self.idx_bg > 2:
+                    self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
+                                         comps['bg_'] + comps['pg_'], label='C_' + str(index_pk + 1))
+                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
+                    if index_pk == len_idx_pk - 1:
+                        self.ax.plot(x, comps['bg_'] + comps['pg_'], label='BG')
+            self.ax.set_xlim(left=self.xmin)
+            self.ar.set_xlim(left=self.xmin)
+            self.ax.set_xlim(right=self.xmax)
+            self.ar.set_xlim(right=self.xmax)
+            self.ax.plot(x, out.best_fit + bg_mod, 'r-', lw=2, label='sum')
+            self.ar.plot(x, out.residual, 'g.', label='residual')
+            autoscale_y(self.ax)
+
+        else:
+            # ax.plot(x, init+bg_mod, 'k:', label='initial')
+            plottitle = self.comboBox_file.currentText().split('/')[-1]
+            if plottitle != '':
+                self.ar.set_title(r"{}".format(plottitle), fontsize=11)
+            len_idx_pk = int(self.fitp1.columnCount() / 2)
+            for index_pk in range(len_idx_pk):
+                strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
+                strind = strind.split(":", 1)[0]
+                if self.idx_bg >= 100:
+                    self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
+                                         comps['bg_'] + comps['pg_'], label='C_' + str(index_pk + 1))
+                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
+                    if index_pk == len_idx_pk - 1:
+                        self.ax.plot(x, comps['bg_'] + comps['pg_'], label="BG")
+                if self.idx_bg < 2:
+                    self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'],
+                                         bg_mod + comps['pg_'], label='C_' + str(index_pk + 1))
+                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'])
+                    if index_pk == len_idx_pk - 1:
+                        self.ax.plot(x, bg_mod + comps['pg_'], label="BG")
+                if self.idx_bg == 2:
+                    self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'], comps['bg_'],
+                                         label='C_' + str(index_pk + 1))
+                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'])
+                    if index_pk == len_idx_pk - 1:
+                        self.ax.plot(x, comps['bg_'], label="BG")
+                if 100 > self.idx_bg > 2:
+                    self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
+                                         comps['bg_'] + comps['pg_'], label='C_' + str(index_pk + 1))
+                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
+                    if index_pk == len_idx_pk - 1:
+                        self.ax.plot(x, comps['bg_'] + comps['pg_'], label="BG")
+
+                #
+            self.ax.set_xlim(left=self.xmin)
+            self.ar.set_xlim(left=self.xmin)
+            self.ax.set_xlim(right=self.xmax)
+            self.ar.set_xlim(right=self.xmax)
+            self.ax.plot(x, out.best_fit + bg_mod, 'r-', lw=2, label='fit')
+            self.ar.plot(x, out.residual, 'g.', label='residual')  # modify residual and red chi-squared [feature]
+            lines = self.ax.get_lines()
+            autoscale_y(self.ax)
+        self.ax.legend(loc=0)
+        self.ar.legend(loc=0)
+        self.canvas.draw()
+
+    def ana(self, mode):
+        self.savePreset()
+        x0 = self.df[:, 0]
+        y0 = self.df[:, 1]
         # if no range is specified, fill it from data
         if self.pre[0][1] is None or len(str(self.pre[0][1])) == 0:
             self.pre[0][1] = x0[0]
@@ -2689,7 +2791,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.statusBar().showMessage(strmode + ' running.')
         init = mod.eval(pars, x=x, y=y)
         if mode == 'eva':
-            out = mod.fit(y, pars, x=x, weights=1 / np.sqrt(y), y=y)
+            out = mod.fit(y, pars, x=x, weights=1 / np.sqrt(y+bg_mod), y=raw_y)
         else:
             try_me_out = self.history_manager(pars)
             if try_me_out is not None:
@@ -2759,96 +2861,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.stats_tab.setItem(9, 0, item)
         self.stats_tab.resizeColumnsToContents()
         self.stats_tab.resizeRowsToContents()
-        if mode == 'eva':
-            plottitle = self.comboBox_file.currentText().split('/')[-1]
-            # ax.plot(x, init+bg_mod, 'b--', lw =2, label='initial')
-            if plottitle != '':
-                self.ar.set_title(r"{}".format(plottitle), fontsize=11)
-            # self.ax.plot(x, out.best_fit + bg_mod, 'k-', lw=2, label='initial')
-            len_idx_pk=int(self.fitp1.columnCount() / 2)
-            for index_pk in range(len_idx_pk):
-                # print(index_pk, color)
-                strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
-                strind = strind.split(":", 1)[0]
-                if self.idx_bg > 100:
-                    self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
-                                         comps['bg_'] + comps['pg_'], label='C_' + str(index_pk + 1))
-                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
-                    if index_pk==len_idx_pk-1:
-                        self.ax.plot(x, comps['bg_'] + comps['pg_'], label='BG')
-                if self.idx_bg < 2 or self.idx_bg == 100:
-                    self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'],
-                                         bg_mod + comps['pg_'], label='C_' + str(index_pk + 1))
-                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'])
-                    if index_pk==len_idx_pk-1:
-                        self.ax.plot(x, bg_mod + comps['pg_'], label='BG')
-                if self.idx_bg == 2:
-                    self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'], comps['bg_'],
-                                         label='C_' + str(index_pk + 1))
-                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'], comps['bg_'])
-                    if index_pk==len_idx_pk-1:
-                        self.ax.plot(x, comps['bg_'], label='BG')
-                if 100 > self.idx_bg > 2:
-                    self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
-                                         comps['bg_'] + comps['pg_'], label='C_' + str(index_pk + 1))
-                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
-                    if index_pk==len_idx_pk-1:
-                        self.ax.plot(x, comps['bg_'] + comps['pg_'], label='BG')
-            self.ax.set_xlim(left=self.xmin)
-            self.ar.set_xlim(left=self.xmin)
-            self.ax.set_xlim(right=self.xmax)
-            self.ar.set_xlim(right=self.xmax)
-            self.ax.plot(x, out.best_fit + bg_mod, 'r-', lw=2, label='sum')
-            self.ar.plot(x, out.residual, 'g.', label='residual')
-            autoscale_y(self.ax)
 
-        else:
-            # ax.plot(x, init+bg_mod, 'k:', label='initial')
-            plottitle = self.comboBox_file.currentText().split('/')[-1]
-            if plottitle != '':
-                self.ar.set_title(r"{}".format(plottitle), fontsize=11)
-            len_idx_pk = int(self.fitp1.columnCount() / 2)
-            for index_pk in range(len_idx_pk):
-                strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
-                strind = strind.split(":", 1)[0]
-                if self.idx_bg >= 100:
-                    self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
-                                         comps['bg_'] + comps['pg_'], label='C_' + str(index_pk + 1))
-                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
-                    if index_pk == len_idx_pk - 1:
-                        self.ax.plot(x, comps['bg_'] + comps['pg_'], label="BG")
-                if self.idx_bg < 2:
-                    self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'],
-                                         bg_mod + comps['pg_'], label='C_' + str(index_pk + 1))
-                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + comps['pg_'])
-                    if index_pk==len_idx_pk-1:
-                        self.ax.plot(x, bg_mod + comps['pg_'], label="BG")
-                if self.idx_bg == 2:
-                    self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'], comps['bg_'],
-                                         label='C_' + str(index_pk + 1))
-                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'])
-                    if index_pk==len_idx_pk-1:
-                        self.ax.plot(x, comps['bg_'], label="BG")
-                if 100 > self.idx_bg > 2:
-                    self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'],
-                                         comps['bg_'] + comps['pg_'], label='C_' + str(index_pk + 1))
-                    self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + comps['bg_'] + comps['pg_'])
-                    if index_pk==len_idx_pk-1:
-                        self.ax.plot(x, comps['bg_'] + comps['pg_'], label="BG")
-
-
-                #
-            self.ax.set_xlim(left=self.xmin)
-            self.ar.set_xlim(left=self.xmin)
-            self.ax.set_xlim(right=self.xmax)
-            self.ar.set_xlim(right=self.xmax)
-            self.ax.plot(x, out.best_fit + bg_mod, 'r-', lw=2, label='fit')
-            self.ar.plot(x, out.residual, 'g.', label='residual')  # modify residual and red chi-squared [feature]
-            lines = self.ax.get_lines()
-            autoscale_y(self.ax)
-        self.ax.legend(loc=0)
-        self.ar.legend(loc=0)
-        self.canvas.draw()
 
         # make fit results to be global to export
         self.export_pars = pars
