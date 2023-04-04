@@ -2016,9 +2016,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     pars[strind + str(index_pk + 1) + '_gamma'].value = float(self.pre[2][5][2 * index_pk + 1])
                     if self.pre[2][5][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_gamma'].vary = False
-                if self.pre[2][22][2 * index_pk + 1] is not None and len(str(self.pre[2][18][2 * index_pk + 1])) > 0:
+                if self.pre[2][22][2 * index_pk + 1] is not None and len(str(self.pre[2][22][2 * index_pk + 1])) > 0:
                     pars.add(strind + str(index_pk + 1) + "_gamma_ratio",
-                             value=float(self.pre[2][18][2 * index_pk + 1]))
+                             value=float(self.pre[2][22][2 * index_pk + 1]))
                     if self.pre[2][22][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_gamma_ratio'].vary = False
             if index == 3:
