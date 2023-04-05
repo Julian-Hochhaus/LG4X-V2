@@ -2072,6 +2072,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def ratio_setup(self, pars, index_pk, strind, index):
         if index == 2 or index == 6:  # unset default expression which sets sigma and gamma for the voigt and skewed-voigt always to the same value
             pars[strind + str(index_pk + 1) + '_gamma'].expr = ''
+            pars[strind + str(index_pk + 1) + '_gamma'].vary = True
         # amp ratio setup
         print(pars)
         if self.pre[2][15][2 * index_pk + 1] > 0:
