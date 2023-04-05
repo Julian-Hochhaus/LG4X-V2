@@ -2073,6 +2073,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if index == 2 or index == 6:  # unset default expression which sets sigma and gamma for the voigt and skewed-voigt always to the same value
             pars[strind + str(index_pk + 1) + '_gamma'].expr = ''
         # amp ratio setup
+        print(pars)
         if self.pre[2][15][2 * index_pk + 1] > 0:
             pktar = self.pre[2][15][2 * index_pk + 1]
             strtar = self.list_shape[self.pre[2][0][2 * pktar - 1]]
@@ -2091,7 +2092,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     pktar) + '_center + ' + str(strind + str(index_pk + 1) + '_center_diff')
 
         # lorentzian sigma ref setup
-
+        print('self pre lorentzian',self.pre[2][17][2 * index_pk + 1] )
         if self.pre[2][17][2 * index_pk + 1] > 0:
             pktar = self.pre[2][17][2 * index_pk + 1]
             strtar = self.list_shape[self.pre[2][0][2 * pktar - 1]]
@@ -2903,7 +2904,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if 100 > self.idx_bg > 2:
             df_b = pd.DataFrame(comps['bg_'] + comps['pg_'], columns=['bg'])
         if self.idx_bg == 100:
-            df_b = pd.DataFrame(bg_mod + comps['pg_'], columns=['bg'])
+            df_b = pd.DataFrame(comps['bg_'], columns=['bg'])
         if self.idx_bg == 2:
             df_b_pg = pd.DataFrame(comps['bg_'], columns=['pg'])
         else:
