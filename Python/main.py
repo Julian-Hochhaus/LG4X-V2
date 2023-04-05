@@ -68,7 +68,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def __init__(self):
         super(PrettyWidget, self).__init__()
         # super(PrettyWidget, self).__init__()
-        self.rows_lightened=1
+        self.rows_lightened = 1
         self.idx_bg = None
         self.export_out = None
         self.export_pars = None
@@ -807,16 +807,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp1_lims.insertColumn(colPosition_fitp1_lims)
         self.fitp1_lims.insertColumn(colPosition_fitp1_lims + 1)
         self.fitp1_lims.insertColumn(colPosition_fitp1_lims + 2)
-        temp_pre=self.pre
-        print(temp_pre)
+        temp_pre = self.pre
         # add DropDown component model
         comboBox = QtWidgets.QComboBox()
         comboBox.addItems(self.list_shape)
         comboBox.currentTextChanged.connect(self.activeParameters)
         # comboBox.setMaximumWidth(55)
         self.fitp1.setCellWidget(0, colPosition_fitp1 + 1, comboBox)
-        new_comp=['', '']*rowPosition
-        print(len())
+        new_comp = [[0 for x in range(2)] for y in range(rowPosition)]
+
         # setup new component parameters
         for row in range(rowPosition):
             add_fac = 0
@@ -828,11 +827,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     and row != 12 and row != 14 and row != 16 \
                     and row != 18 and row != 20 and row != 22 and row != 24:
                 if len(self.fitp1.item(row + 1, colPosition_fitp1 - 1).text()) > 0:
+                    new_comp[int(row+1)][1] = float(self.fitp1.item(row + 1, colPosition_fitp1 - 1).text())+ add_fac
                     item = QtWidgets.QTableWidgetItem(
                         str(format(float(self.fitp1.item(row + 1, colPosition_fitp1 - 1).text()) + add_fac,
                                    self.floating)))
                     self.fitp1.setItem(row + 1, colPosition_fitp1 + 1, item)
-
         # add DropDown component selection for amp_ref and ctr_ref and keep values as it is
         self.list_component.append(str(int(1 + colPosition_fitp1 / 2)))
         for i in range(7):
@@ -845,28 +844,26 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if index > 0 and col < int(colPosition_fitp1 / 2):
                     comboBox.setCurrentIndex(index)
                 self.fitp1.setCellWidget(13 + 2 * i, 2 * col + 1, comboBox)
+                new_comp[13 + 2 * i][1] = int(index)
 
         # add checkbox
         for row in range(rowPosition - 1):
             item = QtWidgets.QTableWidgetItem()
             item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
             item.setToolTip('Check to keep fixed during fit procedure')
-            if row < 12:
+            if (row < 12) or (12 < row and row % 2 == 1):
                 # item.setCheckState(QtCore.Qt.Checked)
                 if self.fitp1.item(row + 1, colPosition_fitp1 - 2).checkState() == 2:
+                    val = 2
                     item.setCheckState(QtCore.Qt.Checked)
                 else:
+                    val = 0
                     item.setCheckState(QtCore.Qt.Unchecked)
-            if 12 < row and row % 2 == 1:
-                if self.fitp1.item(row + 1, colPosition_fitp1 - 2).checkState() == 2:
-                    item.setCheckState(QtCore.Qt.Checked)
-                else:
-                    item.setCheckState(QtCore.Qt.Unchecked)
-
             else:
+                val = 0
                 item.setText('')
+            new_comp[row + 1][0] = val
             self.fitp1.setItem(row + 1, colPosition_fitp1, item)
-
         # add checkbox and entries in limits table
         for row in range(self.fitp1_lims.rowCount()):
             item = QtWidgets.QTableWidgetItem()
@@ -880,7 +877,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
             item = QtWidgets.QTableWidgetItem()
             item.setText('')
             self.fitp1_lims.setItem(row, colPosition_fitp1_lims + 2, item)
-
+        new_comp_lims = [[0,'',''] for idx in range(self.fitp1_lims.rowCount())]
+        for row in range(len(temp_pre[2])):
+            temp_pre[2][row].extend(new_comp[row])
+        temp_pre[3]=[temp_pre[3][row]+new_comp_lims[row] for row in range(self.fitp1_lims.rowCount())]
         # add table header
         item = QtWidgets.QTableWidgetItem()
         self.fitp1.setHorizontalHeaderItem(colPosition_fitp1, item)
@@ -900,6 +900,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp1_lims.resizeColumnsToContents()
         self.fitp1_lims.resizeRowsToContents()
         self.activeParameters()
+        self.setPreset(self.pre[0], self.pre[1], temp_pre[2], temp_pre[3])
         # self.fitp1.setColumnWidth(1, 55)
 
     def rem_col(self):
@@ -912,10 +913,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.fitp1_lims.removeColumn(colPosition_lims - 1)
             self.fitp1_lims.removeColumn(colPosition_lims - 2)
             self.fitp1_lims.removeColumn(colPosition_lims - 3)
+            self.pre[3]=[self.pre[3][row][:-3]for row in range(self.fitp1_lims.rowCount())]
         if colPosition > 2:
             self.fitp1.removeColumn(colPosition - 1)
             self.fitp1.removeColumn(colPosition - 2)
             self.list_component.remove(str(int(colPosition / 2)))
+            self.pre[2] = [self.pre[2][row][:-2] for row in range(self.fitp1.rowCount())]
             # remove component in dropdown menu and keep values as it is
             for i in range(7):
                 for col in range(int(colPosition / 2) - 1):
@@ -927,7 +930,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     if index > 0 and col < int(colPosition / 2):
                         comboBox.setCurrentIndex(index)
                     self.fitp1.setCellWidget(13 + 2 * i, 2 * col + 1, comboBox)
-
+        self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
+        print(self.pre)
     def clickOnBtnPreset(self, idx):
         self.idx_pres = idx
         self.preset()
@@ -1452,16 +1456,22 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 Text += '\n\n[[LG4X parameters]]\n\n' + str(self.parText) + '\n\n[[lmfit parameters]]\n\n' + str(
                     self.export_pars) + '\n\n' + str(self.export_out.fit_report(min_correl=0.1))
 
-                self.export_pickle(cfilePath)  # export las fit parameters as dict int po pickle file
+                self.export_pickle(cfilePath)  # export last fit parameters as dict into pickle file
 
                 with open(cfilePath, 'w') as file:
                     file.write(str(Text))
                 file.close()
                 # print(filePath)
+
                 if cfilePath.split("_")[-1] == "fit.txt":
-                    self.result.to_csv(cfilePath.rsplit("_", 1)[0] + '_fit.csv', index=False)
+                    with open(cfilePath.rsplit("_", 1)[0] + '_fit.csv', 'w') as f:
+                        f.write('#'+str(self.rows_lightened)+ "\n")
+                        self.result.to_csv(f, index=False, mode='a')
                 else:
-                    self.result.to_csv(cfilePath.rsplit(".", 1)[0] + '.csv', index=False)
+                    print('else')
+                    with open(cfilePath.rsplit("_", 1)[0] + '.csv', 'w') as f:
+                        f.write('#'+str(self.rows_lightened)+"\n")
+                        self.result.to_csv(f, index=False, mode='a')
                 # print(self.result)
 
     def clickOnBtnImp(self, idx):
@@ -2705,14 +2715,14 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.statusBar().showMessage(strmode + ' running.')
         init = mod.eval(pars, x=x, y=y)
         if mode == 'eva':
-            out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(y)*np.sqrt(self.rows_lightened)), y=y)
+            out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(y) * np.sqrt(self.rows_lightened)), y=y)
         else:
             try_me_out = self.history_manager(pars)
             if try_me_out is not None:
                 pars, pre = try_me_out
                 self.pre = pre
                 self.setPreset(pre[0], pre[1], pre[2], pre[3])
-            out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y)*np.sqrt(self.rows_lightened)), y=raw_y)
+            out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=raw_y)
         comps = out.eval_components(x=x)
         # fit results to be checked
         for key in out.params:
