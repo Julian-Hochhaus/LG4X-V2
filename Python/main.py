@@ -807,14 +807,16 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp1_lims.insertColumn(colPosition_fitp1_lims)
         self.fitp1_lims.insertColumn(colPosition_fitp1_lims + 1)
         self.fitp1_lims.insertColumn(colPosition_fitp1_lims + 2)
-
+        temp_pre=self.pre
+        print(temp_pre)
         # add DropDown component model
         comboBox = QtWidgets.QComboBox()
         comboBox.addItems(self.list_shape)
         comboBox.currentTextChanged.connect(self.activeParameters)
         # comboBox.setMaximumWidth(55)
         self.fitp1.setCellWidget(0, colPosition_fitp1 + 1, comboBox)
-
+        new_comp=['', '']*rowPosition
+        print(len())
         # setup new component parameters
         for row in range(rowPosition):
             add_fac = 0
@@ -2074,7 +2076,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
             pars[strind + str(index_pk + 1) + '_gamma'].expr = ''
             pars[strind + str(index_pk + 1) + '_gamma'].vary = True
         # amp ratio setup
-        print(pars)
         if self.pre[2][15][2 * index_pk + 1] > 0:
             pktar = self.pre[2][15][2 * index_pk + 1]
             strtar = self.list_shape[self.pre[2][0][2 * pktar - 1]]
@@ -2093,7 +2094,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     pktar) + '_center + ' + str(strind + str(index_pk + 1) + '_center_diff')
 
         # lorentzian sigma ref setup
-        print('self pre lorentzian',self.pre[2][17][2 * index_pk + 1] )
         if self.pre[2][17][2 * index_pk + 1] > 0:
             pktar = self.pre[2][17][2 * index_pk + 1]
             strtar = self.list_shape[self.pre[2][0][2 * pktar - 1]]
@@ -2714,7 +2714,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.setPreset(pre[0], pre[1], pre[2], pre[3])
             out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y)*np.sqrt(self.rows_lightened)), y=raw_y)
         comps = out.eval_components(x=x)
-        print('rows_lightened:', self.rows_lightened)
         # fit results to be checked
         for key in out.params:
             print(key, "=", out.params[key].value)
