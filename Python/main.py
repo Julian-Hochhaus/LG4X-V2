@@ -1101,6 +1101,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp1.resizeRowsToContents()
 
     def setPreset(self, list_pre_com, list_pre_bg, list_pre_pk, list_pre_pk_lims=[[0, '', '']] * 19):
+        print(list_pre_bg)
         if len(list_pre_com) == 1:
             index_bg = list_pre_com[0]
         else:
@@ -1127,6 +1128,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         if list_pre_bg[row][col] == 2:
                             item.setCheckState(QtCore.Qt.Checked)
                         else:
+                            print(row)
                             item.setCheckState(QtCore.Qt.Unchecked)
                     elif row <= 1 and col % 2 == 0:
                         item.setText('')
