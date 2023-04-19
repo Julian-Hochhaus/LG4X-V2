@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot
+from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, QTime
 from lmfit import Model
 from lmfit.models import ExponentialGaussianModel, SkewedGaussianModel, SkewedVoigtModel, DoniachModel, \
     BreitWignerModel, LognormalModel
@@ -105,7 +105,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.initUI()
 
     def initUI(self):
-        self.version = 'LG4X: LMFit GUI for XPS curve fitting experimental version'
+        self.version = 'LG4X: LMFit GUI for XPS curve fitting v2.0.2-dev'
         self.floating = '.4f'
         self.setGeometry(700, 500, 1600, 900)
         self.center()
@@ -813,7 +813,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         comboBox.currentTextChanged.connect(self.activeParameters)
         # comboBox.setMaximumWidth(55)
         self.fitp1.setCellWidget(0, colPosition_fitp1 + 1, comboBox)
-        new_comp=['', '']*rowPosition
         # setup new component parameters
         for row in range(rowPosition):
             add_fac = 0
@@ -1653,12 +1652,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
             plt.xlim(x0[0], x0[-1])
             self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
             self.ax.grid(True)
-            if plottitle == '':
-                short_file_name = self.comboBox_file.currentText().split('/')[-1]
-                self.ar.set_title(short_file_name, fontsize=11)
-                self.plottitle.setText(short_file_name)
-            else:
-                self.ar.set_title(r"{}".format(plottitle), fontsize=11)
             self.ax.legend(loc=0)
             self.canvas.draw()
 
@@ -1683,11 +1676,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if self.xmin is not None and self.xmax is not None and len(str(self.xmin)) > 0 and len(str(self.xmax)) > 0:
                 x1 = float(self.xmin)
                 x2 = float(self.xmax)
-                points = 999
-                self.df = np.array([[0] * 2] * points, dtype='f')
-                self.df[:, 0] = np.linspace(x1, x2, points)
-
-        self.ana('eva')
+            points = 999
+            self.df = np.random.random_sample((points,2))+0.01
+            self.df[:, 0] = np.linspace(x1, x2, points)
+            self.ana('sim')
+        else:
+            self.ana('eva')
 
     def fit(self):
         if self.comboBox_file.currentIndex() > 0:
@@ -1697,7 +1691,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 # self.threadpool.start(self.fitter)
             except Exception as e:
                 return self.raise_error("Error: Fitting was not successful.")
-
+        else:
+            print('No Data present, Switching to simulation mode!')
+            if self.xmin is not None and self.xmax is not None and len(str(self.xmin)) > 0 and len(str(self.xmax)) > 0:
+                x1 = float(self.xmin)
+                x2 = float(self.xmax)
+            points = 999
+            self.df = np.random.random_sample((points,2))+0.01
+            self.df[:, 0] = np.linspace(x1, x2, points)
+            self.ana('sim')
     def interrupt_fit(self):
         print("does nothing yet")
 
@@ -2611,7 +2613,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
     def ana(self, mode):
         self.savePreset()
-        plottitle = self.comboBox_file.currentText().split('/')[-1]
+        plottitle = self.plottitle.text()
+        print(len(plottitle), "*********")
         # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
         x0 = self.df[:, 0]
         y0 = self.df[:, 1]
@@ -2627,9 +2630,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.ax.plot(x0, y0, 'o', color='b', label='raw')
         else:
             # simulation mode
-            if self.comboBox_file.currentIndex() == 0:
-                pass
-                # self.ax.plot(x0, y0, ',', color='b', label='raw')
+            if mode == 'sim':
+                self.ax.plot(x0, y0, ',', color='b', label='raw')
             # evaluation mode
             else:
                 self.ax.plot(x0, y0, 'o', mfc='none', color='b', label='raw')
@@ -2641,9 +2643,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
         plt.xlim(x0[0], x0[-1])
         self.ax.grid(True)
         self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
-        if plottitle == "":
-
-            if self.comboBox_file.currentIndex() == 0:
+        if len(plottitle) == 0:
+            if mode == 'sim':
+                print('test')
                 # simulation mode
                 self.ar.set_title('Simulation', fontsize=11)
             else:
@@ -2672,7 +2674,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.pre[0][2] = x2
 
         [x, y] = xpy.fit_range(x0, y0, x1, x2)
-        raw_y = y
+        raw_y = y.copy()
         # BG model selection and call shirley and tougaard
         # colPosition = self.fitp1.columnCount()
         temp_res = self.bgSelector(x, y, mode=mode)
@@ -2687,7 +2689,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         mod = temp_res[0]
 
-        if mode == 'eva':
+        if mode == 'eva' or mode == 'sim':
             for par in pars:
                 pars[par].vary = False
         else:
@@ -2697,12 +2699,16 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # evaluate model and optimize parameters for fitting in lmfit
         if mode == 'eva':
             strmode = 'Evaluation'
+        elif mode == 'sim':
+            strmode="Simulation"
         else:
             strmode = 'Fitting'
-        self.statusBar().showMessage(strmode + ' running.')
+        self.statusBar().showMessage(strmode + ' running.',)
         init = mod.eval(pars, x=x, y=y)
         if mode == 'eva':
             out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(y)*np.sqrt(self.rows_lightened)), y=y)
+        elif mode=='sim':
+            out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=raw_y)
         else:
             try_me_out = self.history_manager(pars)
             if try_me_out is not None:
@@ -2719,7 +2725,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         results = strmode + ' done: ' + out.method + ', # data: ' + str(out.ndata) + ', # func evals: ' + str(
             out.nfev) + ', # varys: ' + str(out.nvarys) + ', r chi-sqr: ' + str(
-            format(out.redchi, self.floating)) + ', Akaike info crit: ' + str(format(out.aic, self.floating))
+            format(out.redchi, self.floating)) + ', Akaike info crit: ' + str(format(out.aic, self.floating))+ ', Last run finished: '+QTime.currentTime().toString()
         self.statusBar().showMessage(results)
 
         # component results into table
@@ -2727,7 +2733,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
         self.fillTabResults(x, y, out)
         # Fit stats to GUI:
-        if mode == 'eva':
+        if mode == 'eva' or mode =="sim":
             for index_pk in range(int(len(self.pre[2][0]))):
                 item = QtWidgets.QTableWidgetItem('Evaluation mode')
                 self.res_tab.setItem(0, index_pk, item)
@@ -2772,6 +2778,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.stats_tab.setItem(9, 0, item)
         self.stats_tab.resizeColumnsToContents()
         self.stats_tab.resizeRowsToContents()
+        if mode =="sim":
+            self.ar.set_title(r"Simulation mode", fontsize=11)
         if mode == 'eva':
             plottitle = self.comboBox_file.currentText().split('/')[-1]
             # ax.plot(x, init+bg_mod, 'b--', lw =2, label='initial')
