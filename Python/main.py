@@ -807,8 +807,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp1_lims.insertColumn(colPosition_fitp1_lims)
         self.fitp1_lims.insertColumn(colPosition_fitp1_lims + 1)
         self.fitp1_lims.insertColumn(colPosition_fitp1_lims + 2)
-        temp_pre=self.pre
-        print(temp_pre)
         # add DropDown component model
         comboBox = QtWidgets.QComboBox()
         comboBox.addItems(self.list_shape)
@@ -816,7 +814,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # comboBox.setMaximumWidth(55)
         self.fitp1.setCellWidget(0, colPosition_fitp1 + 1, comboBox)
         new_comp=['', '']*rowPosition
-        print(len())
         # setup new component parameters
         for row in range(rowPosition):
             add_fac = 0
