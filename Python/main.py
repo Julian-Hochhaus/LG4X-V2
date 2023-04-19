@@ -11,7 +11,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, QTime
+from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, QTime, QRegExp
+from PyQt5.QtGui import QRegExpValidator, QDoubleValidator
 from lmfit import Model
 from lmfit.models import ExponentialGaussianModel, SkewedGaussianModel, SkewedVoigtModel, DoniachModel, \
     BreitWignerModel, LognormalModel
@@ -310,29 +311,37 @@ class PrettyWidget(QtWidgets.QMainWindow):
         plot_settings_layout = QtWidgets.QHBoxLayout()
         min_form = QtWidgets.QFormLayout()
         self.xmin_item = QtWidgets.QLineEdit()
+        self.xmin_item.setValidator(QDoubleValidator(-np.inf, np.inf, 6, notation=QDoubleValidator.StandardNotation))
         self.xmin = 270
         self.xmin_item.insert(str(self.xmin))
+        self.xmin_item.setToolTip('Valid inputs are only doubles!')
         self.xmin_item.textChanged.connect(self.update_com_vals)
         min_form.addRow("x_min: ", self.xmin_item)
         plot_settings_layout.addLayout(min_form)
         max_form = QtWidgets.QFormLayout()
         self.xmax_item = QtWidgets.QLineEdit()
+        self.xmax_item.setValidator(QDoubleValidator(-np.inf, np.inf, 6, notation=QDoubleValidator.StandardNotation))
         self.xmax = 300
         self.xmax_item.insert(str(self.xmax))
+        self.xmax_item.setToolTip('Valid inputs are only doubles!')
         self.xmax_item.textChanged.connect(self.update_com_vals)
         max_form.addRow("x_max: ", self.xmax_item)
         plot_settings_layout.addLayout(max_form)
         hv_form = QtWidgets.QFormLayout()
         self.hv_item = QtWidgets.QLineEdit()
+        self.hv_item.setValidator(QDoubleValidator(-np.inf, np.inf, 6, notation=QDoubleValidator.StandardNotation))
         self.hv = 1486.6
         self.hv_item.insert(str(self.hv))
+        self.hv_item.setToolTip('Valid inputs are only doubles!')
         self.hv_item.textChanged.connect(self.update_com_vals)
         hv_form.addRow("hv: ", self.hv_item)
         plot_settings_layout.addLayout(hv_form)
         wf_form = QtWidgets.QFormLayout()
         self.wf_item = QtWidgets.QLineEdit()
+        self.wf_item.setValidator(QDoubleValidator(-np.inf, np.inf, 6, notation=QDoubleValidator.StandardNotation))
         self.wf = 4
         self.wf_item.insert(str(self.wf))
+        self.wf_item.setToolTip('Valid inputs are only doubles!')
         self.wf_item.textChanged.connect(self.update_com_vals)
         wf_form.addRow("wf: ", self.wf_item)
         plot_settings_layout.addLayout(wf_form)
@@ -780,10 +789,22 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                                                                              3 * col + 2).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
 
     def update_com_vals(self):
-        self.xmin = float(self.xmin_item.text())
-        self.xmax = float(self.xmax_item.text())
-        self.hv = float(self.hv_item.text())
-        self.wf = float(self.wf_item.text())
+        if self.xmin_item.text()=='':
+            self.xmin=0
+        else:
+            self.xmin = float(self.xmin_item.text())
+        if self.xmax_item.text()=='':
+            self.xmax=0
+        else:
+            self.xmax = float(self.xmax_item.text())
+        if self.hv_item.text()=='':
+            self.hv=0
+        else:
+            self.hv = float(self.hv_item.text())
+        if self.wf_item.text()=='':
+            self.wf=0
+        else:
+            self.wf = float(self.wf_item.text())
         self.pre[0] = [self.idx_bg, self.xmin, self.xmax, self.hv, self.wf]
 
     def setLimits(self):
