@@ -622,6 +622,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             idx = self.fitp1.cellWidget(0, 2 * col + 1).currentIndex()
             for row in range(nrows - 1):
                 if row == 0 or row == 1 or row == 13 or row == 15:
+                    print(row,col)
                     self.fitp1.item(row + 1, 2 * col).setFlags(self.fitp1.item(row + 1,
                                                                                2 * col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
                     self.fitp1.item(row + 1, 2 * col + 1).setFlags(self.fitp1.item(row + 1,
@@ -807,7 +808,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp1_lims.insertColumn(colPosition_fitp1_lims)
         self.fitp1_lims.insertColumn(colPosition_fitp1_lims + 1)
         self.fitp1_lims.insertColumn(colPosition_fitp1_lims + 2)
-        temp_pre = self.pre
         # add DropDown component model
         comboBox = QtWidgets.QComboBox()
         comboBox.addItems(self.list_shape)
@@ -878,9 +878,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
             item.setText('')
             self.fitp1_lims.setItem(row, colPosition_fitp1_lims + 2, item)
         new_comp_lims = [[0,'',''] for idx in range(self.fitp1_lims.rowCount())]
-        for row in range(len(temp_pre[2])):
-            temp_pre[2][row].extend(new_comp[row])
-        temp_pre[3]=[temp_pre[3][row]+new_comp_lims[row] for row in range(self.fitp1_lims.rowCount())]
+        for row in range(len(self.pre[2])):
+            self.pre[2][row].extend(new_comp[row])
+        self.pre[3]=[self.pre[3][row]+new_comp_lims[row] for row in range(self.fitp1_lims.rowCount())]
         # add table header
         item = QtWidgets.QTableWidgetItem()
         self.fitp1.setHorizontalHeaderItem(colPosition_fitp1, item)
@@ -900,7 +900,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp1_lims.resizeColumnsToContents()
         self.fitp1_lims.resizeRowsToContents()
         self.activeParameters()
-        self.setPreset(self.pre[0], self.pre[1], temp_pre[2], temp_pre[3])
         # self.fitp1.setColumnWidth(1, 55)
 
     def rem_col(self):
@@ -930,8 +929,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     if index > 0 and col < int(colPosition / 2):
                         comboBox.setCurrentIndex(index)
                     self.fitp1.setCellWidget(13 + 2 * i, 2 * col + 1, comboBox)
-        self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
-        print(self.pre)
     def clickOnBtnPreset(self, idx):
         self.idx_pres = idx
         self.preset()
@@ -965,7 +962,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     entry.append('')
                 entry.append('')
             else:
-                entry = [elem for elem in temp_pre[1][i + 1][:-1]]
+               entry = [elem for elem in temp_pre[1][i + 1][:-1]]
             temp.append(entry)
         self.pre[1] = temp
         self.pre[1][2][8] = 2
@@ -1012,7 +1009,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             except Exception as e:
                 return self.raise_error(windowTitle="Error: Could not load parameters!")
             # print(self.df[0], self.df[1], self.df[2])
-            if len(str(self.pre[0])) != 0 and len(self.pre[1]) != 0 and len(self.pre[2]) != 0 and len(self.pre) == 3:
+            if (len(str(self.pre[0])) != 0 and len(self.pre[1]) != 0 and len(self.pre[2]) != 0 and len(self.pre) == 3):
                 # old format, reorder data!
                 self.reformat_pre()
                 self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
@@ -1101,7 +1098,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp1.resizeRowsToContents()
 
     def setPreset(self, list_pre_com, list_pre_bg, list_pre_pk, list_pre_pk_lims=[[0, '', '']] * 19):
-        print(list_pre_bg)
         if len(list_pre_com) == 1:
             index_bg = list_pre_com[0]
         else:
@@ -1128,7 +1124,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         if list_pre_bg[row][col] == 2:
                             item.setCheckState(QtCore.Qt.Checked)
                         else:
-                            print(row)
                             item.setCheckState(QtCore.Qt.Unchecked)
                     elif row <= 1 and col % 2 == 0:
                         item.setText('')
@@ -1138,76 +1133,93 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # adjust ncomponent before load
         if len(list_pre_pk) != 0:
             colPosition = int(self.fitp1.columnCount() / 2)
-            if self.addition == 0:
-                # print(int(colPosition), int(len(list_pre_pk[0])/2), list_pre_pk[0])
-                if colPosition > int(len(list_pre_pk[0]) / 2):
-                    for col in range(colPosition - int(len(list_pre_pk[0]) / 2)):
-                        self.rem_col()
-                if colPosition < int(len(list_pre_pk[0]) / 2):
-                    for col in range(int(len(list_pre_pk[0]) / 2) - colPosition):
-                        self.add_col()
-            else:
-                for col in range(int(len(list_pre_pk[0]) / 2)):
-                    self.add_col()
-
-        for row in range(len(list_pre_pk)):
-            for col in range(len(list_pre_pk[0])):
-                if (col % 2) != 0:
-                    if row == 0 or row == 13 or row == 15 or row == 17 or row == 19 or row == 21 or row == 23 or row == 25:
-                        comboBox = QtWidgets.QComboBox()
-                        if row == 0:
-                            comboBox.addItems(self.list_shape)
-                            comboBox.currentTextChanged.connect(self.activeParameters)
-                        else:
-                            comboBox.addItems(self.list_component)
-                        if self.addition == 0:
-                            self.fitp1.setCellWidget(row, col, comboBox)
-                            comboBox.setCurrentIndex(int(list_pre_pk[row][col]))
-                        else:
-                            self.fitp1.setCellWidget(row, col + colPosition * 2, comboBox)
-                            if list_pre_pk[row][col] != 0:
-                                comboBox.setCurrentIndex(list_pre_pk[row][col] + colPosition)
+        print(self.fitp1.columnCount())
+        fitp1_col_count=self.fitp1.columnCount()
+        print(fitp1_col_count, len(list_pre_pk[0]) )
+        while fitp1_col_count< len(list_pre_pk[0]):
+            self.fitp1.insertColumn(fitp1_col_count)
+            self.fitp1.insertColumn(fitp1_col_count + 1)
+            for row in range(len(list_pre_pk)):
+                for c in range(2):
+                    col=c+fitp1_col_count
+                    if (col % 2) != 0:
+                        if row == 0 or row == 13 or row == 15 or row == 17 or row == 19 or row == 21 or row == 23 or row == 25:
+                            comboBox = QtWidgets.QComboBox()
+                            if row == 0:
+                                comboBox.addItems(self.list_shape)
+                                comboBox.currentTextChanged.connect(self.activeParameters)
                             else:
-                                comboBox.setCurrentIndex(list_pre_pk[row][col])
+                                comboBox.addItems(self.list_component)
+                            if self.addition == 0:
+                                self.fitp1.setCellWidget(row, col, comboBox)
+                                comboBox.setCurrentIndex(int(list_pre_pk[row][col]))
+                            else:
+                                self.fitp1.setCellWidget(row, col + colPosition * 2, comboBox)
+                                if list_pre_pk[row][col] != 0:
+                                    comboBox.setCurrentIndex(list_pre_pk[row][col] + colPosition)
+                                else:
+                                    comboBox.setCurrentIndex(list_pre_pk[row][col])
+                        else:
+                            item = self.fitp1.item(row, col)
+                            if self.addition == 0:
+                                if str(list_pre_pk[row][col]) == '':
+                                    item.setText('')
+                                else:
+                                    item.setText(str(format(list_pre_pk[row][col], self.floating)))
+                            else:
+                                if str(list_pre_pk[row][col]) == '':
+                                    item.setText('')
+                                else:
+                                    item.setText(str(format(list_pre_pk[row][col], self.floating)))
+
                     else:
-                        item = self.fitp1.item(row, col)
-                        if self.addition == 0:
-                            if str(list_pre_pk[row][col]) == '':
+                        if row != 0 and row != 13 and row != 15 and row != 17 and row != 19 and row != 21 and row != 23 and row != 25:
+                            item = self.fitp1.item(row, col)
+                            print(row, col)
+                            if list_pre_pk[row][col] == 2:
+                                item.setCheckState(QtCore.Qt.Checked)
+                            else:
+                                item.setCheckState(QtCore.Qt.Unchecked)
+                            if self.addition == 0:
                                 item.setText('')
                             else:
-                                item.setText(str(format(list_pre_pk[row][col], self.floating)))
-                        else:
-                            if str(list_pre_pk[row][col]) == '':
-                                item.setText('')
-                            else:
-                                item.setText(str(format(list_pre_pk[row][col], self.floating)))
+                                self.fitp1.setItem(row, col + colPosition * 2, item)
+            fitp1_col_count += 2
 
+        fitp1_lims_col_count=self.fitp1_lims.columnCount()
+        while fitp1_lims_col_count<len(list_pre_pk_lims[0]):
+            self.fitp1_lims.insertColumn(fitp1_lims_col_count)
+            self.fitp1_lims.insertColumn(fitp1_lims_col_count + 1)
+            self.fitp1_lims.insertColumn(fitp1_lims_col_count + 2)
+            for row in range(self.fitp1_lims.rowCount()):
+                item = QtWidgets.QTableWidgetItem()
+                item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
+                item.setCheckState(QtCore.Qt.Unchecked)
+                item.setToolTip('Check to use limit during fit procedure')
+                self.fitp1_lims.setItem(row, fitp1_lims_col_count, item)
+                item = QtWidgets.QTableWidgetItem()
+                item.setText('')
+                self.fitp1_lims.setItem(row, fitp1_lims_col_count + 1, item)
+                item = QtWidgets.QTableWidgetItem()
+                item.setText('')
+                self.fitp1_lims.setItem(row, fitp1_lims_col_count + 2, item)
+            fitp1_lims_col_count+=3
+        for row in range(len(list_pre_pk_lims)):
+            for col in range(len(list_pre_pk_lims[0])):
+                item = self.fitp1_lims.item(row, col)
+                if (col % 3) != 0:
+                    if str(list_pre_pk_lims[row][col]) == '':
+                        item.setText('')
+                    else:
+                        item.setText(str(format(list_pre_pk_lims[row][col], self.floating)))
                 else:
-                    if row != 0 and row != 13 and row != 15 and row != 17 and row != 19 and row != 21 and row != 23 and row != 25:
-                        item = self.fitp1.item(row, col)
-                        if list_pre_pk[row][col] == 2:
-                            item.setCheckState(QtCore.Qt.Checked)
-                        else:
-                            item.setCheckState(QtCore.Qt.Unchecked)
-                        if self.addition == 0:
-                            item.setText('')
-                        else:
-                            self.fitp1.setItem(row, col + colPosition * 2, item)
-            for row in range(len(list_pre_pk_lims)):
-                for col in range(len(list_pre_pk_lims[0])):
-                    item = self.fitp1_lims.item(row, col)
-                    if (col % 3) != 0:
-                        if str(list_pre_pk_lims[row][col]) == '':
-                            item.setText('')
-                        else:
-                            item.setText(str(format(list_pre_pk_lims[row][col], self.floating)))
+                    if list_pre_pk_lims[row][col] == 2:
+                        item.setCheckState(QtCore.Qt.Checked)
                     else:
-                        if list_pre_pk_lims[row][col] == 2:
-                            item.setCheckState(QtCore.Qt.Checked)
-                        else:
-                            item.setCheckState(QtCore.Qt.Unchecked)
+                        item.setCheckState(QtCore.Qt.Unchecked)
 
     def loadPreset(self):
+        print("test")
         cfilePath, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open data file', self.filePath, "DAT Files (*.dat)")
         if cfilePath != "":
             print(cfilePath)
@@ -1470,7 +1482,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         f.write('#'+str(self.rows_lightened)+ "\n")
                         self.result.to_csv(f, index=False, mode='a')
                 else:
-                    print('else')
                     with open(cfilePath.rsplit("_", 1)[0] + '.csv', 'w') as f:
                         f.write('#'+str(self.rows_lightened)+"\n")
                         self.result.to_csv(f, index=False, mode='a')
