@@ -69,7 +69,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def __init__(self):
         super(PrettyWidget, self).__init__()
         # super(PrettyWidget, self).__init__()
-        self.rows_lightened=1
+        self.rows_lightened = 1
         self.idx_bg = None
         self.export_out = None
         self.export_pars = None
@@ -416,6 +416,25 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_limit_set.clicked.connect(self.setLimits)
         componentbuttons_layout.addWidget(btn_limit_set)
 
+        # indicator for limits
+        self.status_label = QtWidgets.QLabel()
+        self.status_label.setFixedSize(18, 18)
+        self.status_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.status_label.setStyleSheet("background-color: grey; border-radius: 9px")
+
+        # Create a QLabel for the status text
+        self.status_text = QtWidgets.QLabel("Limits not used")
+        self.status_text.setAlignment(QtCore.Qt.AlignLeft)
+        self.status_text.setAlignment(QtCore.Qt.AlignVCenter)
+
+        # Create a QVBoxLayout to hold the status widgets
+        status_layout = QtWidgets.QHBoxLayout()
+        status_layout.addWidget(self.status_label)
+        status_layout.addWidget(self.status_text)
+        status_layout.setAlignment(QtCore.Qt.AlignVCenter)
+        componentbuttons_layout.addLayout(status_layout)
+        componentbuttons_layout.setAlignment(QtCore.Qt.AlignVCenter)
+
         layout_bottom_mid.addLayout(componentbuttons_layout)
 
         # set Fit Table
@@ -431,15 +450,17 @@ class PrettyWidget(QtWidgets.QMainWindow):
         list_colh = ['', 'C_1']
         self.fitp1.setHorizontalHeaderLabels(list_colh)
         self.fitp1.setVerticalHeaderLabels(list_row)
-        list_row_limits = [
+        self.list_row_limits = [
             'center', 'amplitude', 'lorentzian (sigma/gamma)', 'gaussian(sigma)', 'asymmetry(gamma)', 'frac', 'skew',
             'q', 'kt', 'soc',
             'height', "fct_coster_kronig", 'ctr_diff', 'amp_ratio', 'lorentzian_ratio', 'gaussian_ratio',
             'asymmetry_ratio', 'soc_ratio', 'height_ratio']
         list_colh_limits = ['C_1', 'min', 'max']
-        self.fitp1_lims = QtWidgets.QTableWidget(len(list_row_limits), len(list_col) * 3)
+        self.fitp1_lims = QtWidgets.QTableWidget(len(self.list_row_limits), len(list_col) * 3)
         self.fitp1_lims.setHorizontalHeaderLabels(list_colh_limits)
-        self.fitp1_lims.setVerticalHeaderLabels(list_row_limits)
+        self.fitp1_lims.setVerticalHeaderLabels(self.list_row_limits)
+        self.fitp1_lims.cellChanged.connect(self.lims_changed)
+
         # self.list_shape = ['g', 'l', 'v', 'p']
         self.list_shape = ['g: Gaussian', 'l: Lorentzian', 'v: Voigt', 'p: PseudoVoigt', 'e: ExponentialGaussian',
                            's: SkewedGaussian', 'a: SkewedVoigt', 'b: BreitWigner', 'n: Lognormal', 'd: Doniach',
@@ -492,7 +513,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     item.setText('')
                     self.fitp1.setItem(row, col, item)
         # set checkbox in limits table
-        for row in range(len(list_row_limits)):
+        for row in range(len(self.list_row_limits)):
             for col in range(len(list_colh_limits)):
                 item = QtWidgets.QTableWidgetItem()
                 if col % 3 == 0:
@@ -509,7 +530,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                   [0, 0], [2, 1], [0, 0], [2, 1], [0, 0], [2, 1]]
         self.pre = [[self.idx_bg, self.xmin, self.xmax, self.hv, self.wf], pre_bg, pre_pk, [[0, '', '']] * 19]
         self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
-
         self.fitp1.resizeColumnsToContents()
         self.fitp1.resizeRowsToContents()
         layout_bottom_mid.addWidget(self.fitp1)
@@ -555,8 +575,47 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.res_label.setStyleSheet("font-weight: bold; font-size:12pt")
         # grid..addWidget(self.res_label, 7, 7, 1, 1)
         self.activeParameters()
-
         self.show()
+
+    def lims_changed(self, row, column):
+        """Handle the cellChanged signal emitted by fitp1 table (the limits table)
+          Args:
+              row (int): The row index of the changed cell.
+              column (int): The column index of the changed cell.
+
+          Returns:
+              None
+          """
+        item = self.fitp1_lims.item(row, column)
+        if not item is None and item.text()!='':
+            value = item.text()
+            try:
+                double_value = float(value)
+            except ValueError:
+                self.raise_error('Invalid value in Limits!',"Non-double value entered in limits! Invalid value: "+value+" detected for parameter "+self.list_row_limits[row]+ " for component C"+str(int(column/3+1))+".")
+            else:
+                pass
+
+    def set_status(self, status):
+        """
+        Update the status text and color of the status indicator.
+
+        Args:
+            status: A string representing the status according to which color and text are updated.
+
+        """
+        if status == "limit_reached":
+            self.status_label.setStyleSheet("background-color: red; border-radius: 9px")
+            self.status_text.setText("Limit reached!")
+        elif status == "unset":
+            self.status_label.setStyleSheet("background-color: grey; border-radius: 9px")
+            self.status_text.setText("Status: Limits not used")
+        elif status == "limit_set":
+            self.status_label.setStyleSheet("background-color: green; border-radius: 9px")
+            self.status_text.setText("Limits active")
+        else:
+            self.status_label.setStyleSheet("background-color: blue; border-radius: 9px")
+            self.status_text.setText("Error, Unknown state!")
 
     def clicked_cross_section(self):
         window_cross_section = Window_CrossSection()
@@ -789,20 +848,20 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                                                                              3 * col + 2).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
 
     def update_com_vals(self):
-        if self.xmin_item.text()=='':
-            self.xmin=0
+        if self.xmin_item.text() == '':
+            self.xmin = 0
         else:
             self.xmin = float(self.xmin_item.text())
-        if self.xmax_item.text()=='':
-            self.xmax=0
+        if self.xmax_item.text() == '':
+            self.xmax = 0
         else:
             self.xmax = float(self.xmax_item.text())
-        if self.hv_item.text()=='':
-            self.hv=0
+        if self.hv_item.text() == '':
+            self.hv = 0
         else:
             self.hv = float(self.hv_item.text())
-        if self.wf_item.text()=='':
-            self.wf=0
+        if self.wf_item.text() == '':
+            self.wf = 0
         else:
             self.wf = float(self.wf_item.text())
         self.pre[0] = [self.idx_bg, self.xmin, self.xmax, self.hv, self.wf]
@@ -811,11 +870,21 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.sub_window = SubWindow(params_tab=self.fitp1_lims)
         self.sub_window.show()
 
-    def raise_error(self, windowTitle: str) -> None:
-        self.error_dialog.setWindowTitle(windowTitle)
-        self.error_dialog.showMessage(traceback.format_exc())
-        logging.error(traceback.format_exc())
-        return None
+    def raise_error(self, window_title: str, error_message: str) -> None:
+        """
+        Display an error message box with a custom error message and log the error.
+
+        Args:
+            window_title (str): The title of the error message box.
+            error_message (str): The custom error message to be displayed.
+
+        Returns:
+            None
+        """
+        self.error_dialog.setWindowTitle(window_title)
+        error_message = error_message+r'\n *******************\n'+traceback.format_exc()
+        self.error_dialog.showMessage(error_message)
+        logging.error(error_message)
 
     def add_col(self):
         rowPosition = self.fitp1.rowCount()
@@ -1023,7 +1092,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             try:
                 self.loadPreset()
             except Exception as e:
-                return self.raise_error(windowTitle="Error: Could not load parameters!")
+                return self.raise_error(window_title="Error: Could not load parameters!", error_message='Loading parameters failed. The following traceback may help to solve the issue:')
             # print(self.df[0], self.df[1], self.df[2])
             if len(str(self.pre[0])) != 0 and len(self.pre[1]) != 0 and len(self.pre[2]) != 0 and len(self.pre) == 3:
                 # old format, reorder data!
@@ -1037,7 +1106,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
             try:
                 self.addPreset()
             except Exception as e:
-                return self.raise_error("Error: could not add parameters")
+                return self.raise_error(window_title="Error: Could not add parameters!",
+                                    error_message='Adding parameters failed. The following traceback may help to solve the issue:')
             # print(self.df[0], self.df[1], self.df[2])
             if len(str(self.pre[0])) != 0 and len(self.pre[1]) != 0 and len(self.pre[2]) != 0 and len(self.pre) == 3:
                 # old format, reorder data!
@@ -1051,11 +1121,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
             try:
                 self.savePreset()
             except Exception as e:
-                return self.raise_error("Error: could not save parameters")
+                return self.raise_error(window_title="Error: Could not save parameters!", error_message='Save parameters failed. The following traceback may help to solve the issue:')
             try:
                 self.savePresetDia()
             except Exception as e:
-                return self.raise_error("Error: could not save data")
+                return self.raise_error(window_title="Error: Could not save!", error_message='Saving data failed. The following traceback may help to solve the issue:')
         if index == 5:  # reformat inputs [bug]
             # load C1s component preset
             pre_bg = [[2, 295, 2, 275, '', '', '', '', '', ''], ['cv', 1e-06, 'it', 10, '', '', '', '', '', ''],
@@ -1361,15 +1431,18 @@ class PrettyWidget(QtWidgets.QMainWindow):
         try:
             self.exportResults()
         except Exception as e:
-            self.raise_error("Error: could not export the results.")
+            return self.raise_error(window_title="Error: could not export the results.",
+                                    error_message='Exporting results failed. The following traceback may help to solve the issue:')
         try:
             self.savePreset()
         except Exception as e:
-            self.raise_error("Error: could not save parameters.")
+            return self.raise_error(window_title="Error: could not save parameters.",
+                                    error_message='Saving parameters failed. The following traceback may help to solve the issue:')
         try:
             self.savePresetDia()
         except Exception as e:
-            self.raise_error("Error: could not save parameters / export data.")
+            return self.raise_error(window_title="Error: could not save parameters /export data.",
+                                    error_message='Saving parameters /exporting data failed. The following traceback may help to solve the issue:')
 
     def export_pickle(self, path_for_export: str):
 
@@ -1477,11 +1550,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 # print(filePath)
                 if cfilePath.split("_")[-1] == "fit.txt":
                     with open(cfilePath.rsplit("_", 1)[0] + '_fit.csv', 'w') as f:
-                        f.write('#No of rows lightened (2D detector)'+str(self.rows_lightened)+ "(if not using 2D detector, value is 1 and can be ignored!)\n")
+                        f.write('#No of rows lightened (2D detector)' + str(
+                            self.rows_lightened) + "(if not using 2D detector, value is 1 and can be ignored!)\n")
                         self.result.to_csv(f, index=False, mode='a')
                 else:
                     with open(cfilePath.rsplit("_", 1)[0] + '.csv', 'w') as f:
-                        f.write('#No of rows lightened (2D detector)'+str(self.rows_lightened)+ "(if not using 2D detector, value is 1 and can be ignored!)\n")
+                        f.write('#No of rows lightened (2D detector)' + str(
+                            self.rows_lightened) + "(if not using 2D detector, value is 1 and can be ignored!)\n")
                         self.result.to_csv(f, index=False, mode='a')
                 # print(self.result)
 
@@ -1517,7 +1592,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 try:
                     self.list_vamas = vpy.list_vms(cfilePath)
                 except Exception as e:
-                    return self.raise_error("Error: could not load VAMAS file.")
+                    return self.raise_error(window_title="Error: could not load VAMAS file.",
+                                        error_message='Loading VAMAS file failed. The following traceback may help to solve the issue:')
                 self.list_file.extend(self.list_vamas)
 
                 # print (self.list_file)
@@ -1626,7 +1702,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         self.rows_lightened = 1
 
                 except Exception as e:
-                    return self.raise_error("Error: The input .csv is not in the correct format!")
+                    return self.raise_error(window_title="Error: could not load .csv file.",
+                                        error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
+
 
             else:
                 try:
@@ -1642,7 +1720,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     else:
                         self.rows_lightened = 1
                 except Exception as e:
-                    return self.raise_error("Error: The input file is not in the correct format!")
+                    return self.raise_error(window_title="Error: could not load input file.",
+                                        error_message='The input file is not in the correct format!. The following traceback may help to solve the issue:')
+
 
             # I have moved the error handling here directly to the import, there may exist situations, where already the
             # Import would fail. I still left the following error handling there, but I am not sure if there are cases
@@ -1652,11 +1732,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
             try:
                 x0 = self.df[:, 0]
             except Exception as e:
-                return self.raise_error("Error: could not load csv file.")
+                return self.raise_error(window_title="Error: could not load .csv file.",
+                                        error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
             try:
                 y0 = self.df[:, 1]
             except Exception as e:
-                return self.raise_error("Error: could not load csv file.")
+                return self.raise_error(window_title="Error: could not load .csv file.",
+                                        error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
             strpe = (str(strpe).split())
             if strpe[0] == 'PE:' and strpe[2] == 'eV':
                 pe = float(strpe[1])
@@ -1702,7 +1784,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 x1 = float(self.xmin)
                 x2 = float(self.xmax)
             points = 999
-            self.df = np.random.random_sample((points,2))+0.01
+            self.df = np.random.random_sample((points, 2)) + 0.01
             self.df[:, 0] = np.linspace(x1, x2, points)
             self.ana('sim')
         else:
@@ -1715,16 +1797,18 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 # self.fitter = Fitting(self.ana, "fit")
                 # self.threadpool.start(self.fitter)
             except Exception as e:
-                return self.raise_error("Error: Fitting was not successful.")
+                return self.raise_error(window_title="Error: Fitting failed!",
+                                    error_message='Fitting was not successful. The following traceback may help to solve the issue:')
         else:
             print('No Data present, Switching to simulation mode!')
             if self.xmin is not None and self.xmax is not None and len(str(self.xmin)) > 0 and len(str(self.xmax)) > 0:
                 x1 = float(self.xmin)
                 x2 = float(self.xmax)
             points = 999
-            self.df = np.random.random_sample((points,2))+0.01
+            self.df = np.random.random_sample((points, 2)) + 0.01
             self.df[:, 0] = np.linspace(x1, x2, points)
             self.ana('sim')
+
     def interrupt_fit(self):
         print("does nothing yet")
 
@@ -1757,7 +1841,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 return pars, pre
             except IndexError:
                 self.go_back_in_parameter_history = False
-                return self.raise_error('No further steps are saved')
+                return self.raise_error(window_title="Error: History empty!",
+                                    error_message='First entry in parameter history reached. No further steps saved. The following traceback may help to solve the issue:')
+
         else:
             self.savePreset()
             self.parameter_history_list.append([pars, self.pre])
@@ -1768,7 +1854,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.idx_bg = idx
         else:
             self.idx_bg = idx + 100
-        self.pre[0][0]=self.idx_bg
+        self.pre[0][0] = self.idx_bg
         self.activeBG = activeBG
         self.displayChoosenBG.setText('Choosen Background: {}'.format(dictBG[str(self.idx_bg)]))
         self.activeParameters()
@@ -2726,15 +2812,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if mode == 'eva':
             strmode = 'Evaluation'
         elif mode == 'sim':
-            strmode="Simulation"
+            strmode = "Simulation"
         else:
             strmode = 'Fitting'
-        self.statusBar().showMessage(strmode + ' running.',)
+        self.statusBar().showMessage(strmode + ' running.', )
         init = mod.eval(pars, x=x, y=y)
         if mode == 'eva':
             print(min(y))
-            out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y)*np.sqrt(self.rows_lightened)), y=y)
-        elif mode=='sim':
+            out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=y)
+        elif mode == 'sim':
             out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=y)
         else:
             try_me_out = self.history_manager(pars)
@@ -2742,7 +2828,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 pars, pre = try_me_out
                 self.pre = pre
                 self.setPreset(pre[0], pre[1], pre[2], pre[3])
-            out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y)*np.sqrt(self.rows_lightened)), y=raw_y)
+            out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=raw_y)
         comps = out.eval_components(x=x)
         # fit results to be checked
         for key in out.params:
@@ -2752,7 +2838,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         results = strmode + ' done: ' + out.method + ', # data: ' + str(out.ndata) + ', # func evals: ' + str(
             out.nfev) + ', # varys: ' + str(out.nvarys) + ', r chi-sqr: ' + str(
-            format(out.redchi, self.floating)) + ', Akaike info crit: ' + str(format(out.aic, self.floating))+ ', Last run finished: '+QTime.currentTime().toString()
+            format(out.redchi, self.floating)) + ', Akaike info crit: ' + str(
+            format(out.aic, self.floating)) + ', Last run finished: ' + QTime.currentTime().toString()
         self.statusBar().showMessage(results)
 
         # component results into table
@@ -2760,7 +2847,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
         self.fillTabResults(x, y, out)
         # Fit stats to GUI:
-        if mode == 'eva' or mode =="sim":
+        if mode == 'eva' or mode == "sim":
             for index_pk in range(int(len(self.pre[2][0]))):
                 item = QtWidgets.QTableWidgetItem('Evaluation mode')
                 self.res_tab.setItem(0, index_pk, item)
@@ -2805,7 +2892,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.stats_tab.setItem(9, 0, item)
         self.stats_tab.resizeColumnsToContents()
         self.stats_tab.resizeRowsToContents()
-        if mode =="sim":
+        if mode == "sim":
             self.ar.set_title(r"Simulation mode", fontsize=11)
         if mode == 'eva':
             plottitle = self.comboBox_file.currentText().split('/')[-1]
