@@ -1477,11 +1477,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 # print(filePath)
                 if cfilePath.split("_")[-1] == "fit.txt":
                     with open(cfilePath.rsplit("_", 1)[0] + '_fit.csv', 'w') as f:
-                        f.write('#'+str(self.rows_lightened)+ "\n")
+                        f.write('#No of rows lightened (2D detector)'+str(self.rows_lightened)+ "(if not using 2D detector, value is 1 and can be ignored!)\n")
                         self.result.to_csv(f, index=False, mode='a')
                 else:
                     with open(cfilePath.rsplit("_", 1)[0] + '.csv', 'w') as f:
-                        f.write('#'+str(self.rows_lightened)+"\n")
+                        f.write('#No of rows lightened (2D detector)'+str(self.rows_lightened)+ "(if not using 2D detector, value is 1 and can be ignored!)\n")
                         self.result.to_csv(f, index=False, mode='a')
                 # print(self.result)
 
