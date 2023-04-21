@@ -1476,9 +1476,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 file.close()
                 # print(filePath)
                 if cfilePath.split("_")[-1] == "fit.txt":
-                    self.result.to_csv(cfilePath.rsplit("_", 1)[0] + '_fit.csv', index=False)
+                    with open(cfilePath.rsplit("_", 1)[0] + '_fit.csv', 'w') as f:
+                        f.write('#'+str(self.rows_lightened)+ "\n")
+                        self.result.to_csv(f, index=False, mode='a')
                 else:
-                    self.result.to_csv(cfilePath.rsplit(".", 1)[0] + '.csv', index=False)
+                    with open(cfilePath.rsplit("_", 1)[0] + '.csv', 'w') as f:
+                        f.write('#'+str(self.rows_lightened)+"\n")
+                        self.result.to_csv(f, index=False, mode='a')
                 # print(self.result)
 
     def clickOnBtnImp(self, idx):
