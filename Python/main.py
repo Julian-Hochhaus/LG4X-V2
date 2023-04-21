@@ -389,7 +389,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp0.resizeRowsToContents()
         bg_fixedLayout = QtWidgets.QHBoxLayout()
         self.fixedBG = QtWidgets.QCheckBox('Keep background fixed')
-        self.displayChoosenBG.setText('Choosen Background:{}'.format(dictBG[str(self.idx_bg)]))
+        self.displayChoosenBG.setText('Choosen Background: {}'.format(dictBG[str(self.idx_bg)]))
         self.displayChoosenBG.setStyleSheet("font-weight: bold")
 
         bg_fixedLayout.addWidget(self.displayChoosenBG)
@@ -1768,8 +1768,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.idx_bg = idx
         else:
             self.idx_bg = idx + 100
+        self.pre[0][0]=self.idx_bg
         self.activeBG = activeBG
-        self.displayChoosenBG.setText('Choosen Background:{}'.format(dictBG[str(self.idx_bg)]))
+        self.displayChoosenBG.setText('Choosen Background: {}'.format(dictBG[str(self.idx_bg)]))
         self.activeParameters()
 
     def write_pars(self, pars):
@@ -1974,7 +1975,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             index = self.pre[2][0][2 * index_pk + 1]
             strind = self.list_shape[index]
             strind = strind.split(":", 1)[0]
-            modp = modelSelector(index, strind, index_pk)
+            modp = model_selector(index, strind, index_pk)
             mod += modp
             if index_pk == 0:
                 pars = modp.make_params()
@@ -2731,9 +2732,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.statusBar().showMessage(strmode + ' running.',)
         init = mod.eval(pars, x=x, y=y)
         if mode == 'eva':
-            out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(y)*np.sqrt(self.rows_lightened)), y=y)
+            print(min(y))
+            out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y)*np.sqrt(self.rows_lightened)), y=y)
         elif mode=='sim':
-            out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=raw_y)
+            out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=y)
         else:
             try_me_out = self.history_manager(pars)
             if try_me_out is not None:
