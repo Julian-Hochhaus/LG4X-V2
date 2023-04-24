@@ -686,6 +686,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
         elif status == "limit_set":
             self.status_label.setStyleSheet("background-color: green; border-radius: 9px")
             self.status_text.setText("Limits active")
+        elif status=='at_zero':
+            self.status_label.setStyleSheet("background-color: yellow; border-radius: 9px")
+            self.status_text.setText("Limit at 0. ")
+            self.status_text.setToolTip('If one limit reaches zero, a warning is displayed. Usually, such a case is intended because several parameters such as the amplitude are limited to positive values. If e.g. one component gets an amplitude of 0 during the fit, the warning will be displayed.')
         else:
             self.status_label.setStyleSheet("background-color: blue; border-radius: 9px")
             self.status_text.setText("Error, Unknown state!")
@@ -2153,7 +2157,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if self.pre[2][14][2 * index_pk] == 2:
                     pars[strind + str(index_pk + 1) + '_center_diff'].vary = False
             if self.pre[2][16][2 * index_pk + 1] is not None and len(str(self.pre[2][16][2 * index_pk + 1])) > 0:
-                pars.add(strind + str(index_pk + 1) + "_amp_ratio", value=float(self.pre[2][16][2 * index_pk + 1]))
+                pars.add(strind + str(index_pk + 1) + "_amp_ratio", value=float(self.pre[2][16][2 * index_pk + 1]), min=0)
                 if self.pre[2][16][2 * index_pk] == 2:
                     pars[strind + str(index_pk + 1) + '_amp_ratio'].vary = False
             if index == 0 or index == 2 or index == 4 or index == 5 or index == 6 or index == 7 or index == 8 or index == 12:
@@ -3105,10 +3109,18 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.result = pd.concat([self.result, df_c], axis=1)
         print(out.fit_report())
         lim_reached=False
+        at_zero=False
         for key in out.params:
-            if out.params[key].value==out.params[key].min or out.params[key].value==out.params[key].max:
-                lim_reached=True
-                print('Limit reached for ', key)
+            if (out.params[key].value==out.params[key].min or out.params[key].value==out.params[key].max) :
+                if out.params[key].value!=0:
+                    lim_reached=True
+                    print('Limit reached for ', key)
+                else:
+                    at_zero=True
+                    print(key, ' is at limit. Value is at 0.0. That was probably intended and can be ignored!' )
+
+        if at_zero:
+            self.set_status('at_zero')
         if lim_reached:
             self.set_status('limit_reached')
         # macOS's compatibility issue on pyqt5, add below to update window
