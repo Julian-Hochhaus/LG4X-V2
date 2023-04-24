@@ -11,8 +11,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, QTime, QRegExp
-from PyQt5.QtGui import QRegExpValidator, QDoubleValidator
+from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, QTime, QRegExp, Qt
+from PyQt5.QtGui import QRegExpValidator, QDoubleValidator, QColor, QValidator
+from PyQt5.QtWidgets import QApplication, QTableWidget, QTableWidgetItem, QItemDelegate, QCheckBox, QLineEdit, \
+    QMessageBox
+from PyQt5.QtGui import QDoubleValidator
+from PyQt5.QtCore import Qt, QLocale, QRegExp, pyqtSignal
+
 from lmfit import Model
 from lmfit.models import ExponentialGaussianModel, SkewedGaussianModel, SkewedVoigtModel, DoniachModel, \
     BreitWignerModel, LognormalModel
@@ -47,7 +52,75 @@ dictBG = {
     '5': 'CutOff (+Polynomial BG)',
 
 }
+class DoubleValidator(QDoubleValidator):
+    """Subclass of QDoubleValidator that emits a signal if the input is not valid."""
 
+    # Define a custom signal that will be emitted when the input is not valid.
+    validationChanged = QtCore.pyqtSignal(list)
+
+    def validate(self, input_str, pos):
+        state, input_str, pos = super().validate(input_str, pos)
+        validate_state=[state, input_str, pos]
+        self.validationChanged.emit(validate_state)
+        return state, input_str, pos
+
+
+class TableItemDelegate(QItemDelegate):
+    """Delegate class for QTableWidget cells that validates user input.
+
+    This class creates a line edit widget as the editor for each cell in a
+    QTableWidget. It adds a DoubleValidator to the line edit widget to ensure
+    that the user input is a valid double (floating-point) value.
+
+    Attributes:
+        None
+
+    Methods:
+        createEditor(parent, option, index): Creates a line edit widget as the
+            editor for the cell at the specified index. Returns the editor.
+
+    """
+
+    def createEditor(self, parent, option, index):
+        """Create a line edit widget as the editor for the cell at the specified index.
+
+        Args:
+            parent (QWidget): The parent widget of the editor.
+            option (QStyleOptionViewItem): The style options for the editor.
+            index (QModelIndex): The model index of the cell being edited.
+
+        Returns:
+            editor (QLineEdit): The line edit widget used as the editor.
+
+        """
+        self.editor = QLineEdit(parent)
+        self.editor.setToolTip('Only double values are valid inputs!')
+        validator = DoubleValidator()
+        self.editor.setValidator(validator)
+        validator.validationChanged.connect(self.onValidationChanged)
+        return self.editor
+
+    def onValidationChanged(self, validate_return):
+        """Display a message box when the user enters an invalid input."""
+        state=validate_return[0]
+        if state != QValidator.Acceptable:
+            print('Value '+validate_return[1]+" was entered. However, only double values are valid!")
+
+class DoubleLineEdit(QLineEdit):
+    """Custom QLineEdit widget that uses DoubleValidator to validate user input."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.validator = DoubleValidator()
+        self.setValidator(self.validator)
+        self.validator.validationChanged.connect(self.onValidationChanged)
+
+
+    def onValidationChanged(self, validate_return):
+        """Display a message box when the user enters an invalid input."""
+        state = validate_return[0]
+        if state != QValidator.Acceptable:
+            print('Value ' + validate_return[1] + " was entered. However, only double values are valid!")
 
 class SubWindow(QtWidgets.QWidget):
     def __init__(self, params_tab):
@@ -103,6 +176,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.event_stop = threading.Event()
         self.error_dialog = QtWidgets.QErrorMessage()
         self.displayChoosenBG = QtWidgets.QLabel()
+        self.delegate = TableItemDelegate()
         self.initUI()
 
     def initUI(self):
@@ -310,38 +384,30 @@ class PrettyWidget(QtWidgets.QMainWindow):
         plottitle_form.addRow("Plot title: ", self.plottitle)
         plot_settings_layout = QtWidgets.QHBoxLayout()
         min_form = QtWidgets.QFormLayout()
-        self.xmin_item = QtWidgets.QLineEdit()
-        self.xmin_item.setValidator(QDoubleValidator(-np.inf, np.inf, 6, notation=QDoubleValidator.StandardNotation))
+        self.xmin_item = DoubleLineEdit()
         self.xmin = 270
         self.xmin_item.insert(str(self.xmin))
-        self.xmin_item.setToolTip('Valid inputs are only doubles!')
         self.xmin_item.textChanged.connect(self.update_com_vals)
         min_form.addRow("x_min: ", self.xmin_item)
         plot_settings_layout.addLayout(min_form)
         max_form = QtWidgets.QFormLayout()
-        self.xmax_item = QtWidgets.QLineEdit()
-        self.xmax_item.setValidator(QDoubleValidator(-np.inf, np.inf, 6, notation=QDoubleValidator.StandardNotation))
+        self.xmax_item = DoubleLineEdit()
         self.xmax = 300
         self.xmax_item.insert(str(self.xmax))
-        self.xmax_item.setToolTip('Valid inputs are only doubles!')
         self.xmax_item.textChanged.connect(self.update_com_vals)
         max_form.addRow("x_max: ", self.xmax_item)
         plot_settings_layout.addLayout(max_form)
         hv_form = QtWidgets.QFormLayout()
-        self.hv_item = QtWidgets.QLineEdit()
-        self.hv_item.setValidator(QDoubleValidator(-np.inf, np.inf, 6, notation=QDoubleValidator.StandardNotation))
+        self.hv_item = DoubleLineEdit()
         self.hv = 1486.6
         self.hv_item.insert(str(self.hv))
-        self.hv_item.setToolTip('Valid inputs are only doubles!')
         self.hv_item.textChanged.connect(self.update_com_vals)
         hv_form.addRow("hv: ", self.hv_item)
         plot_settings_layout.addLayout(hv_form)
         wf_form = QtWidgets.QFormLayout()
-        self.wf_item = QtWidgets.QLineEdit()
-        self.wf_item.setValidator(QDoubleValidator(-np.inf, np.inf, 6, notation=QDoubleValidator.StandardNotation))
+        self.wf_item =DoubleLineEdit()
         self.wf = 4
         self.wf_item.insert(str(self.wf))
-        self.wf_item.setToolTip('Valid inputs are only doubles!')
         self.wf_item.textChanged.connect(self.update_com_vals)
         wf_form.addRow("wf: ", self.wf_item)
         plot_settings_layout.addLayout(wf_form)
@@ -363,6 +429,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         list_bg_row = ['Shirley (cv, it, k, c)', 'Tougaard(B, C, C*, D)', 'Polynomial',
                        'arctan (amp, ctr, sig)', 'erf (amp, ctr, sig)', 'cutoff (ctr, d1-4)']
         self.fitp0 = QtWidgets.QTableWidget(len(list_bg_row), len(list_bg_col) * 2)
+        self.fitp0.setItemDelegate(self.delegate)
         list_bg_colh = ['', 'bg_c0', '', 'bg_c1', '', 'bg_c2', '', 'bg_c3', '', 'bg_c4']
         self.fitp0.setHorizontalHeaderLabels(list_bg_colh)
         self.fitp0.setVerticalHeaderLabels(list_bg_row)
@@ -447,6 +514,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     'asymmetry_ref', 'ratio', 'soc_ref', 'ratio', 'height_ref', 'ratio']
 
         self.fitp1 = QtWidgets.QTableWidget(len(list_row), len(list_col) * 2)
+        self.fitp1.setItemDelegate(self.delegate)
         list_colh = ['', 'C_1']
         self.fitp1.setHorizontalHeaderLabels(list_colh)
         self.fitp1.setVerticalHeaderLabels(list_row)
@@ -456,7 +524,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
             'height', "fct_coster_kronig", 'ctr_diff', 'amp_ratio', 'lorentzian_ratio', 'gaussian_ratio',
             'asymmetry_ratio', 'soc_ratio', 'height_ratio']
         list_colh_limits = ['C_1', 'min', 'max']
+
         self.fitp1_lims = QtWidgets.QTableWidget(len(self.list_row_limits), len(list_col) * 3)
+        self.fitp1_lims.setItemDelegate(self.delegate)
+
         self.fitp1_lims.setHorizontalHeaderLabels(list_colh_limits)
         self.fitp1_lims.setVerticalHeaderLabels(self.list_row_limits)
         self.fitp1_lims.cellChanged.connect(self.lims_changed)
@@ -586,15 +657,18 @@ class PrettyWidget(QtWidgets.QMainWindow):
           Returns:
               None
           """
-        item = self.fitp1_lims.item(row, column)
-        if not item is None and item.text()!='':
-            value = item.text()
-            try:
-                double_value = float(value)
-            except ValueError:
-                self.raise_error('Invalid value in Limits!',"Non-double value entered in limits! Invalid value: "+value+" detected for parameter "+self.list_row_limits[row]+ " for component C"+str(int(column/3+1))+".")
-            else:
-                pass
+        item=self.fitp1_lims.item(row, column)
+        checked=False
+        for c in range(int(self.fitp1_lims.columnCount()/3)):
+            for r in range(self.fitp1_lims.rowCount()):
+                item=self.fitp1_lims.item(r,3*c)
+                if item is not None and item.checkState():
+                    checked=True
+        if checked:
+            self.set_status('limit_set')
+            print('checked')
+        else:
+            self.set_status('unset')
 
     def set_status(self, status):
         """
