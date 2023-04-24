@@ -666,7 +666,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     checked=True
         if checked:
             self.set_status('limit_set')
-            print('checked')
         else:
             self.set_status('unset')
 
@@ -1405,7 +1404,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         colPosition = self.fitp0.columnCount()
         list_pre_bg = []
         # save preset for bg
-        for row in range(rowPosition):  # [bug]
+        for row in range(rowPosition):
             new = []
             for col in range(colPosition):
                 if ((col % 2) != 0):
@@ -1431,7 +1430,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         for row in range(rowPosition):
             new = []
             for col in range(colPosition):
-                if (col % 2) != 0:  # [bug] test functionality
+                if (col % 2) != 0:  #
                     if row == 0 or row == 13 or row == 15 or row == 17 or row == 19 or row == 21 or row == 23 or row == 25:
                         new.append(self.fitp1.cellWidget(row, col).currentIndex())
                     else:
@@ -1457,7 +1456,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         for row in range(rowPosition):
             new = []
             for col in range(colPosition):
-                if (col % 3) != 0:  # [bug] test functionality
+                if (col % 3) != 0:
                     if self.fitp1_lims.item(row, col) is None or len(self.fitp1_lims.item(row, col).text()) == 0:
                         new.append('')
                     else:
@@ -2119,7 +2118,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 pars['pg_c' + str(index)].value = self.pre[1][2][2 * index + 1]
                 if self.pre[1][2][2 * index] == 2:
                     pars['pg_c' + str(index)].vary = False
-            pars['pg_c0'].min = 0
         mod += modp
         if self.fixedBG.isChecked():
             for par in pars:
@@ -2800,7 +2798,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def ana(self, mode):
         self.savePreset()
         plottitle = self.plottitle.text()
-        print(len(plottitle), "*********")
         # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
         x0 = self.df[:, 0]
         y0 = self.df[:, 1]
@@ -2831,7 +2828,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
         if len(plottitle) == 0:
             if mode == 'sim':
-                print('test')
                 # simulation mode
                 self.ar.set_title('Simulation', fontsize=11)
             else:
@@ -2892,7 +2888,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.statusBar().showMessage(strmode + ' running.', )
         init = mod.eval(pars, x=x, y=y)
         if mode == 'eva':
-            print(min(y))
             out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=y)
         elif mode == 'sim':
             out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=y)
@@ -3109,6 +3104,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
             df_c = pd.DataFrame(comps[strind + str(index_pk + 1) + '_'], columns=[strind + str(index_pk + 1)])
             self.result = pd.concat([self.result, df_c], axis=1)
         print(out.fit_report())
+        lim_reached=False
+        for key in out.params:
+            if out.params[key].value==out.params[key].min or out.params[key].value==out.params[key].max:
+                lim_reached=True
+                print('Limit reached for ', key)
+        if lim_reached:
+            self.set_status('limit_reached')
         # macOS's compatibility issue on pyqt5, add below to update window
         self.repaint()
 
