@@ -1,10 +1,11 @@
 # Sample workflow for building and deploying a Jekyll site to GitHub Pages
-name: Deploy Jekyll with GitHub Pages dependencies preinstalled
+name: github pages jekyll build
 
 on:
   # Runs on pushes targeting the default branch
   push:
-    branches: ["master"]
+    branches:
+      - gh-pages
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -14,38 +15,26 @@ permissions:
   contents: read
   pages: write
   id-token: write
-
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
+# Define a job named `build-and-publish` in your workflow.
 jobs:
-  # Build job
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Setup Pages
-        uses: actions/configure-pages@v3
-      - name: Build with Jekyll
-        uses: actions/jekyll-build-pages@v1
-        with:
-          source: ./
-          destination: ./_site
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
+  build-and-publish:
+    runs-on: ubuntu-latest # This job uses a GitHub-hosted runner.
 
-  # Deployment job
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v2
+      # Checkout the source from the `jekyll` branch.
+      - uses: actions/checkout@v2
+
+      # Invoke this action against the newly checked out source code.
+      - uses: fabacab/jekyll-builder-for-github-pages-action@master
+        with:
+          # Provide this action with your repository's `GH_PAGES_TOKEN`
+          # "Secret" variable. This should be the value of a personal
+          # access token granted, at a minimum, the `public_repo` and
+          # the `repo_deployment` scopes needed to deploy to GH Pages.
+          secret_gh_pages_api_token: ${{ secrets.GH_PAGES_TOKEN }}
