@@ -60,6 +60,8 @@ class DoubleValidator(QDoubleValidator):
 
     def validate(self, input_str, pos):
         state, input_str, pos = super().validate(input_str, pos)
+        if input_str == "" and state == QValidator.Acceptable:
+            state = QValidator.Intermediate
         validate_state=[state, input_str, pos]
         self.validationChanged.emit(validate_state)
         return state, input_str, pos
@@ -103,7 +105,7 @@ class TableItemDelegate(QItemDelegate):
     def onValidationChanged(self, validate_return):
         """Display a message box when the user enters an invalid input."""
         state=validate_return[0]
-        if state != QValidator.Acceptable:
+        if state == QValidator.Invalid:
             print('Value '+validate_return[1]+" was entered. However, only double values are valid!")
 
 class DoubleLineEdit(QLineEdit):
@@ -119,7 +121,7 @@ class DoubleLineEdit(QLineEdit):
     def onValidationChanged(self, validate_return):
         """Display a message box when the user enters an invalid input."""
         state = validate_return[0]
-        if state != QValidator.Acceptable:
+        if state == QValidator.Invalid:
             print('Value ' + validate_return[1] + " was entered. However, only double values are valid!")
 
 class SubWindow(QtWidgets.QWidget):
