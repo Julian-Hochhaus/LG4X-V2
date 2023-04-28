@@ -46,9 +46,9 @@ minima:
 
 
 header_pages:
- - pages/setup.markdown
- - pages/guide.markdown
- - pages/about.markdown
+ - pages/setup.md
+ - pages/guide.md
+ - pages/about.md
 
 
 
