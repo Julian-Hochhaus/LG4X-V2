@@ -1941,13 +1941,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def write_pars(self, pars):
         return None
 
-    def bgSelector(self, x, y, mode):
-        if self.idx_bg == 0:
+    def bgSelector(self, x, y, mode, idx_bg):
+        if idx_bg == 0:
             shA = self.pre[1][0][1]
             shB = self.pre[1][0][3]
             pars = None
             bg_mod = xpy.shirley_calculate(x, y, shA, shB)
-        if self.idx_bg == 100:
+        if idx_bg == 100:
             if mode == "eva":
                 shA = self.pre[1][0][1]
                 shB = self.pre[1][0][3]
@@ -1965,7 +1965,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if self.pre[1][0][6] == 2:
                     pars['bg_const'].vary = False
                 bg_mod = 0
-        if self.idx_bg == 1:
+        if idx_bg == 1:
             toB = self.pre[1][1][1]
             toC = self.pre[1][1][3]
             toCd = self.pre[1][1][5]
@@ -1979,7 +1979,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 toM = 1
                 [bg_mod, bg_toB] = xpy.tougaard_calculate(x, y, toB, toC, toCd, toD, toM)
             self.pre[1][1][1] = bg_toB
-        if self.idx_bg == 101:
+        if idx_bg == 101:
             mod = Model(xpy.tougaard2, independent_vars=["x", "y"], prefix='bg_')
             if self.pre[1][1][1] is None or self.pre[1][1][3] is None or self.pre[1][1][5] is None \
                     or self.pre[1][1][7] is None or len(str(self.pre[1][1][1])) == 0 or len(str(self.pre[1][1][3])) == 0 \
@@ -1997,29 +1997,29 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 pars['bg_D'].value = self.pre[1][1][7]
                 pars['bg_D'].vary = False
             bg_mod = 0
-        if self.idx_bg == 3 or self.idx_bg == 4:
-            if self.idx_bg == 3:
+        if idx_bg == 3 or idx_bg == 4:
+            if idx_bg == 3:
                 mod = StepModel(prefix='bg_', form='arctan')
-            if self.idx_bg == 4:
+            if idx_bg == 4:
                 mod = StepModel(prefix='bg_', form='erf')
-            if self.pre[1][self.idx_bg][1] is None or self.pre[1][self.idx_bg][3] is None or self.pre[1][self.idx_bg][
+            if self.pre[1][idx_bg][1] is None or self.pre[1][idx_bg][3] is None or self.pre[1][idx_bg][
                 5] is None \
-                    or len(str(self.pre[1][self.idx_bg][1])) == 0 or len(str(self.pre[1][self.idx_bg][3])) == 0 \
-                    or len(str(self.pre[1][self.idx_bg][5])) == 0:
+                    or len(str(self.pre[1][idx_bg][1])) == 0 or len(str(self.pre[1][idx_bg][3])) == 0 \
+                    or len(str(self.pre[1][idx_bg][5])) == 0:
                 pars = mod.guess(y, x=x)
             else:
                 pars = mod.make_params()
-                pars['bg_amplitude'].value = self.pre[1][self.idx_bg][1]
-                if self.pre[1][self.idx_bg][0] == 2:
+                pars['bg_amplitude'].value = self.pre[1][idx_bg][1]
+                if self.pre[1][idx_bg][0] == 2:
                     pars['bg_amplitude'].vary = False
-                pars['bg_center'].value = self.pre[1][self.idx_bg][3]
-                if self.pre[1][self.idx_bg][2] == 2:
+                pars['bg_center'].value = self.pre[1][idx_bg][3]
+                if self.pre[1][idx_bg][2] == 2:
                     pars['bg_center'].vary = False
-                pars['bg_sigma'].value = self.pre[1][self.idx_bg][5]
-                if self.pre[1][self.idx_bg][4] == 2:
+                pars['bg_sigma'].value = self.pre[1][idx_bg][5]
+                if self.pre[1][idx_bg][4] == 2:
                     pars['bg_sigma'].vary = False
             bg_mod = 0
-        if self.idx_bg == 5:
+        if idx_bg == 5:
             if (x[0] > x[-1] and y[0] > y[-1]) or (x[0] < x[-1] and y[0] < y[-1]):
                 # VBM
                 def poly2vbm(x, ctr, d1, d2, d3, d4):
@@ -2033,35 +2033,35 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
             mod = Model(poly2vbm, prefix='bg_')
             pars = mod.make_params()
-            if self.pre[1][self.idx_bg][1] is None or self.pre[1][self.idx_bg][3] is None or self.pre[1][self.idx_bg][
+            if self.pre[1][idx_bg][1] is None or self.pre[1][idx_bg][3] is None or self.pre[1][idx_bg][
                 5] is None \
-                    or self.pre[1][self.idx_bg][7] is None or self.pre[1][self.idx_bg][9] is None \
-                    or len(str(self.pre[1][self.idx_bg][1])) == 0 or len(str(self.pre[1][self.idx_bg][3])) == 0 \
-                    or len(str(self.pre[1][self.idx_bg][5])) == 0 or len(str(self.pre[1][self.idx_bg][7])) == 0 \
-                    or len(str(self.pre[1][self.idx_bg][9])) == 0:
+                    or self.pre[1][idx_bg][7] is None or self.pre[1][idx_bg][9] is None \
+                    or len(str(self.pre[1][idx_bg][1])) == 0 or len(str(self.pre[1][idx_bg][3])) == 0 \
+                    or len(str(self.pre[1][idx_bg][5])) == 0 or len(str(self.pre[1][idx_bg][7])) == 0 \
+                    or len(str(self.pre[1][idx_bg][9])) == 0:
                 pars['bg_ctr'].value = (x[0] + x[-1]) / 2
                 pars['bg_d1'].value = 0
                 pars['bg_d2'].value = 0
                 pars['bg_d3'].value = 0
                 pars['bg_d4'].value = 0
             else:
-                pars['bg_ctr'].value = self.pre[1][self.idx_bg][1]
-                if self.pre[1][self.idx_bg][0] == 2:
+                pars['bg_ctr'].value = self.pre[1][idx_bg][1]
+                if self.pre[1][idx_bg][0] == 2:
                     pars['bg_ctr'].vary = False
-                pars['bg_d1'].value = self.pre[1][self.idx_bg][3]
-                if self.pre[1][self.idx_bg][2] == 2:
+                pars['bg_d1'].value = self.pre[1][idx_bg][3]
+                if self.pre[1][idx_bg][2] == 2:
                     pars['bg_d1'].vary = False
-                pars['bg_d2'].value = self.pre[1][self.idx_bg][5]
-                if self.pre[1][self.idx_bg][5] == 2:
+                pars['bg_d2'].value = self.pre[1][idx_bg][5]
+                if self.pre[1][idx_bg][5] == 2:
                     pars['bg_d2'].vary = False
-                pars['bg_d3'].value = self.pre[1][self.idx_bg][7]
-                if self.pre[1][self.idx_bg][6] == 2:
+                pars['bg_d3'].value = self.pre[1][idx_bg][7]
+                if self.pre[1][idx_bg][6] == 2:
                     pars['bg_d3'].vary = False
-                pars['bg_d4'].value = self.pre[1][self.idx_bg][9]
-                if self.pre[1][self.idx_bg][8] == 2:
+                pars['bg_d4'].value = self.pre[1][idx_bg][9]
+                if self.pre[1][idx_bg][8] == 2:
                     pars['bg_d4'].vary = False
             bg_mod = 0
-        if self.idx_bg == 2:
+        if idx_bg == 2:
             mod = PolynomialModel(4, prefix='bg_')
             bg_mod = 0
             if self.pre[1][2][1] is None or self.pre[1][2][3] is None or self.pre[1][2][5] is None \
@@ -2556,30 +2556,30 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                 3 * index_pk + 2]
         return pars
 
-    def bgResult2Pre(self, out_params, mode):
-        if self.idx_bg == 100:
+    def bgResult2Pre(self, out_params, mode, idx_bg):
+        if idx_bg == 100:
             if mode != "eva":
                 self.pre[1][0][5] = out_params['bg_k'].value
                 self.pre[1][0][7] = out_params['bg_const'].value
-        if self.idx_bg == 101:
+        if idx_bg == 101:
             self.pre[1][1][1] = out_params['bg_B'].value
             self.pre[1][1][3] = out_params['bg_C'].value
             self.pre[1][1][5] = out_params['bg_C_d'].value
             self.pre[1][1][7] = out_params['bg_D'].value
-        if self.idx_bg == 3 or self.idx_bg == 4:
-            self.pre[1][self.idx_bg][1] = out_params['bg_amplitude'].value
-            self.pre[1][self.idx_bg][3] = out_params['bg_center'].value
-            self.pre[1][self.idx_bg][5] = out_params['bg_sigma'].value
-        if self.idx_bg == 5:
-            self.pre[1][self.idx_bg][1] = out_params['bg_ctr'].value
-            self.pre[1][self.idx_bg][3] = out_params['bg_d1'].value
-            self.pre[1][self.idx_bg][5] = out_params['bg_d2'].value
-            self.pre[1][self.idx_bg][7] = out_params['bg_d3'].value
-            self.pre[1][self.idx_bg][9] = out_params['bg_d4'].value
-        if self.idx_bg == 2:
+        if idx_bg == 3 or idx_bg == 4:
+            self.pre[1][idx_bg][1] = out_params['bg_amplitude'].value
+            self.pre[1][idx_bg][3] = out_params['bg_center'].value
+            self.pre[1][idx_bg][5] = out_params['bg_sigma'].value
+        if idx_bg == 5:
+            self.pre[1][idx_bg][1] = out_params['bg_ctr'].value
+            self.pre[1][idx_bg][3] = out_params['bg_d1'].value
+            self.pre[1][idx_bg][5] = out_params['bg_d2'].value
+            self.pre[1][idx_bg][7] = out_params['bg_d3'].value
+            self.pre[1][idx_bg][9] = out_params['bg_d4'].value
+        if idx_bg == 2:
             for index in range(5):
-                self.pre[1][self.idx_bg][2 * index + 1] = out_params['bg_c' + str(index)].value
-        if self.idx_bg != 2:
+                self.pre[1][idx_bg][2 * index + 1] = out_params['bg_c' + str(index)].value
+        if idx_bg != 2:
             for index in range(5):
                 self.pre[1][2][2 * index + 1] = out_params['pg_c' + str(index)].value
 
@@ -2628,7 +2628,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.pre[2][12][2 * index_pk + 1] = out_params[strind + str(index_pk + 1) + '_fct_coster_kronig'].value
 
     def result2Par(self, out_params, mode):
-        self.bgResult2Pre(out_params, mode)
+        self.bgResult2Pre(out_params, mode, self.idx_bg)
         self.peakResult2Pre(out_params, mode)
 
     def fillTabResults(self, x, y, out):
@@ -2865,7 +2865,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         raw_y = y.copy()
         # BG model selection and call shirley and tougaard
         # colPosition = self.fitp1.columnCount()
-        temp_res = self.bgSelector(x, y, mode=mode)
+        temp_res = self.bgSelector(x, y, mode=mode, idx_bg=self.idx_bg)
         mod = temp_res[0]
         bg_mod = temp_res[1]
         pars = temp_res[2]
