@@ -1633,7 +1633,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             self.rows_lightened) + "(if not using 2D detector, value is 1 and can be ignored!)\n")
                         self.result.to_csv(f, index=False, mode='a')
                 else:
-                    with open(cfilePath.rsplit("_", 1)[0] + '.csv', 'w') as f:
+                    with open(cfilePath.rsplit(".", 1)[0] + '.csv', 'w') as f:
                         f.write('#No of rows lightened (2D detector)' + str(
                             self.rows_lightened) + "(if not using 2D detector, value is 1 and can be ignored!)\n")
                         self.result.to_csv(f, index=False, mode='a')
@@ -1767,8 +1767,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
             # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
             fileName = os.path.basename(self.comboBox_file.currentText())
             if os.path.splitext(fileName)[1] == '.csv':
-                try:
-                    self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
+                try:# change import, so that export file is detected
+                    data = np.genfromtxt(str(self.comboBox_file.currentText()),dtype='str', delimiter=',', max_rows=2)
+                    if all(elem in data for elem in ['x', 'raw_y', 'sum_fit']):
+                        self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=2, usecols=(0, 1))
+                    else:
+                        self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
+                    print(self.df)
                     # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1,
                     # header=None)
                     strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter=',', usecols=1,
