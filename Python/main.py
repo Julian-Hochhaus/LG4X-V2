@@ -201,7 +201,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         self.idx_imp = 0
 
-        self.idx_bg = 0
+        self.idx_bg = {0}
 
         self.idx_pres = 0
         self.addition = 0
@@ -467,7 +467,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp0.resizeRowsToContents()
         bg_fixedLayout = QtWidgets.QHBoxLayout()
         self.fixedBG = QtWidgets.QCheckBox('Keep background fixed')
-        self.displayChoosenBG.setText('Choosen Background: {}'.format(dictBG[str(self.idx_bg)]))
+        self.displayChoosenBG.setText('Choosen Background: {}'.format(', '.join([dictBG[str(idx)] for idx in self.idx_bg])))
         self.displayChoosenBG.setStyleSheet("font-weight: bold")
 
         bg_fixedLayout.addWidget(self.displayChoosenBG)
@@ -719,48 +719,39 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
 
     def activeParameters(self):
-        """
-
-        """
         nrows = self.fitp0.rowCount()
         ncols = self.fitp0.columnCount()
+
         for col in range(ncols):
             for row in range(nrows):
                 if not row == 2:
                     self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
-                                                                       col).flags() & ~ QtCore.Qt.ItemIsEditable & ~QtCore.Qt.ItemIsEnabled & ~QtCore.Qt.ItemIsSelectable)
-        idx = self.idx_bg
-        for col in range(ncols):
-            for row in range(nrows):
-                if idx == 0:
-                    if row == 0 and col < 4:
-                        self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
-                                                                           col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
-                if idx == 100:
-                    if row == 0:
-                        self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
-                                                                           col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
-                if idx == 1:
-                    if row == 1:
-                        self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
-                                                                           col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
-                if idx == 101:
-                    if row == 1:
-                        self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
-                                                                           col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
-                if idx == 3:
-                    if row == 3:
-                        self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
-                                                                           col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
-                if idx == 4:
-                    if row == 4:
-                        self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
-                                                                           col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
-                if idx == 5:
-                    if row == 5:
-                        self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
-                                                                           col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+                                                                       col).flags() & ~QtCore.Qt.ItemIsEditable & ~QtCore.Qt.ItemIsEnabled & ~QtCore.Qt.ItemIsSelectable)
 
+        for idx in self.idx_bg:
+            for col in range(ncols):
+                for row in range(nrows):
+                    if idx == 0 and row == 0 and col < 4:
+                        self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
+                                                                           col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+                    elif idx == 100 and row == 0:
+                        self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
+                                                                           col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+                    elif idx == 1 and row == 1:
+                        self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
+                                                                           col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+                    elif idx == 101 and row == 1:
+                        self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
+                                                                           col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+                    elif idx == 3 and row == 3:
+                        self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
+                                                                           col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+                    elif idx == 4 and row == 4:
+                        self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
+                                                                           col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+                    elif idx == 5 and row == 5:
+                        self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
+                                                                           col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
         nrows = self.fitp1.rowCount()
         ncols = self.fitp1.columnCount()
         ncols = int(ncols / 2)
@@ -1284,11 +1275,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.hv_item.setText(str(format(self.hv, self.floating)))
             self.wf = list_pre_com[4]
             self.wf_item.setText(str(format(self.wf, self.floating)))
-        if len(str(index_bg)) > 0 and self.addition == 0:
-            if int(index_bg) < len(self.bgMenu.actions()) or int(index_bg) in [100, 101]:
-                # self.comboBox_bg.setCurrentIndex(int(index_bg))
-                self.idx_bg = int(index_bg)
-        self.displayChoosenBG.setText('Choosen Background: {}'.format(dictBG[str(self.idx_bg)]))
+        self.displayChoosenBG.setText('Choosen Background: {}'.format(', '.join([dictBG[str(idx)] for idx in self.idx_bg])))
         # load preset for bg
         if len(list_pre_bg) != 0 and self.addition == 0:
             for row in range(len(list_pre_bg)):
@@ -1943,32 +1930,24 @@ class PrettyWidget(QtWidgets.QMainWindow):
             return None
 
     def clickOnBtnBG(self):
-        checked_actions = []
-        for action in self.bgMenu.actions():
-            if isinstance(action, QtWidgets.QMenu):
-                for sub_action in action.actions():
-                    if sub_action.isChecked():
-                        checked_actions.append(sub_action)
-            elif action.isChecked():
-                checked_actions.append(action)
+        checked_actions = [action for action in self.bgMenu.actions() if action.isChecked()]
+        idx_bg = set()
 
-        if not checked_actions:
-            # None of the actions are checked
-            return
+        if checked_actions:
+            last_checked_action = checked_actions[-1]
+        print(last_checked_action.text())
 
         idx_bg = set()
         activeBG = False
         for checked_action in checked_actions:
             if checked_action.text() == '&Active &Shirley BG':
-                idx_bg.add(0)
-                activeBG = True
-            elif checked_action.text() == '&Static &Shirley BG':
                 idx_bg.add(100)
+            elif checked_action.text() == '&Static &Shirley BG' and '&Active &Shirley BG' not in [checked_act.text() for checked_act in checked_actions]:
+                idx_bg.add(0)
             elif checked_action.text() == '&Active &Tougaard BG':
-                idx_bg.add(1)
-                activeBG = True
-            elif checked_action.text() == '&Static &Tougaard BG':
                 idx_bg.add(101)
+            elif checked_action.text() == '&Static &Tougaard BG'and '&Active &Tougaard BG' not in [checked_act.text() for checked_act in checked_actions]:
+                idx_bg.add(1)
             elif checked_action.text() == '&Polynomial BG':
                 idx_bg.add(2)
             elif checked_action.text() == '&Arctan BG':
