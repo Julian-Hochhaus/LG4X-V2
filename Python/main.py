@@ -292,32 +292,41 @@ class PrettyWidget(QtWidgets.QMainWindow):
         presetMenu.addAction(btn_preset_ptable)
 
         self.bgMenu = menubar.addMenu('&Choose BG')
-        self.submenu_shirley = self.bgMenu.addMenu('&Shirley BG')
-        btn_bg_shirley_act = QtWidgets.QAction('&Active approach', self)
-        btn_bg_shirley_act.triggered.connect(lambda: self.clickOnBtnBG(idx=0, activeBG=True))
-        btn_bg_shirley_static = QtWidgets.QAction('&Static approach', self)
-        btn_bg_shirley_static.triggered.connect(lambda: self.clickOnBtnBG(idx=0, activeBG=False))
-        self.submenu_shirley.addAction(btn_bg_shirley_act)
-        self.submenu_shirley.addAction(btn_bg_shirley_static)
-        self.submenu_tougaard = self.bgMenu.addMenu('&Tougaard BG')
-        btn_bg_tougaard_act = QtWidgets.QAction('&Active approach', self)
-        btn_bg_tougaard_act.triggered.connect(lambda: self.clickOnBtnBG(idx=1, activeBG=True))
-        btn_bg_tougaard_static = QtWidgets.QAction('&Static approach', self)
-        btn_bg_tougaard_static.triggered.connect(lambda: self.clickOnBtnBG(idx=1, activeBG=False))
-        self.submenu_tougaard.addAction(btn_bg_tougaard_act)
-        self.submenu_tougaard.addAction(btn_bg_tougaard_static)
 
-        btn_bg_polynomial = QtWidgets.QAction('&Polynomial BG', self)
+        btn_bg_shirley_act = QtWidgets.QAction('&Active &Shirley BG', self, checkable=True)
+        btn_bg_shirley_act.triggered.connect(self.clickOnBtnBG)
+
+        btn_bg_shirley_static = QtWidgets.QAction('&Static &Shirley BG', self, checkable=True)
+        btn_bg_shirley_static.triggered.connect(self.clickOnBtnBG)
+
+        btn_bg_tougaard_act = QtWidgets.QAction('&Active &Tougaard BG', self, checkable=True)
+        btn_bg_tougaard_act.triggered.connect(self.clickOnBtnBG)
+
+        btn_bg_tougaard_static = QtWidgets.QAction('&Static &Tougaard BG', self, checkable=True)
+        btn_bg_tougaard_static.triggered.connect(self.clickOnBtnBG)
+
+        btn_bg_polynomial = QtWidgets.QAction('&Polynomial BG', self, checkable=True)
         btn_bg_polynomial.setShortcut('Ctrl+Alt+P')
-        btn_bg_polynomial.triggered.connect(lambda: self.clickOnBtnBG(idx=2))
-        btn_bg_arctan = QtWidgets.QAction('&Arctan BG', self)
-        btn_bg_arctan.triggered.connect(lambda: self.clickOnBtnBG(idx=3))
+        btn_bg_polynomial.triggered.connect(self.clickOnBtnBG)
 
-        btn_bg_erf = QtWidgets.QAction('&Erf BG', self)
-        btn_bg_erf.triggered.connect(lambda: self.clickOnBtnBG(idx=4))
+        btn_bg_arctan = QtWidgets.QAction('&Arctan BG', self, checkable=True)
+        btn_bg_arctan.triggered.connect(self.clickOnBtnBG)
 
-        btn_bg_vbm = QtWidgets.QAction('&VBM/Cutoff BG', self)
-        btn_bg_vbm.triggered.connect(lambda: self.clickOnBtnBG(idx=5))
+        btn_bg_erf = QtWidgets.QAction('&Erf BG', self, checkable=True)
+        btn_bg_erf.triggered.connect(self.clickOnBtnBG)
+
+        btn_bg_vbm = QtWidgets.QAction('&VBM/Cutoff BG', self, checkable=True)
+        btn_bg_vbm.triggered.connect(self.clickOnBtnBG)
+
+        # Add the checkable actions to the menu
+        self.bgMenu.addAction(btn_bg_shirley_act)
+        self.bgMenu.addAction(btn_bg_shirley_static)
+        self.bgMenu.addAction(btn_bg_tougaard_act)
+        self.bgMenu.addAction(btn_bg_tougaard_static)
+        self.bgMenu.addAction(btn_bg_polynomial)
+        self.bgMenu.addAction(btn_bg_arctan)
+        self.bgMenu.addAction(btn_bg_erf)
+        self.bgMenu.addAction(btn_bg_vbm)
 
         btn_tougaard_cross_section = QtWidgets.QAction('Tougaard &Cross Section ', self)
         btn_tougaard_cross_section.triggered.connect(self.clicked_cross_section)
@@ -1933,14 +1942,47 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.parameter_history_list.append([pars, self.pre])
             return None
 
-    def clickOnBtnBG(self, idx, activeBG=False):
-        if not activeBG:
-            self.idx_bg = idx
-        else:
-            self.idx_bg = idx + 100
+    def clickOnBtnBG(self):
+        checked_actions = []
+        for action in self.bgMenu.actions():
+            if isinstance(action, QtWidgets.QMenu):
+                for sub_action in action.actions():
+                    if sub_action.isChecked():
+                        checked_actions.append(sub_action)
+            elif action.isChecked():
+                checked_actions.append(action)
+
+        if not checked_actions:
+            # None of the actions are checked
+            return
+
+        idx_bg = set()
+        activeBG = False
+        for checked_action in checked_actions:
+            if checked_action.text() == '&Active &Shirley BG':
+                idx_bg.add(0)
+                activeBG = True
+            elif checked_action.text() == '&Static &Shirley BG':
+                idx_bg.add(100)
+            elif checked_action.text() == '&Active &Tougaard BG':
+                idx_bg.add(1)
+                activeBG = True
+            elif checked_action.text() == '&Static &Tougaard BG':
+                idx_bg.add(101)
+            elif checked_action.text() == '&Polynomial BG':
+                idx_bg.add(2)
+            elif checked_action.text() == '&Arctan BG':
+                idx_bg.add(3)
+            elif checked_action.text() == '&Erf BG':
+                idx_bg.add(4)
+            elif checked_action.text() == '&VBM/Cutoff BG':
+                idx_bg.add(5)
+
+        self.idx_bg = sorted(idx_bg)
+        print(self.idx_bg)
         self.pre[0][0] = self.idx_bg
-        self.activeBG = activeBG
-        self.displayChoosenBG.setText('Choosen Background: {}'.format(dictBG[str(self.idx_bg)]))
+        self.displayChoosenBG.setText(
+            'Choosen Background: {}'.format(', '.join([dictBG[str(idx)] for idx in self.idx_bg])))
         self.activeParameters()
 
     def write_pars(self, pars):
