@@ -470,7 +470,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         bg_fixedLayout = QtWidgets.QHBoxLayout()
         self.fixedBG = QtWidgets.QCheckBox('Keep background fixed')
         self.displayChoosenBG.setText(
-            'Choosen Background: {}'.format(', '.join([dictBG[str(idx)] for idx in self.idx_bg])))
+            'Choosen Background: {}'.format('+ '.join([dictBG[str(idx)] for idx in self.idx_bg])))
         self.displayChoosenBG.setStyleSheet("font-weight: bold")
 
         bg_fixedLayout.addWidget(self.displayChoosenBG)
@@ -1283,7 +1283,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.wf = list_pre_com[4]
             self.wf_item.setText(str(format(self.wf, self.floating)))
         self.displayChoosenBG.setText(
-            'Choosen Background: {}'.format(', '.join([dictBG[str(idx)] for idx in self.idx_bg])))
+            'Choosen Background: {}'.format('+ '.join([dictBG[str(idx)] for idx in self.idx_bg])))
         # load preset for bg
         if len(list_pre_bg) != 0 and self.addition == 0:
             for row in range(len(list_pre_bg)):
@@ -1983,18 +1983,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.idx_bg = sorted(idx_bg)
 
         self.pre[0][0] = self.idx_bg
-        if len(checked_actions) == 1 and checked_actions[0].text() == '&Polynomial BG':
-            self.displayChoosenBG.setText(
-                'Choosen Background: {}'.format(', '.join([dictBG[str(idx)] for idx in self.idx_bg])))
-        elif len(checked_actions) == 1 and checked_actions[0].text() != '&Polynomial BG':
-            self.displayChoosenBG.setText(
-            'Choosen Background: {}'.format(', '.join([dictBG[str(idx)] for idx in self.idx_bg]))+ '(+Polynomial BG)')
-        elif len(checked_actions) >= 1 and '&Polynomial BG' not in [checked_act.text() for checked_act in checked_actions]:
-            self.displayChoosenBG.setText(
-            'Choosen Background: {}'.format(', '.join([dictBG[str(idx)] for idx in self.idx_bg]))+ '(+Polynomial BG)')
-        else:
-            self.displayChoosenBG.setText(
-                'Choosen Background: {}'.format(', '.join([dictBG[str(idx)] for idx in self.idx_bg])))
+        self.displayChoosenBG.setText(
+                'Choosen Background: {}'.format('+ '.join([dictBG[str(idx)] for idx in self.idx_bg])))
         self.activeParameters()
 
     def write_pars(self, pars):
