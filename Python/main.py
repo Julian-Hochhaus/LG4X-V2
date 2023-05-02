@@ -42,16 +42,18 @@ import logging  # error handling
 # style.use('ggplot')    
 style.use('seaborn-pastel')
 dictBG = {
-    '0': 'static ShirleyBG (+Polynomial BG)',
-    '100': 'active ShirleyBG (+Polynomial BG)',
-    '1': 'static TougaardBG (+Polynomial BG)',
-    '101': 'active TougaardBG (+Polynomial BG)',
+    '0': 'static Shirley BG',
+    '100': 'active Shirley BG ',
+    '1': 'static Tougaard BG',
+    '101': 'active Tougaard BG',
     '2': 'Polynomial BG',
-    '3': 'arctan (+Polynomial BG)',
-    '4': 'Error function (+Polynomial BG)',
-    '5': 'CutOff (+Polynomial BG)',
+    '3': 'arctan',
+    '4': 'Error function',
+    '5': 'CutOff',
 
 }
+
+
 class DoubleValidator(QDoubleValidator):
     """Subclass of QDoubleValidator that emits a signal if the input is not valid."""
 
@@ -62,7 +64,7 @@ class DoubleValidator(QDoubleValidator):
         state, input_str, pos = super().validate(input_str, pos)
         if input_str == "" and state == QValidator.Acceptable:
             state = QValidator.Intermediate
-        validate_state=[state, input_str, pos]
+        validate_state = [state, input_str, pos]
         self.validationChanged.emit(validate_state)
         return state, input_str, pos
 
@@ -104,9 +106,10 @@ class TableItemDelegate(QItemDelegate):
 
     def onValidationChanged(self, validate_return):
         """Display a message box when the user enters an invalid input."""
-        state=validate_return[0]
+        state = validate_return[0]
         if state == QValidator.Invalid:
-            print('Value '+validate_return[1]+" was entered. However, only double values are valid!")
+            print('Value ' + validate_return[1] + " was entered. However, only double values are valid!")
+
 
 class DoubleLineEdit(QLineEdit):
     """Custom QLineEdit widget that uses DoubleValidator to validate user input."""
@@ -117,12 +120,12 @@ class DoubleLineEdit(QLineEdit):
         self.setValidator(self.validator)
         self.validator.validationChanged.connect(self.onValidationChanged)
 
-
     def onValidationChanged(self, validate_return):
         """Display a message box when the user enters an invalid input."""
         state = validate_return[0]
         if state == QValidator.Invalid:
             print('Value ' + validate_return[1] + " was entered. However, only double values are valid!")
+
 
 class SubWindow(QtWidgets.QWidget):
     def __init__(self, params_tab):
@@ -201,7 +204,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         self.idx_imp = 0
 
-        self.idx_bg = {0}
+        self.idx_bg = [2]
 
         self.idx_pres = 0
         self.addition = 0
@@ -416,7 +419,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         hv_form.addRow("hv: ", self.hv_item)
         plot_settings_layout.addLayout(hv_form)
         wf_form = QtWidgets.QFormLayout()
-        self.wf_item =DoubleLineEdit()
+        self.wf_item = DoubleLineEdit()
         self.wf = 4
         self.wf_item.insert(str(self.wf))
         self.wf_item.textChanged.connect(self.update_com_vals)
@@ -467,7 +470,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp0.resizeRowsToContents()
         bg_fixedLayout = QtWidgets.QHBoxLayout()
         self.fixedBG = QtWidgets.QCheckBox('Keep background fixed')
-        self.displayChoosenBG.setText('Choosen Background: {}'.format(', '.join([dictBG[str(idx)] for idx in self.idx_bg])))
+        self.displayChoosenBG.setText(
+            'Choosen Background: {}'.format(', '.join([dictBG[str(idx)] for idx in self.idx_bg])))
         self.displayChoosenBG.setStyleSheet("font-weight: bold")
 
         bg_fixedLayout.addWidget(self.displayChoosenBG)
@@ -668,13 +672,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
           Returns:
               None
           """
-        item=self.fitp1_lims.item(row, column)
-        checked=False
-        for c in range(int(self.fitp1_lims.columnCount()/3)):
+        item = self.fitp1_lims.item(row, column)
+        checked = False
+        for c in range(int(self.fitp1_lims.columnCount() / 3)):
             for r in range(self.fitp1_lims.rowCount()):
-                item=self.fitp1_lims.item(r,3*c)
+                item = self.fitp1_lims.item(r, 3 * c)
                 if item is not None and item.checkState():
-                    checked=True
+                    checked = True
         if checked:
             self.set_status('limit_set')
         else:
@@ -697,10 +701,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
         elif status == "limit_set":
             self.status_label.setStyleSheet("background-color: green; border-radius: 9px")
             self.status_text.setText("Limits active")
-        elif status=='at_zero':
+        elif status == 'at_zero':
             self.status_label.setStyleSheet("background-color: yellow; border-radius: 9px")
             self.status_text.setText("Limit at 0. ")
-            self.status_text.setToolTip('If one limit reaches zero, a warning is displayed. Usually, such a case is intended because several parameters such as the amplitude are limited to positive values. If e.g. one component gets an amplitude of 0 during the fit, the warning will be displayed.')
+            self.status_text.setToolTip(
+                'If one limit reaches zero, a warning is displayed. Usually, such a case is intended because several parameters such as the amplitude are limited to positive values. If e.g. one component gets an amplitude of 0 during the fit, the warning will be displayed.')
         else:
             self.status_label.setStyleSheet("background-color: blue; border-radius: 9px")
             self.status_text.setText("Error, Unknown state!")
@@ -961,7 +966,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             None
         """
         self.error_dialog.setWindowTitle(window_title)
-        error_message = error_message+r'\n *******************\n'+traceback.format_exc()
+        error_message = error_message + r'\n *******************\n' + traceback.format_exc()
         self.error_dialog.showMessage(error_message)
         logging.error(error_message)
 
@@ -1171,7 +1176,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
             try:
                 self.loadPreset()
             except Exception as e:
-                return self.raise_error(window_title="Error: Could not load parameters!", error_message='Loading parameters failed. The following traceback may help to solve the issue:')
+                return self.raise_error(window_title="Error: Could not load parameters!",
+                                        error_message='Loading parameters failed. The following traceback may help to solve the issue:')
             # print(self.df[0], self.df[1], self.df[2])
             if len(str(self.pre[0])) != 0 and len(self.pre[1]) != 0 and len(self.pre[2]) != 0 and len(self.pre) == 3:
                 # old format, reorder data!
@@ -1186,7 +1192,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.addPreset()
             except Exception as e:
                 return self.raise_error(window_title="Error: Could not add parameters!",
-                                    error_message='Adding parameters failed. The following traceback may help to solve the issue:')
+                                        error_message='Adding parameters failed. The following traceback may help to solve the issue:')
             # print(self.df[0], self.df[1], self.df[2])
             if len(str(self.pre[0])) != 0 and len(self.pre[1]) != 0 and len(self.pre[2]) != 0 and len(self.pre) == 3:
                 # old format, reorder data!
@@ -1200,11 +1206,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
             try:
                 self.savePreset()
             except Exception as e:
-                return self.raise_error(window_title="Error: Could not save parameters!", error_message='Save parameters failed. The following traceback may help to solve the issue:')
+                return self.raise_error(window_title="Error: Could not save parameters!",
+                                        error_message='Save parameters failed. The following traceback may help to solve the issue:')
             try:
                 self.savePresetDia()
             except Exception as e:
-                return self.raise_error(window_title="Error: Could not save!", error_message='Saving data failed. The following traceback may help to solve the issue:')
+                return self.raise_error(window_title="Error: Could not save!",
+                                        error_message='Saving data failed. The following traceback may help to solve the issue:')
         if index == 5:  # reformat inputs [bug]
             # load C1s component preset
             pre_bg = [[2, 295, 2, 275, '', '', '', '', '', ''], ['cv', 1e-06, 'it', 10, '', '', '', '', '', ''],
@@ -1275,7 +1283,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.hv_item.setText(str(format(self.hv, self.floating)))
             self.wf = list_pre_com[4]
             self.wf_item.setText(str(format(self.wf, self.floating)))
-        self.displayChoosenBG.setText('Choosen Background: {}'.format(', '.join([dictBG[str(idx)] for idx in self.idx_bg])))
+        self.displayChoosenBG.setText(
+            'Choosen Background: {}'.format(', '.join([dictBG[str(idx)] for idx in self.idx_bg])))
         # load preset for bg
         if len(list_pre_bg) != 0 and self.addition == 0:
             for row in range(len(list_pre_bg)):
@@ -1668,7 +1677,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.list_vamas = vpy.list_vms(cfilePath)
                 except Exception as e:
                     return self.raise_error(window_title="Error: could not load VAMAS file.",
-                                        error_message='Loading VAMAS file failed. The following traceback may help to solve the issue:')
+                                            error_message='Loading VAMAS file failed. The following traceback may help to solve the issue:')
                 self.list_file.extend(self.list_vamas)
 
                 # print (self.list_file)
@@ -1763,10 +1772,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
             # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
             fileName = os.path.basename(self.comboBox_file.currentText())
             if os.path.splitext(fileName)[1] == '.csv':
-                try:# change import, so that export file is detected
-                    data = np.genfromtxt(str(self.comboBox_file.currentText()),dtype='str', delimiter=',', max_rows=2)
+                try:  # change import, so that export file is detected
+                    data = np.genfromtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter=',', max_rows=2)
                     if all(elem in data for elem in ['x', 'raw_y', 'sum_fit']):
-                        self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=2, usecols=(0, 1))
+                        self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=2,
+                                             usecols=(0, 1))
                     else:
                         self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
                     print(self.df)
@@ -1783,7 +1793,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
                 except Exception as e:
                     return self.raise_error(window_title="Error: could not load .csv file.",
-                                        error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
+                                            error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
 
 
             else:
@@ -1801,8 +1811,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         self.rows_lightened = 1
                 except Exception as e:
                     return self.raise_error(window_title="Error: could not load input file.",
-                                        error_message='The input file is not in the correct format!. The following traceback may help to solve the issue:')
-
+                                            error_message='The input file is not in the correct format!. The following traceback may help to solve the issue:')
 
             # I have moved the error handling here directly to the import, there may exist situations, where already the
             # Import would fail. I still left the following error handling there, but I am not sure if there are cases
@@ -1878,7 +1887,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 # self.threadpool.start(self.fitter)
             except Exception as e:
                 return self.raise_error(window_title="Error: Fitting failed!",
-                                    error_message='Fitting was not successful. The following traceback may help to solve the issue:')
+                                        error_message='Fitting was not successful. The following traceback may help to solve the issue:')
         else:
             print('No Data present, Switching to simulation mode!')
             if self.xmin is not None and self.xmax is not None and len(str(self.xmin)) > 0 and len(str(self.xmax)) > 0:
@@ -1922,7 +1931,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             except IndexError:
                 self.go_back_in_parameter_history = False
                 return self.raise_error(window_title="Error: History empty!",
-                                    error_message='First entry in parameter history reached. No further steps saved. The following traceback may help to solve the issue:')
+                                        error_message='First entry in parameter history reached. No further steps saved. The following traceback may help to solve the issue:')
 
         else:
             self.savePreset()
@@ -1932,22 +1941,33 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def clickOnBtnBG(self):
         checked_actions = [action for action in self.bgMenu.actions() if action.isChecked()]
         idx_bg = set()
-
-        if checked_actions:
-            last_checked_action = checked_actions[-1]
-        print(last_checked_action.text())
-
-        idx_bg = set()
-        activeBG = False
         for checked_action in checked_actions:
-            if checked_action.text() == '&Active &Shirley BG':
-                idx_bg.add(100)
-            elif checked_action.text() == '&Static &Shirley BG' and '&Active &Shirley BG' not in [checked_act.text() for checked_act in checked_actions]:
+            if checked_action.text() == '&Static &Shirley BG':
                 idx_bg.add(0)
-            elif checked_action.text() == '&Active &Tougaard BG':
-                idx_bg.add(101)
-            elif checked_action.text() == '&Static &Tougaard BG'and '&Active &Tougaard BG' not in [checked_act.text() for checked_act in checked_actions]:
+            elif checked_action.text() == '&Active &Shirley BG' and '&Static &Shirley BG' in [checked_act.text() for
+                                                                                              checked_act in
+                                                                                              checked_actions]:
+                QtWidgets.QMessageBox.warning(self, 'Warning', 'You cannot choose both Active Shirley BG and Static '
+                                                               'Shirley BG at the same time! Static Shirley BG set! To use Active Shirley BG, please uncheck Static '
+                                                               'Shirley BG!')
+                idx_bg.add(0)
+            elif checked_action.text() == '&Active &Shirley BG' and '&Static &Shirley BG' not in [checked_act.text() for
+                                                                                                  checked_act in
+                                                                                                  checked_actions]:
+                idx_bg.add(100)
+            elif checked_action.text() == '&Static &Tougaard BG':
                 idx_bg.add(1)
+            elif checked_action.text() == '&Active &Tougaard BG' and '&Static &Tougaard BG' in [
+                checked_act.text() for checked_act in checked_actions]:
+                QtWidgets.QMessageBox.warning(self, 'Warning',
+                                              'You cannot choose both Active Tougaard BG and Static Tougaard BG at '
+                                              'the same time! Static Tougaard BG set! To use Active Tougaard BG, '
+                                              'please uncheck Static Tougaard BG!')
+                idx_bg.add(1)
+            elif checked_action.text() == '&Active &Tougaard BG' and '&Static &Tougaard BG' not in [checked_act.text()
+                                                                                                    for checked_act in
+                                                                                                    checked_actions]:
+                idx_bg.add(101)
             elif checked_action.text() == '&Polynomial BG':
                 idx_bg.add(2)
             elif checked_action.text() == '&Arctan BG':
@@ -1960,14 +1980,19 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.idx_bg = sorted(idx_bg)
         print(self.idx_bg)
         self.pre[0][0] = self.idx_bg
-        self.displayChoosenBG.setText(
-            'Choosen Background: {}'.format(', '.join([dictBG[str(idx)] for idx in self.idx_bg])))
+        if len(checked_actions) == 1 and checked_actions[0].text() == '&Polynomial BG':
+            self.displayChoosenBG.setText(
+                'Choosen Background: {}'.format(', '.join([dictBG[str(idx)] for idx in self.idx_bg])))
+        else:
+            self.displayChoosenBG.setText(
+            'Choosen Background: {}'.format(', '.join([dictBG[str(idx)] for idx in self.idx_bg]))+ '(+Polynomial BG)')
         self.activeParameters()
 
     def write_pars(self, pars):
         return None
 
     def bgSelector(self, x, y, mode, idx_bg):
+        print(idx_bg)
         if idx_bg == 0:
             shA = self.pre[1][0][1]
             shB = self.pre[1][0][3]
@@ -2101,56 +2126,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     pars['bg_c' + str(index)].value = self.pre[1][2][2 * index + 1]
                     if self.pre[1][2][2 * index] == 2:
                         pars['bg_c' + str(index)].vary = False
-            if self.fixedBG.isChecked():
-                for par in pars:
-                    pars[par].vary = False
-            return [mod, bg_mod, pars]
-        # Polynomial BG to be added for all BG
-        modp = PolynomialModel(4, prefix='pg_')
-        if self.pre[1][2][1] is None or self.pre[1][2][3] is None or self.pre[1][2][5] is None \
-                or self.pre[1][2][7] is None or self.pre[1][2][9] is None or len(str(self.pre[1][2][1])) == 0 \
-                or len(str(self.pre[1][2][3])) == 0 or len(str(self.pre[1][2][5])) == 0 \
-                or len(str(self.pre[1][2][7])) == 0 or len(str(self.pre[1][2][9])) == 0:
-            if pars is None:
-                pars = modp.make_params()
-                mod = modp
-                for index in range(5):
-                    pars['pg_c' + str(index)].value = 0
-                # make all poly bg parameters fixed
-                for col in range(5):
-                    self.pre[1][2][2 * col] = 0
-                if self.fixedBG.isChecked():
-                    for par in pars:
-                        pars[par].vary = False
-                return [mod, bg_mod, pars]
-
-            else:
-                pars.update(modp.make_params())
-            for index in range(5):
-                pars['pg_c' + str(index)].value = 0
-            # make all poly bg parameters fixed
-            for col in range(5):
-                self.pre[1][2][2 * col] = 0
-
-        else:
-            if pars is None:
-                pars = modp.make_params()
-                mod = modp
-                for index in range(5):
-                    pars['pg_c' + str(index)].value = self.pre[1][2][2 * index + 1]
-                    if self.pre[1][2][2 * index] == 2:
-                        pars['pg_c' + str(index)].vary = False
-                if self.fixedBG.isChecked():
-                    for par in pars:
-                        pars[par].vary = False
-                return [mod, bg_mod, pars]
-            else:
-                pars.update(modp.make_params())
-            for index in range(5):
-                pars['pg_c' + str(index)].value = self.pre[1][2][2 * index + 1]
-                if self.pre[1][2][2 * index] == 2:
-                    pars['pg_c' + str(index)].vary = False
-        mod += modp
         if self.fixedBG.isChecked():
             for par in pars:
                 pars[par].vary = False
@@ -2185,7 +2160,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if self.pre[2][14][2 * index_pk] == 2:
                     pars[strind + str(index_pk + 1) + '_center_diff'].vary = False
             if self.pre[2][16][2 * index_pk + 1] is not None and len(str(self.pre[2][16][2 * index_pk + 1])) > 0:
-                pars.add(strind + str(index_pk + 1) + "_amp_ratio", value=float(self.pre[2][16][2 * index_pk + 1]), min=0)
+                pars.add(strind + str(index_pk + 1) + "_amp_ratio", value=float(self.pre[2][16][2 * index_pk + 1]),
+                         min=0)
                 if self.pre[2][16][2 * index_pk] == 2:
                     pars[strind + str(index_pk + 1) + '_amp_ratio'].vary = False
             if index == 0 or index == 2 or index == 4 or index == 5 or index == 6 or index == 7 or index == 8 or index == 12:
@@ -2826,6 +2802,26 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.res_tab.resizeRowsToContents()
             self.fitp1.resizeColumnsToContents()
             self.fitp1.resizeRowsToContents()
+    def BGModCreator(self, x,y,mode,idx_bg):
+        if len(idx_bg) == 1:
+            temp_res = self.bgSelector(x, y, mode=mode, idx_bg=idx_bg[0])
+            return temp_res[0], temp_res[1], temp_res[2]
+        if len(self.idx_bg) > 1:
+            # Polynomial BG to be added for all BG
+            #to prevent Polynomial BG from being added twice, iterate over temporate idx_list
+            idx_list = self.idx_bg.copy()
+            idx_list.remove(2)
+            temp_res = self.bgSelector(x, y, mode=mode, idx_bg=2)
+            bg_mod=temp_res[0]
+            pars=temp_res[1]
+            mod=temp_res[2]
+            for idx_bg in idx_list:
+                temp_res=self.bgSelector(x,y,mode,idx_bg)
+                bg_mod += temp_res[0]
+                pars.update(temp_res[1])
+                mod += temp_res[2]
+            return bg_mod,pars,mod
+
 
     def ana(self, mode):
         self.savePreset()
@@ -2891,10 +2887,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
         raw_y = y.copy()
         # BG model selection and call shirley and tougaard
         # colPosition = self.fitp1.columnCount()
-        temp_res = self.bgSelector(x, y, mode=mode, idx_bg=self.idx_bg)
-        mod = temp_res[0]
-        bg_mod = temp_res[1]
-        pars = temp_res[2]
+
+
+        temp_res = self.BGModCreator(x, y, mode=mode, idx_bg=self.idx_bg)
+        mod += temp_res[0]
+        bg_mod += temp_res[1]
+        pars += temp_res[2]
+        print(pars, mod, bg_mod)
         self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
         # component model selection and construction
         y -= bg_mod
@@ -3136,16 +3135,16 @@ class PrettyWidget(QtWidgets.QMainWindow):
             df_c = pd.DataFrame(comps[strind + str(index_pk + 1) + '_'], columns=[strind + str(index_pk + 1)])
             self.result = pd.concat([self.result, df_c], axis=1)
         print(out.fit_report())
-        lim_reached=False
-        at_zero=False
+        lim_reached = False
+        at_zero = False
         for key in out.params:
-            if (out.params[key].value==out.params[key].min or out.params[key].value==out.params[key].max) :
-                if out.params[key].value!=0:
-                    lim_reached=True
+            if (out.params[key].value == out.params[key].min or out.params[key].value == out.params[key].max):
+                if out.params[key].value != 0:
+                    lim_reached = True
                     print('Limit reached for ', key)
                 else:
-                    at_zero=True
-                    print(key, ' is at limit. Value is at 0.0. That was probably intended and can be ignored!' )
+                    at_zero = True
+                    print(key, ' is at limit. Value is at 0.0. That was probably intended and can be ignored!')
 
         if at_zero:
             self.set_status('at_zero')
