@@ -718,6 +718,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def setCrossSection(self, window):
         window.choosenElement()
         tougaard = window.tougaard_params
+        self.savePreset()
         for idx in range(4):
             self.pre[1][1][2 * idx + 1] = tougaard[idx]
         self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
