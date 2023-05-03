@@ -295,48 +295,43 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         self.bgMenu = menubar.addMenu('&Choose BG')
 
-        btn_bg_shirley_act = QtWidgets.QAction('&Active &Shirley BG', self, checkable=True)
-        btn_bg_shirley_act.triggered.connect(self.clickOnBtnBG)
+        self.btn_bg_shirley_act = QtWidgets.QAction('&Active &Shirley BG', self, checkable=True)
+        self.btn_bg_shirley_act.triggered.connect(self.clickOnBtnBG)
 
-        btn_bg_shirley_static = QtWidgets.QAction('&Static &Shirley BG', self, checkable=True)
-        btn_bg_shirley_static.triggered.connect(self.clickOnBtnBG)
+        self.btn_bg_shirley_static = QtWidgets.QAction('&Static &Shirley BG', self, checkable=True)
+        self.btn_bg_shirley_static.triggered.connect(self.clickOnBtnBG)
 
-        btn_bg_tougaard_act = QtWidgets.QAction('&Active &Tougaard BG', self, checkable=True)
-        btn_bg_tougaard_act.triggered.connect(self.clickOnBtnBG)
+        self.btn_bg_tougaard_act = QtWidgets.QAction('&Active &Tougaard BG', self, checkable=True)
+        self.btn_bg_tougaard_act.triggered.connect(self.clickOnBtnBG)
 
-        btn_bg_tougaard_static = QtWidgets.QAction('&Static &Tougaard BG', self, checkable=True)
-        btn_bg_tougaard_static.triggered.connect(self.clickOnBtnBG)
+        self.btn_bg_tougaard_static = QtWidgets.QAction('&Static &Tougaard BG', self, checkable=True)
+        self.btn_bg_tougaard_static.triggered.connect(self.clickOnBtnBG)
 
-        btn_bg_polynomial = QtWidgets.QAction('&Polynomial BG', self, checkable=True)
-        btn_bg_polynomial.setShortcut('Ctrl+Alt+P')
-        btn_bg_polynomial.triggered.connect(self.clickOnBtnBG)
+        self.btn_bg_polynomial = QtWidgets.QAction('&Polynomial BG', self, checkable=True)
+        self.btn_bg_polynomial.setShortcut('Ctrl+Alt+P')
+        self.btn_bg_polynomial.triggered.connect(self.clickOnBtnBG)
 
-        btn_bg_arctan = QtWidgets.QAction('&Arctan BG', self, checkable=True)
-        btn_bg_arctan.triggered.connect(self.clickOnBtnBG)
+        self.btn_bg_arctan = QtWidgets.QAction('&Arctan BG', self, checkable=True)
+        self.btn_bg_arctan.triggered.connect(self.clickOnBtnBG)
 
-        btn_bg_erf = QtWidgets.QAction('&Erf BG', self, checkable=True)
-        btn_bg_erf.triggered.connect(self.clickOnBtnBG)
+        self.btn_bg_erf = QtWidgets.QAction('&Erf BG', self, checkable=True)
+        self.btn_bg_erf.triggered.connect(self.clickOnBtnBG)
 
-        btn_bg_vbm = QtWidgets.QAction('&VBM/Cutoff BG', self, checkable=True)
-        btn_bg_vbm.triggered.connect(self.clickOnBtnBG)
+        self.btn_bg_vbm = QtWidgets.QAction('&VBM/Cutoff BG', self, checkable=True)
+        self.btn_bg_vbm.triggered.connect(self.clickOnBtnBG)
 
         # Add the checkable actions to the menu
-        self.bgMenu.addAction(btn_bg_shirley_act)
-        self.bgMenu.addAction(btn_bg_shirley_static)
-        self.bgMenu.addAction(btn_bg_tougaard_act)
-        self.bgMenu.addAction(btn_bg_tougaard_static)
-        self.bgMenu.addAction(btn_bg_polynomial)
-        self.bgMenu.addAction(btn_bg_arctan)
-        self.bgMenu.addAction(btn_bg_erf)
-        self.bgMenu.addAction(btn_bg_vbm)
+        self.bgMenu.addAction(self.btn_bg_shirley_act)
+        self.bgMenu.addAction(self.btn_bg_shirley_static)
+        self.bgMenu.addAction(self.btn_bg_tougaard_act)
+        self.bgMenu.addAction(self.btn_bg_tougaard_static)
+        self.bgMenu.addAction(self.btn_bg_polynomial)
+        self.bgMenu.addAction(self.btn_bg_arctan)
+        self.bgMenu.addAction(self.btn_bg_erf)
+        self.bgMenu.addAction(self.btn_bg_vbm)
 
         btn_tougaard_cross_section = QtWidgets.QAction('Tougaard &Cross Section ', self)
         btn_tougaard_cross_section.triggered.connect(self.clicked_cross_section)
-
-        self.bgMenu.addAction(btn_bg_polynomial)
-        self.bgMenu.addAction(btn_bg_arctan)
-        self.bgMenu.addAction(btn_bg_erf)
-        self.bgMenu.addAction(btn_bg_vbm)
         self.bgMenu.addSeparator()
         self.bgMenu.addAction(btn_tougaard_cross_section)
         # central widget layout
@@ -662,6 +657,24 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.activeParameters()
         self.show()
 
+    def setButtonState(self, indices):
+        for i in indices:
+            if i==0:
+                self.btn_bg_shirley_static.setChecked(True)
+            elif i==1:
+                self.btn_bg_tougaard_static.setChecked(True)
+            elif i==2:
+                self.btn_bg_polynomial_static.setChecked(True)
+            elif i==3:
+                self.btn_bg_arctan.setChecked(True)
+            elif i==4:
+                self.btn_bg_erf.setChecked(True)
+            elif i==5:
+                self.btn_bg_vbm.setChecked(True)
+            elif i==100:
+                self.btn_bg_shirley_act.setChecked(True)
+            elif i==101:
+                self.btn_bg_tougaard_act.setChecked(True)
     def lims_changed(self, row, column):
         """Handle the cellChanged signal emitted by fitp1 table (the limits table)
           Args:
@@ -733,7 +746,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
                                                                        col).flags() & ~QtCore.Qt.ItemIsEditable & ~QtCore.Qt.ItemIsEnabled & ~QtCore.Qt.ItemIsSelectable)
 
+        print('active', self.idx_bg)
         for idx in self.idx_bg:
+            print(idx)
             for col in range(ncols):
                 for row in range(nrows):
                     if idx == 0 and row == 0 and col < 4:
@@ -1271,6 +1286,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp1.resizeRowsToContents()
 
     def setPreset(self, list_pre_com, list_pre_bg, list_pre_pk, list_pre_pk_lims=[[0, '', '']] * 19):
+        print(list_pre_com)
+        self.activeParameters()
         if len(list_pre_com) == 1:
             index_bg = list_pre_com[0]
         else:
@@ -1321,8 +1338,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     if row == 0 or row == 13 or row == 15 or row == 17 or row == 19 or row == 21 or row == 23 or row == 25:
                         comboBox = QtWidgets.QComboBox()
                         if row == 0:
+                            print('row 0')
                             comboBox.addItems(self.list_shape)
                             comboBox.currentTextChanged.connect(self.activeParameters)
+                            print('*******')
                         else:
                             comboBox.addItems(self.list_component)
                         if self.addition == 0:
@@ -1331,36 +1350,44 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         else:
                             self.fitp1.setCellWidget(row, col + colPosition * 2, comboBox)
                             if list_pre_pk[row][col] != 0:
-                                comboBox.setCurrentIndex(list_pre_pk[row][col] + colPosition)
+                                if row==0:
+                                    comboBox.setCurrentIndex(int(list_pre_pk[row][col]))
+                                else:
+                                    comboBox.setCurrentIndex(int(list_pre_pk[row][col] + colPosition))
                             else:
-                                comboBox.setCurrentIndex(list_pre_pk[row][col])
+                                comboBox.setCurrentIndex(int(list_pre_pk[row][col]))
                     else:
-                        item = self.fitp1.item(row, col)
                         if self.addition == 0:
+                            item = self.fitp1.item(row, col)
                             if str(list_pre_pk[row][col]) == '':
                                 item.setText('')
                             else:
                                 item.setText(str(format(list_pre_pk[row][col], self.floating)))
                         else:
+                            item = self.fitp1.item(row, col+colPosition*2)
                             if str(list_pre_pk[row][col]) == '':
                                 item.setText('')
                             else:
                                 item.setText(str(format(list_pre_pk[row][col], self.floating)))
 
+
                 else:
                     if row != 0 and row != 13 and row != 15 and row != 17 and row != 19 and row != 21 and row != 23 and row != 25:
-                        item = self.fitp1.item(row, col)
+                        if self.addition == 0:
+                            item = self.fitp1.item(row, col)
+                        else:
+                            item = self.fitp1.item(row, col+colPosition*2)
+                        item.setText('')
                         if list_pre_pk[row][col] == 2:
                             item.setCheckState(QtCore.Qt.Checked)
                         else:
                             item.setCheckState(QtCore.Qt.Unchecked)
-                        if self.addition == 0:
-                            item.setText('')
-                        else:
-                            self.fitp1.setItem(row, col + colPosition * 2, item)
             for row in range(len(list_pre_pk_lims)):
                 for col in range(len(list_pre_pk_lims[0])):
-                    item = self.fitp1_lims.item(row, col)
+                    if self.addition == 0:
+                        item = self.fitp1_lims.item(row, col)
+                    else:
+                        item = self.fitp1_lims.item(row, col+colPosition*3)
                     if (col % 3) != 0:
                         if str(list_pre_pk_lims[row][col]) == '':
                             item.setText('')
@@ -1382,6 +1409,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
             file.close()
             # print(self.pre, type(self.pre))
             self.pre = ast.literal_eval(temp_pre)
+            if type(self.pre[0][0])==int:#backwards compatibility for old presets which only allowed one single BG
+                self.idx_bg = [self.pre[0][0]]
+            else:
+                self.idx_bg = self.pre[0][0]
+            self.setButtonState(self.idx_bg)
             # self.pre = json.loads(self.pre) #json does not work due to the None issue
             # print(self.pre, type(self.pre))
             # self.comboBox_pres.clear()
