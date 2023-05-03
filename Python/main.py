@@ -675,7 +675,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.btn_bg_shirley_act.setChecked(True)
             elif i==101:
                 self.btn_bg_tougaard_act.setChecked(True)
-    def lims_changed(self, row, column):
+    def lims_changed(self, row=0, column=0):
         """Handle the cellChanged signal emitted by fitp1 table (the limits table)
           Args:
               row (int): The row index of the changed cell.
@@ -684,7 +684,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
           Returns:
               None
           """
-        item = self.fitp1_lims.item(row, column)
         checked = False
         for c in range(int(self.fitp1_lims.columnCount() / 3)):
             for r in range(self.fitp1_lims.rowCount()):
@@ -746,9 +745,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
                                                                        col).flags() & ~QtCore.Qt.ItemIsEditable & ~QtCore.Qt.ItemIsEnabled & ~QtCore.Qt.ItemIsSelectable)
 
-        print('active', self.idx_bg)
         for idx in self.idx_bg:
-            print(idx)
             for col in range(ncols):
                 for row in range(nrows):
                     if idx == 0 and row == 0 and col < 4:
@@ -1286,8 +1283,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp1.resizeRowsToContents()
 
     def setPreset(self, list_pre_com, list_pre_bg, list_pre_pk, list_pre_pk_lims=[[0, '', '']] * 19):
-        print(list_pre_com)
-        self.activeParameters()
         if len(list_pre_com) == 1:
             index_bg = list_pre_com[0]
         else:
@@ -1338,10 +1333,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     if row == 0 or row == 13 or row == 15 or row == 17 or row == 19 or row == 21 or row == 23 or row == 25:
                         comboBox = QtWidgets.QComboBox()
                         if row == 0:
-                            print('row 0')
                             comboBox.addItems(self.list_shape)
                             comboBox.currentTextChanged.connect(self.activeParameters)
-                            print('*******')
                         else:
                             comboBox.addItems(self.list_component)
                         if self.addition == 0:
@@ -1398,7 +1391,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             item.setCheckState(QtCore.Qt.Checked)
                         else:
                             item.setCheckState(QtCore.Qt.Unchecked)
-
+        self.activeParameters()
+        self.lims_changed()
     def loadPreset(self):
         cfilePath, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open data file', self.filePath, "DAT Files (*.dat)")
         if cfilePath != "":
@@ -1811,7 +1805,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                              usecols=(0, 1))
                     else:
                         self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
-                    print(self.df)
                     # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1,
                     # header=None)
                     strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter=',', usecols=1,
@@ -2170,7 +2163,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 pars = mod.guess(y, x=x)
             else:
                 pars = mod.make_params()
-                print(pars)
                 for index in range(5):
                     pars['bg_poly_c' + str(index)].value = self.pre[1][2][2 * index + 1]
                     if self.pre[1][2][2 * index] == 2:
@@ -2939,10 +2931,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         mod = temp_res[0]
         bg_mod = temp_res[1]
         pars = temp_res[2]
-        print(pars, mod, bg_mod)
         self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
         # component model selection and construction
-        print(bg_mod)
         y -= bg_mod
         temp_res = self.PeakSelector(mod)
         pars.update(temp_res[1])
