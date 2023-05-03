@@ -184,7 +184,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.initUI()
 
     def initUI(self):
-        self.version = 'LG4X: LMFit GUI for XPS curve fitting v2.0.2-dev'
+        self.version = 'LG4X: LMFit GUI for XPS curve fitting v2.0.3-dev'
         self.floating = '.4f'
         self.setGeometry(700, 500, 1600, 900)
         self.center()
@@ -1735,24 +1735,17 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.repaint()
             # self.ax.texts.remove()
         if self.pt.selectedElements:
-            if self.fitp0.item(0, 7).text() is not None and self.fitp0.item(0, 9).text() is not None:
-                if len(self.fitp0.item(0, 7).text()) > 0 and len(self.fitp0.item(0, 9).text()) > 0:
-                    pe = float(self.fitp0.item(0, 7).text())
-                    wf = float(self.fitp0.item(0, 9).text())
-                else:
-                    pe = 1486.6
-                    wf = 4
-                    item = QtWidgets.QTableWidgetItem(str(pe))
-                    self.fitp0.setItem(0, 7, item)
-                    item = QtWidgets.QTableWidgetItem(str(wf))
-                    self.fitp0.setItem(0, 9, item)
+            print(self.pre[0])
+            print(self.pre[0][4])
+            if self.pre[0][3] != None and self.pre[0][4] != None:
+                pe = self.pre[0][3]
+                wf = self.pre[0][4]
             else:
-                pe = 1486.6
-                wf = 4
-                item = QtWidgets.QTableWidgetItem(str(pe))
-                self.fitp0.setItem(0, 7, item)
-                item = QtWidgets.QTableWidgetItem(str(wf))
-                self.fitp0.setItem(0, 9, item)
+                self.hv = 1486.6
+                self.hv_item.insert(str(self.hv))
+                self.wf = 4
+                self.wf.insert(str(self.wf))
+
             ymin, ymax = self.ax.get_ylim()
             xmin, xmax = self.ax.get_xlim()
             for obj in self.pt.selectedElements:
