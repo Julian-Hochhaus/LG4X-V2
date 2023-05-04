@@ -76,7 +76,7 @@ def shirley_calculate(x, y, tol=1e-5, maxit=10):
     # print(any(x), any(y), (any(x) and any(y)))
     if not (any(x) and any(y)):
         print("One of the arrays x or y is empty. Returning zero background.")
-        return x * 0
+        return np.asarray(x * 0)
 
     # Next ensure the energy values are *decreasing* in the array,
     # if not, reverse them.
@@ -94,7 +94,7 @@ def shirley_calculate(x, y, tol=1e-5, maxit=10):
     # we can't use this algorithm, we return a zero background.
     if maxidx == 0 or maxidx >= len(y) - 1:
         print("Boundaries too high for algorithm: returning a zero background.")
-        return x * 0
+        return np.asarray(x * 0)
 
     # Locate the minima either side of maxidx.
     lmidx = abs(y[0:maxidx] - y[0:maxidx].min()).argmin()
@@ -142,10 +142,10 @@ def shirley_calculate(x, y, tol=1e-5, maxit=10):
         print("Max iterations exceeded before convergence.")
     if is_reversed:
         # print("Shirley BG: tol (ini = ", tol, ") , iteration (max = ", maxit, "): ", it)
-        return (yr + B)[::-1]
+        return np.asarray((yr + B)[::-1])
     else:
         # print("Shirley BG: tol (ini = ", tol, ") , iteration (max = ", maxit, "): ", it)
-        return yr + B
+        returnnp.asarray(yr + B)
 
 
 def tougaard_calculate(x, y, tb=2866, tc=1643, tcd=1, td=1, maxit=100):
@@ -154,7 +154,7 @@ def tougaard_calculate(x, y, tb=2866, tc=1643, tcd=1, td=1, maxit=100):
     # Sanity check: Do we actually have data to process here?
     if not (any(x) and any(y)):
         print("One of the arrays x or y is empty. Returning zero background.")
-        return [x * 0, tb]
+        return [np.asarray(x * 0), tb]
 
     # KE in XPS or PE in XAS
     if x[0] < x[-1]:
@@ -193,7 +193,7 @@ def tougaard_calculate(x, y, tb=2866, tc=1643, tcd=1, td=1, maxit=100):
 
     print("Tougaard B:", tb, ", C:", tc, ", C':", tcd, ", D:", td)
 
-    return [y[len(y) - 1] + Btou, tb]
+    return [np.asarray(y[len(y) - 1] + Btou), tb]
 
 
 bgrnd = [[], []]
@@ -202,7 +202,7 @@ bgrnd = [[], []]
 def tougaard2(x, y, B, C, C_d, D):
     # returns an approximation of the Tougaard BG for a given parameterset
     if np.array_equal(bgrnd[0], y):
-        return [B * elem for elem in bgrnd[1]]
+        return np.asarray([B * elem for elem in bgrnd[1]])
     else:
         bgrnd[0] = y
         bg = []
@@ -221,13 +221,13 @@ def tougaard2(x, y, B, C, C_d, D):
                                                   + D * (padded_x_kj - x_k) ** 2) * padded_y[k + j] * delta_x
             bg.append(bg_temp)
         bgrnd[1] = bg
-        return [B * elem for elem in bgrnd[1]]
+        return np.asarray([B * elem for elem in bgrnd[1]])
 
 
 def tougaard(x, y, B, C, C_d, D):
     # returns an approximation of the Tougaard BG for a given parameterset
     if np.array_equal(bgrnd[0], y):
-        return [[B * elem for elem in bgrnd[1]], B]
+        return [np.asarray([B * elem for elem in bgrnd[1]]), B]
     else:
         bgrnd[0] = y
         bg = []
@@ -245,7 +245,7 @@ def tougaard(x, y, B, C, C_d, D):
                                                   + D * (padded_x_kj - x_k) ** 2) * padded_y[k + j] * delta_x
             bg.append(bg_temp)
         bgrnd[1] = bg
-    return [[B * elem for elem in bg], B]
+    return [np.asarray([B * elem for elem in bg]), B]
 
 
 def shirley(y, k, const):
@@ -255,4 +255,17 @@ def shirley(y, k, const):
     bg = []
     for i in range(n):
         bg.append(np.sum(y_temp[i:]))
-    return [k * elem + y_right for elem in bg]
+    return np.asarray([k * elem + y_right for elem in bg])
+
+def slope(y, k, const):
+    n=len(y)
+    #print('len slope',n)
+    y_temp=y-const
+    bg=[]
+    bg2=[]
+    for i in range(n):
+        bg.append(np.sum(y_temp[i:]))  #sum from i until end of y_temp
+    bg=np.asarray(bg)+const
+    for j in range(len(bg)):
+        bg2.append(np.sum(bg[j:]))
+    return -k*np.asarray(bg2)

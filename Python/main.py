@@ -39,6 +39,7 @@ dictBG = {
     '3': 'arctan',
     '4': 'Error function',
     '5': 'CutOff',
+    '6': 'Slope BG',
 
 }
 
@@ -298,6 +299,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.btn_bg_polynomial.setShortcut('Ctrl+Alt+P')
         self.btn_bg_polynomial.triggered.connect(self.clickOnBtnBG)
 
+        self.btn_bg_slope = QtWidgets.QAction('&Slope BG', self, checkable=True)
+        self.btn_bg_slope.setShortcut('Ctrl+Alt+S')
+        self.btn_bg_slope.triggered.connect(self.clickOnBtnBG)
+
         self.btn_bg_arctan = QtWidgets.QAction('&Arctan BG', self, checkable=True)
         self.btn_bg_arctan.triggered.connect(self.clickOnBtnBG)
 
@@ -313,6 +318,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.bgMenu.addAction(self.btn_bg_tougaard_act)
         self.bgMenu.addAction(self.btn_bg_tougaard_static)
         self.bgMenu.addAction(self.btn_bg_polynomial)
+        self.bgMenu.addAction(self.btn_bg_slope)
         self.bgMenu.addAction(self.btn_bg_arctan)
         self.bgMenu.addAction(self.btn_bg_erf)
         self.bgMenu.addAction(self.btn_bg_vbm)
@@ -421,7 +427,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         layout_bottom_mid = QtWidgets.QVBoxLayout()
         # PolyBG Table
         list_bg_col = ['bg_c0', 'bg_c1', 'bg_c2', 'bg_c3', 'bg_c4']
-        list_bg_row = ['Shirley (cv, it, k, c)', 'Tougaard(B, C, C*, D)', 'Polynomial',
+        list_bg_row = ['Shirley (cv, it, k, c)', 'Tougaard(B, C, C*, D)', 'Polynomial', 'Slope(k,const)',
                        'arctan (amp, ctr, sig)', 'erf (amp, ctr, sig)', 'cutoff (ctr, d1-4)']
         self.fitp0 = QtWidgets.QTableWidget(len(list_bg_row), len(list_bg_col) * 2)
         self.fitp0.setItemDelegate(self.delegate)
@@ -431,7 +437,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # set BG table checkbox
         for row in range(len(list_bg_row)):
             for col in range(len(list_bg_colh)):
-                if (row >= 2 or (row == 0 and 8 > col >= 4) or (row == 1 and col == 0)) and col % 2 == 0:
+                if (row == 2 or row>3 or (row==3 and col<4) or (row == 0 and 8 > col >= 4) or (row == 1 and col == 0)) and col % 2 == 0:
                     item = QtWidgets.QTableWidgetItem()
                     item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
                     item.setCheckState(QtCore.Qt.Unchecked)
@@ -444,7 +450,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # set BG table default
         pre_bg = [['', 1e-06, '', 10, 2, 0.0003, 2, 1000, '', ''],
                   [2, 2866.0, '', 1643.0, '', 1.0, '', 1.0, '', ''],
-                  [2, 0, 2, 0, 2, 0, 2, 0, 2, 0]]
+                  [2, 0, 2, 0, 2, 0, 2, 0, 2, 0],
+                  [2,0.0,2,1000, '', '', '', '', '', '']]
         # self.setPreset([0], pre_bg, [])
 
         self.fitp0.resizeColumnsToContents()
@@ -651,13 +658,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
             elif i==1:
                 self.btn_bg_tougaard_static.setChecked(True)
             elif i==2:
-                self.btn_bg_polynomial_static.setChecked(True)
+                self.btn_bg_polynomial.setChecked(True)
             elif i==3:
                 self.btn_bg_arctan.setChecked(True)
             elif i==4:
                 self.btn_bg_erf.setChecked(True)
             elif i==5:
                 self.btn_bg_vbm.setChecked(True)
+            elif i==6:
+                self.btn_bg_slope.setChecked(True)
             elif i==100:
                 self.btn_bg_shirley_act.setChecked(True)
             elif i==101:
@@ -728,8 +737,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         for col in range(ncols):
             for row in range(nrows):
-                if not row == 2:
-                    self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
+                self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
                                                                        col).flags() & ~QtCore.Qt.ItemIsEditable & ~QtCore.Qt.ItemIsEnabled & ~QtCore.Qt.ItemIsSelectable)
 
         for idx in self.idx_bg:
@@ -747,13 +755,20 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     elif idx == 101 and row == 1:
                         self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
                                                                            col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
-                    elif idx == 3 and row == 3:
+                    elif idx == 6 and row == 3 and col < 4:
                         self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
                                                                            col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
-                    elif idx == 4 and row == 4:
+                    elif idx == 3 and row == 4:
                         self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
                                                                            col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
-                    elif idx == 5 and row == 5:
+                    elif idx == 2 and row == 2:
+                        self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
+                                                                           col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+
+                    elif idx == 4 and row == 5:
+                        self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
+                                                                           col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
+                    elif idx == 5 and row == 6:
                         self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
                                                                            col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
         nrows = self.fitp1.rowCount()
@@ -1272,9 +1287,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
     def setPreset(self, list_pre_com, list_pre_bg, list_pre_pk, list_pre_pk_lims=[[0, '', '']] * 19):
         if len(list_pre_com) == 1:
-            index_bg = list_pre_com[0]
+            pass
         else:
-            index_bg = list_pre_com[0]
             self.xmin = list_pre_com[1]
             self.xmin_item.setText(str(format(self.xmin, self.floating)))
             self.xmax = list_pre_com[2]
@@ -1290,7 +1304,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             for row in range(len(list_pre_bg)):
                 for col in range(len(list_pre_bg[0])):
                     item = self.fitp0.item(row, col)
-                    if (row >= 2 or (row == 0 and 8 > col >= 4) or (row == 1 and col == 0)) and col % 2 == 0:
+                    if (row == 2 or row>3 or (row==3 and col<4) or (row == 0 and 8 > col >= 4) or (row == 1 and col == 0)) and col % 2 == 0:
                         if list_pre_bg[row][col] == 2:
                             item.setCheckState(QtCore.Qt.Checked)
                         else:
@@ -1715,7 +1729,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.idx_imp = 0
 
     def plot_pt(self):
-        print('test')
         # component elements from periodic table window selection
         while len(self.ax.texts) > 0:
             for txt in self.ax.texts:
@@ -1724,7 +1737,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.repaint()
             # self.ax.texts.remove()
         if self.pt.selected_elements:
-            print(self.pt.selected_elements)
             if self.pre[0][3] != None and self.pre[0][4] != None:
                 pe = self.pre[0][3]
                 wf = self.pre[0][4]
@@ -1738,7 +1750,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
             xmin, xmax = self.ax.get_xlim()
             for obj in self.pt.selected_elements:
                 alka=ast.literal_eval(obj['alka'].values[0])
-                print(alka)
                 if len(alka['trans']) > 0:
                     for orb in range(len(alka['trans'])):
                         if xmin > xmax:
@@ -1753,7 +1764,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             self.ax.text(elem_x, ymin + (ymax - ymin) * math.log(elem_y + 1, 10) / 2,
                                          obj['symbol'].values[0] + elem_z, color="r", rotation="vertical")
                 aes=ast.literal_eval(obj['aes'].values[0])
-                print(aes)
                 if len(aes['trans']) > 0:
                     for orb in range(len(aes['trans'])):
                         if xmin > xmax:
@@ -1982,6 +1992,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 idx_bg.add(101)
             elif checked_action.text() == '&Polynomial BG':
                 idx_bg.add(2)
+            elif checked_action.text() == '&Slope BG':
+                idx_bg.add(6)
             elif checked_action.text() == '&Arctan BG':
                 idx_bg.add(3)
             elif checked_action.text() == '&Erf BG':
@@ -2059,40 +2071,40 @@ class PrettyWidget(QtWidgets.QMainWindow):
             bg_mod = 0
         if idx_bg == 3:
             mod = StepModel(prefix='bg_arctan_', form='arctan')
-            if self.pre[1][idx_bg][1] is None or self.pre[1][idx_bg][3] is None or self.pre[1][idx_bg][
+            if self.pre[1][idx_bg+1][1] is None or self.pre[1][idx_bg+1][3] is None or self.pre[1][idx_bg+1][
                 5] is None \
-                    or len(str(self.pre[1][idx_bg][1])) == 0 or len(str(self.pre[1][idx_bg][3])) == 0 \
-                    or len(str(self.pre[1][idx_bg][5])) == 0:
+                    or len(str(self.pre[1][idx_bg+1][1])) == 0 or len(str(self.pre[1][idx_bg+1][3])) == 0 \
+                    or len(str(self.pre[1][idx_bg+1][5])) == 0:
                 pars = mod.guess(y, x=x)
             else:
                 pars = mod.make_params()
-                pars['bg_arctan_amplitude'].value = self.pre[1][idx_bg][1]
-                if self.pre[1][idx_bg][0] == 2:
+                pars['bg_arctan_amplitude'].value = self.pre[1][idx_bg+1][1]
+                if self.pre[1][idx_bg+1][0] == 2:
                     pars['bg_arctan_amplitude'].vary = False
-                pars['bg_arctan_center'].value = self.pre[1][idx_bg][3]
-                if self.pre[1][idx_bg][2] == 2:
+                pars['bg_arctan_center'].value = self.pre[1][idx_bg+1][3]
+                if self.pre[1][idx_bg+1][2] == 2:
                     pars['bg_arctan_center'].vary = False
-                pars['bg_arctan_sigma'].value = self.pre[1][idx_bg][5]
-                if self.pre[1][idx_bg][4] == 2:
+                pars['bg_arctan_sigma'].value = self.pre[1][idx_bg+1][5]
+                if self.pre[1][idx_bg+1][4] == 2:
                     pars['bg_arctan_sigma'].vary = False
             bg_mod = 0
         if idx_bg == 4:
             mod = StepModel(prefix='bg_step_', form='erf')
-            if self.pre[1][idx_bg][1] is None or self.pre[1][idx_bg][3] is None or self.pre[1][idx_bg][
+            if self.pre[1][idx_bg+1][1] is None or self.pre[1][idx_bg+1][3] is None or self.pre[1][idx_bg+1][
                 5] is None \
-                    or len(str(self.pre[1][idx_bg][1])) == 0 or len(str(self.pre[1][idx_bg][3])) == 0 \
-                    or len(str(self.pre[1][idx_bg][5])) == 0:
+                    or len(str(self.pre[1][idx_bg+1][1])) == 0 or len(str(self.pre[1][idx_bg+1][3])) == 0 \
+                    or len(str(self.pre[1][idx_bg+1][5])) == 0:
                 pars = mod.guess(y, x=x)
             else:
                 pars = mod.make_params()
-                pars['bg_step_amplitude'].value = self.pre[1][idx_bg][1]
-                if self.pre[1][idx_bg][0] == 2:
+                pars['bg_step_amplitude'].value = self.pre[1][idx_bg+1][1]
+                if self.pre[1][idx_bg+1][0] == 2:
                     pars['bg_step_amplitude'].vary = False
-                pars['bg_step_center'].value = self.pre[1][idx_bg][3]
-                if self.pre[1][idx_bg][2] == 2:
+                pars['bg_step_center'].value = self.pre[1][idx_bg+1][3]
+                if self.pre[1][idx_bg+1][2] == 2:
                     pars['bg_step_center'].vary = False
-                pars['bg_step_sigma'].value = self.pre[1][idx_bg][5]
-                if self.pre[1][idx_bg][4] == 2:
+                pars['bg_step_sigma'].value = self.pre[1][idx_bg+1][5]
+                if self.pre[1][idx_bg+1][4] == 2:
                     pars['bg_step_sigma'].vary = False
             bg_mod = 0
 
@@ -2110,32 +2122,32 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
             mod = Model(poly2vbm, prefix='bg_vbm_')
             pars = mod.make_params()
-            if self.pre[1][idx_bg][1] is None or self.pre[1][idx_bg][3] is None or self.pre[1][idx_bg][
+            if self.pre[1][idx_bg+1][1] is None or self.pre[1][idx_bg+1][3] is None or self.pre[1][idx_bg+1][
                 5] is None \
-                    or self.pre[1][idx_bg][7] is None or self.pre[1][idx_bg][9] is None \
-                    or len(str(self.pre[1][idx_bg][1])) == 0 or len(str(self.pre[1][idx_bg][3])) == 0 \
-                    or len(str(self.pre[1][idx_bg][5])) == 0 or len(str(self.pre[1][idx_bg][7])) == 0 \
-                    or len(str(self.pre[1][idx_bg][9])) == 0:
+                    or self.pre[1][idx_bg+1][7] is None or self.pre[1][idx_bg+1][9] is None \
+                    or len(str(self.pre[1][idx_bg+1][1])) == 0 or len(str(self.pre[1][idx_bg+1][3])) == 0 \
+                    or len(str(self.pre[1][idx_bg+1][5])) == 0 or len(str(self.pre[1][idx_bg+1][7])) == 0 \
+                    or len(str(self.pre[1][idx_bg+1][9])) == 0:
                 pars['bg_vbm_ctr'].value = (x[0] + x[-1]) / 2
                 pars['bg_vbm_d1'].value = 0
                 pars['bg_vbm_d2'].value = 0
                 pars['bg_vbm_d3'].value = 0
                 pars['bg_vbm_d4'].value = 0
             else:
-                pars['bg_vbm_ctr'].value = self.pre[1][idx_bg][1]
-                if self.pre[1][idx_bg][0] == 2:
+                pars['bg_vbm_ctr'].value = self.pre[1][idx_bg+1][1]
+                if self.pre[1][idx_bg+1][0] == 2:
                     pars['bg_vbm_ctr'].vary = False
-                pars['bg_vbm_d1'].value = self.pre[1][idx_bg][3]
-                if self.pre[1][idx_bg][2] == 2:
+                pars['bg_vbm_d1'].value = self.pre[1][idx_bg+1][3]
+                if self.pre[1][idx_bg+1][2] == 2:
                     pars['bg_vbm_d1'].vary = False
-                pars['bg_vbm_d2'].value = self.pre[1][idx_bg][5]
-                if self.pre[1][idx_bg][5] == 2:
+                pars['bg_vbm_d2'].value = self.pre[1][idx_bg+1][5]
+                if self.pre[1][idx_bg+1][5] == 2:
                     pars['bg_vbm_d2'].vary = False
-                pars['bg_vbm_d3'].value = self.pre[1][idx_bg][7]
-                if self.pre[1][idx_bg][6] == 2:
+                pars['bg_vbm_d3'].value = self.pre[1][idx_bg+1][7]
+                if self.pre[1][idx_bg+1][6] == 2:
                     pars['bg_vbm_d3'].vary = False
-                pars['bg_vbm_d4'].value = self.pre[1][idx_bg][9]
-                if self.pre[1][idx_bg][8] == 2:
+                pars['bg_vbm_d4'].value = self.pre[1][idx_bg+1][9]
+                if self.pre[1][idx_bg+1][8] == 2:
                     pars['bg_vbm_d4'].vary = False
             bg_mod = 0
         if idx_bg == 2:
@@ -2152,10 +2164,26 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     pars['bg_poly_c' + str(index)].value = self.pre[1][2][2 * index + 1]
                     if self.pre[1][2][2 * index] == 2:
                         pars['bg_poly_c' + str(index)].vary = False
+        if idx_bg ==6:
+            mod=Model(xpy.slope, prefix='bg_slope_')
+            bg_mod=0
+            if self.pre[1][3][1] is None or self.pre[1][3][3] is None or len(str(self.pre[1][3][1])) == 0 \
+                    or len(str(self.pre[1][3][3])) == 0:
+                pars = mod.guess(y, x=x)
+            else:
+                pars = mod.make_params()
+                pars['bg_slope_k'].value = self.pre[1][3][1]
+                if self.pre[1][3][0] == 2:
+                    pars['bg_slope_k'].vary = False
+                pars['bg_slope_const'].value = self.pre[1][3][3]
+                if self.pre[1][3][2] == 2:
+                    pars['bg_slope_const'].vary = False
         if self.fixedBG.isChecked():
             for par in pars:
                 pars[par].vary = False
         return [mod, bg_mod, pars]
+
+
 
     def PeakSelector(self, mod):
         pars_all = []
@@ -2584,8 +2612,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                 3 * index_pk + 2]
         return pars
 
-    def bgResult2Pre(self, out_params, mode, idx_bg):
-        for idx in idx_bg:
+    def bgResult2Pre(self, out_params, mode, idx_bgs):
+        for idx_bg in idx_bgs:
+            if idx_bg == 6:
+                self.pre[1][3][1] = out_params['bg_slope_k'].value
+                self.pre[1][3][3] = out_params['bg_slope_const'].value
             if idx_bg == 100:
                 if mode != "eva":
                     self.pre[1][0][5] = out_params['bg_shirley_k'].value
@@ -2596,21 +2627,21 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.pre[1][1][5] = out_params['bg_tougaard_C_d'].value
                 self.pre[1][1][7] = out_params['bg_tougaard_D'].value
             if idx_bg == 3:
-                self.pre[1][idx_bg][1] = out_params['bg_arctan_amplitude'].value
-                self.pre[1][idx_bg][3] = out_params['bg_arctan_center'].value
-                self.pre[1][idx_bg][5] = out_params['bg_arctan_sigma'].value
+                self.pre[1][idx_bg+1][1] = out_params['bg_arctan_amplitude'].value
+                self.pre[1][idx_bg+1][3] = out_params['bg_arctan_center'].value
+                self.pre[1][idx_bg+1][5] = out_params['bg_arctan_sigma'].value
 
             if idx_bg == 4:
-                self.pre[1][idx_bg][1] = out_params['bg_step_amplitude'].value
-                self.pre[1][idx_bg][3] = out_params['bg_step_center'].value
-                self.pre[1][idx_bg][5] = out_params['bg_step_sigma'].value
+                self.pre[1][idx_bg+1][1] = out_params['bg_step_amplitude'].value
+                self.pre[1][idx_bg+1][3] = out_params['bg_step_center'].value
+                self.pre[1][idx_bg+1][5] = out_params['bg_step_sigma'].value
             if idx_bg == 5:
-                self.pre[1][idx_bg][1] = out_params['bg_vbm_ctr'].value
-                self.pre[1][idx_bg][3] = out_params['bg_vbm_d1'].value
-                self.pre[1][idx_bg][5] = out_params['bg_vbm_d2'].value
-                self.pre[1][idx_bg][7] = out_params['bg_vbm_d3'].value
-                self.pre[1][idx_bg][9] = out_params['bg_vbm_d4'].value
-            if idx==2:
+                self.pre[1][idx_bg+1][1] = out_params['bg_vbm_ctr'].value
+                self.pre[1][idx_bg+1][3] = out_params['bg_vbm_d1'].value
+                self.pre[1][idx_bg+1][5] = out_params['bg_vbm_d2'].value
+                self.pre[1][idx_bg+1][7] = out_params['bg_vbm_d3'].value
+                self.pre[1][idx_bg+1][9] = out_params['bg_vbm_d4'].value
+            if idx_bg==2:
                 for index in range(5):
                     self.pre[1][2][2 * index + 1] = out_params['bg_poly_c' + str(index)].value
 
