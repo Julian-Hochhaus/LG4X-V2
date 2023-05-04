@@ -1,61 +1,87 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QLineEdit, QCheckBox
-from PyQt5.QtCore import pyqtSignal
-from periodictableui import Ui_PeriodicTable
-from elements import Transition
-from elementdata import ElementData
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QGridLayout, QLabel
+import pandas as pd
+import os
+
+
+data = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'elements.csv'))
 
 class PeriodicTable(QWidget):
-
-    # Custom signal defined here
-    elementEmitted = pyqtSignal(object, bool)
-
     def __init__(self):
         super().__init__()
+        self.data = data
+        self.selected_elements = []
+        self.selected_elements_names = []
+        self.selected_buttons=[]
+        self.initUI()
 
-        self.ui = Ui_PeriodicTable()
-        self.ui.setupUi(self)
+    def initUI(self):
+        self.grid = QGridLayout()
+        self.grid.setSpacing(0)  # Remove spacing between buttons
+        self.grid.setVerticalSpacing(0)
+        for i in range(1, 8):
+            for j in range(1, 19):
+                symbol = self.data[(self.data['period'] == i) & (self.data['group_id'] == j)]['symbol'].values
+                if len(symbol) > 0:
+                    button = QPushButton(symbol[0], self)
+                    button.clicked.connect(lambda checked,s=self.data[(self.data['period'] == i) & (self.data['group_id'] == j)]: self.toggleElementSelection(s))
+                    cpk_color = \
+                    self.data[(self.data['period'] == i) & (self.data['group_id'] == j)]['cpk_color'].values[0]
+                    button.setStyleSheet("background-color: %s" % cpk_color)
+                    button.setMinimumHeight(50)
+                    self.grid.addWidget(button, i, j)
+                    self.grid.setRowMinimumHeight(i, 60)
+        self.grid.setVerticalSpacing(0)
+        self.grid.setHorizontalSpacing(0)
+        self.setLayout(self.grid)
+        self.setGeometry(100, 100, 800, 600)
+        self.setWindowTitle('Clickable Periodic Table')
 
-        # Element Objects
-        self.elements = ElementData().xps
-        self.periodicTable = {}
-        #self.selectedElements = []
 
-        for element in self.elements:
-            self.periodicTable[element['symbol']] = Transition(element['symbol'], element['alka'], element['aes'])
-            #print(element['symbol'])
+        self.refresh_button = QPushButton('Refresh', self)
+        self.refresh_button.setStyleSheet("font-weight: bold; font-size: 16px")
+        self.refresh_button.clicked.connect(self.updateSelectedElements)
+        self.refresh_button.setMaximumHeight(50)
+        self.grid.addWidget(self.refresh_button, 8, 5,1,3)
 
-        # Iterates through all of the UI object names and connects slots/signals
-        # This widget is highly dependent on the naming convention of the buttons
-        # and line edits, changing the names will break the function assignments
-        for name in dir(self.ui):
-            # Element buttons:
-            if 'ebtn' in name:
-                btn = getattr(self.ui, name)
-                btn.clicked[bool].connect(self.emitElement)
-            elif 'Clear' in name:
-                btn = getattr(self.ui, name)
-                btn.clicked.connect(self.emitElement)
-            elif 'Refresh' in name:
-                btn = getattr(self.ui, name)
-                btn.clicked.connect(self.emitElement)
+        self.clear_button = QPushButton('Clear', self)
+        self.clear_button.setStyleSheet("font-weight: bold; font-size: 16px")
+        self.clear_button.clicked.connect(self.clearSelection)
+        self.clear_button.setMaximumHeight(50)
+        self.grid.addWidget(self.clear_button, 8, 8,1,3)
 
-    # Slot for element button clicked signal
-    # Emits custom signal with elemental symbol and boolean
-    def emitElement(self, checked):
-        symbol = self.sender().text()
-        elementObject = self.periodicTable[symbol]
-        self.elementEmitted.emit(elementObject, checked)
+    def toggleElementSelection(self, element):
+        if element['symbol'].values[0] in self.selected_elements_names:
+            self.selected_elements_names.remove(element['symbol'].values[0])
+            self.selected_elements.remove(element)
+        else:
+            self.selected_elements.append(element)
+            self.selected_elements_names.append(element['symbol'].values[0])
+        for i in range(1, 8):
+            for j in range(1, 19):
+                if self.grid.itemAtPosition(i, j) is not None:
+                    symbol = self.data[(self.data['period'] == i) & (self.data['group_id'] == j)]['symbol'].values
+                    button = self.grid.itemAtPosition(i, j).widget()
+                    cpk_color = \
+                        self.data[(self.data['period'] == i) & (self.data['group_id'] == j)]['cpk_color'].values[0]
+                    if symbol in self.selected_elements_names:
+                        button.setStyleSheet("border: 3px solid #FF0000; font-weight: bold; color: #FF0000")
+                    else:
+                        button.setStyleSheet("background-color: %s" % cpk_color)
+    def clearSelection(self):
+        print(self.selected_elements_names)
+        self.selected_elements = []
+        self.selected_elements_names = []
+        for i in range(1, 8):
+            for j in range(1, 19):
+                if self.grid.itemAtPosition(i, j) is not None:
+                    button = self.grid.itemAtPosition(i, j).widget()
+                    cpk_color = \
+                        self.data[(self.data['period'] == i) & (self.data['group_id'] == j)]['cpk_color'].values[0]
+                    button.setStyleSheet("background-color: %s" % cpk_color)
 
-        if symbol == 'Clear':
-            for name in dir(self.ui):
-                # Element buttons:
-                if 'ebtn' in name:
-                    btnc = getattr(self.ui, name)
-                    btnc.setChecked(False)
 
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    window = PeriodicTable()
-    window.show()
-    sys.exit(app.exec_())
+    def updateSelectedElements(self):
+        print(self.selected_elements_names)
+        print(self.selected_elements)
+        return self.selected_elements

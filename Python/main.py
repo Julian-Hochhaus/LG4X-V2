@@ -193,8 +193,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
             'Copyright (C) 2022, Julian Hochhaus, TU Dortmund University')
         self.pt = PeriodicTable()
         self.pt.setWindowTitle('Periodic Table')
-        self.pt.elementEmitted.connect(self.handleElementClicked)
-        self.pt.selectedElements = []
         # data template
         # self.df = pd.DataFrame()
         self.df = []
@@ -1274,6 +1272,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.setPreset([4], pre_bg, pre_pk)
         if index == 7:
             self.pt.show()
+            self.pt.refresh_button.clicked.connect(self.plot_pt)
             if not self.pt.isActiveWindow():
                 self.pt.close()
                 self.pt.show()
@@ -1727,6 +1726,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.idx_imp = 0
 
     def plot_pt(self):
+        print('test')
         # component elements from periodic table window selection
         while len(self.ax.texts) > 0:
             for txt in self.ax.texts:
@@ -1734,9 +1734,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.canvas.draw()
             self.repaint()
             # self.ax.texts.remove()
-        if self.pt.selectedElements:
-            print(self.pre[0])
-            print(self.pre[0][4])
+        if self.pt.selected_elements:
+            print(self.pt.selected_elements)
             if self.pre[0][3] != None and self.pre[0][4] != None:
                 pe = self.pre[0][3]
                 wf = self.pre[0][4]
@@ -1748,32 +1747,36 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
             ymin, ymax = self.ax.get_ylim()
             xmin, xmax = self.ax.get_xlim()
-            for obj in self.pt.selectedElements:
-                if len(obj.alka['trans']) > 0:
-                    for orb in range(len(obj.alka['trans'])):
+            for obj in self.pt.selected_elements:
+                alka=ast.literal_eval(obj['alka'].values[0])
+                print(alka)
+                if len(alka['trans']) > 0:
+                    for orb in range(len(alka['trans'])):
                         if xmin > xmax:
-                            en = float(obj.alka['be'][orb])
+                            en = float(alka['be'][orb])
                         else:
-                            en = pe - wf - float(obj.alka['be'][orb])
+                            en = pe - wf - float(alka['be'][orb])
                         if (xmin > xmax and xmin > en > xmax) or (xmin < xmax and xmin < en < xmax):
                             elem_x = np.asarray([en])
-                            elem_y = np.asarray([float(obj.alka['rsf'][orb])])
-                            elem_z = obj.alka['trans'][orb]
+                            elem_y = np.asarray([float(alka['rsf'][orb])])
+                            elem_z = alka['trans'][orb]
                             # obj.symbol+elem_z, color="r", rotation="vertical")
                             self.ax.text(elem_x, ymin + (ymax - ymin) * math.log(elem_y + 1, 10) / 2,
-                                         obj.symbol + elem_z, color="r", rotation="vertical")
-                if len(obj.aes['trans']) > 0:
-                    for orb in range(len(obj.aes['trans'])):
+                                         obj['symbol'].values[0] + elem_z, color="r", rotation="vertical")
+                aes=ast.literal_eval(obj['aes'].values[0])
+                print(aes)
+                if len(aes['trans']) > 0:
+                    for orb in range(len(aes['trans'])):
                         if xmin > xmax:
-                            en = pe - wf - float(obj.aes['ke'][orb])
+                            en = pe - wf - float(aes['ke'][orb])
                         else:
-                            en = float(obj.aes['ke'][orb])
+                            en = float(aes['ke'][orb])
                         if (xmin > xmax and xmin > en > xmax) or (xmin < xmax and xmin < en < xmax):
                             elem_x = np.asarray([en])
-                            elem_y = np.asarray([float(obj.aes['rsf'][orb])])
-                            elem_z = obj.aes['trans'][orb]
+                            elem_y = np.asarray([float(aes['rsf'][orb])])
+                            elem_z = aes['trans'][orb]
                             # obj.symbol+elem_z, color="g", rotation="vertical")
-                            self.ax.text(elem_x, ymin + (ymax - ymin) * math.log(elem_y + 1, 10), obj.symbol + elem_z,
+                            self.ax.text(elem_x, ymin + (ymax - ymin) * math.log(elem_y + 1, 10), obj['symbol'].values[0] + elem_z,
                                          color="g", rotation="vertical")
 
             self.canvas.draw()
@@ -3125,18 +3128,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         cp = QtWidgets.QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
-
-    def handleElementClicked(self, elementObject, checked):
-        symbol = elementObject.symbol
-        if symbol == 'Clear':
-            self.pt.selectedElements = []
-        elif symbol == 'Refresh':
-            pass
-        elif checked and elementObject not in self.pt.selectedElements:
-            self.pt.selectedElements.append(elementObject)
-        elif not checked:
-            self.pt.selectedElements.remove(elementObject)
-        self.plot_pt()
 
     def closeEvent(self, event):
         event.accept()
