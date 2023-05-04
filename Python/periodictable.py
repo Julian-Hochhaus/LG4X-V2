@@ -1,5 +1,4 @@
-import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QGridLayout, QLabel
+from PyQt5.QtWidgets import QWidget, QPushButton, QGridLayout
 import pandas as pd
 import os
 

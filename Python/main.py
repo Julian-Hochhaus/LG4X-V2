@@ -3,26 +3,17 @@
 
 import ast
 import math
-import os
 import sys
 import pickle
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtCore import QThreadPool, QRunnable, pyqtSlot, QTime, QRegExp, Qt
-from PyQt5.QtGui import QRegExpValidator, QDoubleValidator, QColor, QValidator
-from PyQt5.QtWidgets import QApplication, QTableWidget, QTableWidgetItem, QItemDelegate, QCheckBox, QLineEdit, \
-    QMessageBox
+from PyQt5.QtCore import QTime
+from PyQt5.QtGui import  QValidator
+from PyQt5.QtWidgets import QItemDelegate, QLineEdit
 from PyQt5.QtGui import QDoubleValidator
-from PyQt5.QtCore import Qt, QLocale, QRegExp, pyqtSignal
 
 from lmfit import Model
-from lmfit.models import ExponentialGaussianModel, SkewedGaussianModel, SkewedVoigtModel, DoniachModel, \
-    BreitWignerModel, LognormalModel
-from lmfit.models import GaussianModel, LorentzianModel, VoigtModel, PseudoVoigtModel, ThermalDistributionModel, \
-    PolynomialModel, StepModel
 from matplotlib import style
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
@@ -30,9 +21,7 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 import vamas_export as vpy
 import xpspy as xpy
 from periodictable import PeriodicTable
-from usrmodel import ConvGaussianDoniachDublett, ConvGaussianDoniachSinglett, FermiEdgeModel, singlett, fft_convolve
 from scipy import integrate
-from scipy import interpolate
 from helpers import *
 import threading
 
