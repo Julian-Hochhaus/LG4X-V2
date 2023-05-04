@@ -2,6 +2,9 @@ import pandas as pd
 import numpy as np
 from mendeleev.fetch import fetch_table
 mendeleev_pt = fetch_table('elements')
+mendeleev_series=fetch_table('series')
+print(mendeleev_series.keys())
+print(mendeleev_series['name'].values[0])
 print(mendeleev_pt.keys())
 for key in mendeleev_pt.keys():
     print(mendeleev_pt[key][78])
@@ -802,13 +805,14 @@ xps = [
         'aes': {'trans': [], 'ke': [], 'rsf': []}
     }
 ]
-df=pd.DataFrame(columns=['symbol','period','group_id', 'series_id','alka','aes',  'atomic_number','cpk_color','jmol_color'])
+df=pd.DataFrame(columns=['symbol','period','group_id', 'series_id','alka','aes',  'atomic_number','cpk_color','jmol_color','series_name', 'series_color'])
 
 for elem in xps:
     index = mendeleev_pt.index[mendeleev_pt['symbol'] == elem['symbol']].tolist()[0]
     if np.isnan(mendeleev_pt['group_id'][index]):
         mendeleev_pt['group_id'][index] = 100
-    row = pd.Series([elem['symbol'],mendeleev_pt['period'][index],mendeleev_pt['group_id'][index], mendeleev_pt['series_id'][index], elem['alka'], elem['aes'], mendeleev_pt['atomic_number'][index], mendeleev_pt['cpk_color'][index], mendeleev_pt['jmol_color'][index]  ], index=df.columns)
+    print(mendeleev_pt['series_id'][index])
+    row = pd.Series([elem['symbol'],mendeleev_pt['period'][index],mendeleev_pt['group_id'][index], mendeleev_pt['series_id'][index], elem['alka'], elem['aes'], mendeleev_pt['atomic_number'][index], mendeleev_pt['cpk_color'][index], mendeleev_pt['jmol_color'][index], mendeleev_series['name'].values[mendeleev_pt['series_id'][index]-1], mendeleev_series['color'].values[mendeleev_pt['series_id'][index]-1]], index=df.columns)
     df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
 
 df.to_csv('elements.csv', index=False)
