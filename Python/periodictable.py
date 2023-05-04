@@ -26,7 +26,9 @@ class PeriodicTable(QWidget):
                     button.clicked.connect(lambda checked,s=self.data[(self.data['period'] == i) & (self.data['group_id'] == j)]: self.toggleElementSelection(s))
                     cpk_color = \
                     self.data[(self.data['period'] == i) & (self.data['group_id'] == j)]['cpk_color'].values[0]
-                    button.setStyleSheet("background-color: %s" % cpk_color)
+                    series_color = \
+                        self.data[(self.data['period'] == i) & (self.data['group_id'] == j)]['series_color'].values[0]
+                    button.setStyleSheet("background-color: %s" % series_color)
                     button.setMinimumHeight(50)
                     self.grid.addWidget(button, i, j)
                     self.grid.setRowMinimumHeight(i, 60)
@@ -63,12 +65,13 @@ class PeriodicTable(QWidget):
                     button = self.grid.itemAtPosition(i, j).widget()
                     cpk_color = \
                         self.data[(self.data['period'] == i) & (self.data['group_id'] == j)]['cpk_color'].values[0]
+                    series_color = \
+                        self.data[(self.data['period'] == i) & (self.data['group_id'] == j)]['series_color'].values[0]
                     if symbol in self.selected_elements_names:
                         button.setStyleSheet("border: 3px solid #FF0000; font-weight: bold; color: #FF0000")
                     else:
-                        button.setStyleSheet("background-color: %s" % cpk_color)
+                        button.setStyleSheet("background-color: %s" % series_color)
     def clearSelection(self):
-        print(self.selected_elements_names)
         self.selected_elements = []
         self.selected_elements_names = []
         for i in range(1, 8):
@@ -77,10 +80,10 @@ class PeriodicTable(QWidget):
                     button = self.grid.itemAtPosition(i, j).widget()
                     cpk_color = \
                         self.data[(self.data['period'] == i) & (self.data['group_id'] == j)]['cpk_color'].values[0]
-                    button.setStyleSheet("background-color: %s" % cpk_color)
+                    series_color = \
+                        self.data[(self.data['period'] == i) & (self.data['group_id'] == j)]['series_color'].values[0]
+                    button.setStyleSheet("background-color: %s" % series_color)
 
 
     def updateSelectedElements(self):
-        print(self.selected_elements_names)
-        print(self.selected_elements)
         return self.selected_elements
