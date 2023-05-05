@@ -1,4 +1,6 @@
-from PyQt5.QtWidgets import QWidget, QPushButton, QGridLayout
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QColor, QPixmap
+from PyQt5.QtWidgets import QWidget, QPushButton, QGridLayout, QLabel, QListWidgetItem, QListWidget, QHBoxLayout
 import pandas as pd
 import os
 
@@ -18,6 +20,7 @@ class PeriodicTable(QWidget):
         self.grid = QGridLayout()
         self.grid.setSpacing(0)  # Remove spacing between buttons
         self.grid.setVerticalSpacing(0)
+        self.grid.setHorizontalSpacing(0)
         for i in range(1, 8):
             for j in range(1, 19):
                 symbol = self.data[(self.data['period'] == i) & (self.data['group_id'] == j)]['symbol'].values
@@ -30,12 +33,13 @@ class PeriodicTable(QWidget):
                         self.data[(self.data['period'] == i) & (self.data['group_id'] == j)]['series_color'].values[0]
                     button.setStyleSheet("background-color: %s" % series_color)
                     button.setMinimumHeight(50)
+                    button.setMaximumWidth(80)
                     self.grid.addWidget(button, i, j)
-                    self.grid.setRowMinimumHeight(i, 60)
+                    self.grid.setRowMinimumHeight(i, 50)
         self.grid.setVerticalSpacing(0)
         self.grid.setHorizontalSpacing(0)
         self.setLayout(self.grid)
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 600, 500)
         self.setWindowTitle('Clickable Periodic Table')
 
 
@@ -43,14 +47,35 @@ class PeriodicTable(QWidget):
         self.refresh_button.setStyleSheet("font-weight: bold; font-size: 16px")
         self.refresh_button.clicked.connect(self.updateSelectedElements)
         self.refresh_button.setMaximumHeight(50)
-        self.grid.addWidget(self.refresh_button, 8, 5,1,3)
+        self.grid.addWidget(self.refresh_button, 1, 5,2,3)
 
         self.clear_button = QPushButton('Clear', self)
         self.clear_button.setStyleSheet("font-weight: bold; font-size: 16px")
         self.clear_button.clicked.connect(self.clearSelection)
         self.clear_button.setMaximumHeight(50)
-        self.grid.addWidget(self.clear_button, 8, 8,1,3)
+        self.grid.addWidget(self.clear_button, 1, 8,2,3)
 
+        # create legend
+        legend_layout = QHBoxLayout()
+        legend = QLabel(self)
+        legend.setText("<b>Legend:</b>")
+        legend.setStyleSheet("font-size: 16px; margin-top: 20px")
+        legend.move(50, 750)
+        colors = self.data['series_color'].unique()
+
+        # add legend labels for each color used in the periodic table
+        for i, color in enumerate(colors):
+            label = QLabel(self)
+            label.setStyleSheet("background-color: %s; border: 1px solid black" % color)
+            label.setFixedSize(30, 30)
+            label.move(40 + i * 50, 780)
+            legend_layout.addWidget(label)
+            legend_text = QLabel(self)
+            legend_text.setText(self.data[(self.data['series_color']==color)]['series_name'].values[0])
+            legend_text.setStyleSheet("font-size: 16px; margin-top: 20px")
+            legend_text.move(55 + i * 50, 785)
+            legend_layout.addWidget(legend_text)
+        self.grid.addLayout(legend_layout, 9, 1, 1, 18)
     def toggleElementSelection(self, element):
         if element['symbol'].values[0] in self.selected_elements_names:
             self.selected_elements_names.remove(element['symbol'].values[0])

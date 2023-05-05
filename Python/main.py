@@ -1277,6 +1277,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if index == 7:
             self.pt.show()
             self.pt.refresh_button.clicked.connect(self.plot_pt)
+            self.pt.clear_button.clicked.connect(self.plot_pt)
             if not self.pt.isActiveWindow():
                 self.pt.close()
                 self.pt.show()
