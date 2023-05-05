@@ -1,6 +1,4 @@
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QColor, QPixmap
-from PyQt5.QtWidgets import QWidget, QPushButton, QGridLayout, QLabel, QListWidgetItem, QListWidget, QHBoxLayout
+from PyQt5.QtWidgets import QWidget, QPushButton, QGridLayout, QLabel, QHBoxLayout
 import pandas as pd
 import os
 
