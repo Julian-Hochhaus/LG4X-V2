@@ -5,7 +5,7 @@ import ast
 import math
 import sys
 import pickle
-
+import webbrowser
 import matplotlib.pyplot as plt
 import pandas as pd
 from PyQt5.QtCore import QTime
@@ -179,7 +179,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # btn_preset_ckedge.setShortcut('Ctrl+Shift+')
         btn_preset_ckedge.triggered.connect(lambda: self.clickOnBtnPreset(idx=6))
 
-        btn_preset_ptable = QtWidgets.QAction('&Periodic Table', self)
+        btn_preset_ptable = QtWidgets.QAction('Periodic &Table', self)
         # btn_preset_ptable.setShortcut('Ctrl+Shift+')
         btn_preset_ptable.triggered.connect(lambda: self.clickOnBtnPreset(idx=7))
 
@@ -189,7 +189,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         presetMenu.addAction(btn_preset_save)
         presetMenu.addAction(btn_preset_c1s)
         presetMenu.addAction(btn_preset_ckedge)
-        presetMenu.addAction(btn_preset_ptable)
+        menubar.addAction(btn_preset_ptable)
 
         self.bgMenu = menubar.addMenu('&Choose BG')
 
@@ -237,6 +237,19 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_tougaard_cross_section.triggered.connect(self.clicked_cross_section)
         self.bgMenu.addSeparator()
         self.bgMenu.addAction(btn_tougaard_cross_section)
+
+        menubar.addSeparator()
+        links_menu= menubar.addMenu('&Help/Info')
+        #manual_link= QtWidgets.QAction('&Manual', self)
+        #manual_link.triggered.connect(lambda: webbrowser.open('https://julian-hochhaus.github.io/LG4X-V2/'))
+        #links_menu.addAction(manual_link)
+        github_link= QtWidgets.QAction('See on &Github', self)
+        github_link.triggered.connect(lambda: webbrowser.open('https://github.com/Julian-Hochhaus/LG4X-V2'))
+        links_menu.addAction(github_link)
+        about_link= QtWidgets.QAction('&How to cite', self)
+        about_link.triggered.connect(self.show_citation_dialog)
+        links_menu.addAction(about_link)
+
         # central widget layout
         widget = QtWidgets.QWidget(self)
         self.setCentralWidget(widget)
@@ -560,6 +573,24 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # grid..addWidget(self.res_label, 7, 7, 1, 1)
         self.activeParameters()
         self.show()
+
+    def show_citation_dialog(self):
+        citation_text = 'J. A. Hochhaus and H. Nakajima, LG4X-V2 (Zenodo, 2023), DOI:10.5281/zenodo.7871174'
+        msg_box = QtWidgets.QMessageBox(self)
+        msg_box.setWindowTitle('How to cite')
+        msg_box.setTextFormat(QtCore.Qt.RichText)
+        msg_box.setText(citation_text)
+        copy_button = msg_box.addButton('Copy to clipboard',QtWidgets.QMessageBox.AcceptRole)
+        open_zenodo_button = msg_box.addButton('Open on Zenodo(DOI)', QtWidgets.QMessageBox.ActionRole)
+
+        msg_box.exec_()
+        if msg_box.clickedButton() == copy_button:
+            # Copy citation text to clipboard
+            QtWidgets.QApplication.clipboard().setText(citation_text)
+        elif msg_box.clickedButton() == open_zenodo_button:
+            # Open web link
+            url = 'https://zenodo.org/record/7871174'
+            webbrowser.open(url)
 
     def setButtonState(self, indices):
         for i in indices:
