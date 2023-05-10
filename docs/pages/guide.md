@@ -2,6 +2,7 @@
 layout: page
 title: User Guide
 permalink: /pages/guide/
+has_children: true
 nav_order: 2
 ---
 

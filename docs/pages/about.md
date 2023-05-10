@@ -13,9 +13,9 @@ LG4X-V2 is build upon the ['lmfit'-package](https://github.com/lmfit/lmfit-py) u
 
 ### Cite the project
 
-If LG4X-V2 has been significant in your research, and you would like to acknowledge the project in your academic publication, we suggest citing the software using zenodo:\
+If LG4X-V2 has been significant in your research, and you would like to acknowledge the project in your academic publication, we suggest citing the software using zenodo:
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7777422.svg)](https://doi.org/10.5281/zenodo.7777422)\
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7777422.svg)](https://doi.org/10.5281/zenodo.7777422)
 
 You can use our [CITATION.cff](https://github.com/Julian-Hochhaus/LG4X-V2/blob/master/CITATION.cff) too to generate a citation.
 
