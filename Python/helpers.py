@@ -248,7 +248,7 @@ class Window_CrossSection(QtWidgets.QWidget):
         """
         dirPath = os.path.dirname(os.path.abspath(__file__))
         temp_elements=[]
-        with open (dirPath+'/../CrossSections/cross_sections.csv') as f:
+        with open (dirPath+'/../Databases/CrossSections/cross_sections.csv') as f:
             next(f)
             lines=f.read().splitlines()
             for line in lines:
