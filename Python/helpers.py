@@ -1,3 +1,5 @@
+from PyQt5.QtGui import QDoubleValidator, QValidator
+from PyQt5.QtWidgets import QItemDelegate, QLineEdit
 from lmfit.models import ExponentialGaussianModel, SkewedGaussianModel, SkewedVoigtModel, DoniachModel, \
     BreitWignerModel, LognormalModel
 from lmfit.models import GaussianModel, LorentzianModel, VoigtModel, PseudoVoigtModel, ThermalDistributionModel, \
@@ -6,14 +8,28 @@ from usrmodel import ConvGaussianDoniachDublett, ConvGaussianDoniachSinglett, Fe
 from PyQt5 import QtWidgets, QtCore
 import numpy as np
 import os
-def autoscale_y(ax, margin=0.1):
-    """This function rescales the y-axis based on the data that is visible given the current xlim of the axis.
-    ax -- a matplotlib axes object
-    margin -- the fraction of the total height of the y-data to pad the upper ylims"""
+import numpy as np
 
-    import numpy as np
+def autoscale_y(ax, margin=0.1):
+    """Rescales the y-axis based on the visible data given the current xlim of the axis.
+
+    Args:
+        ax (matplotlib.axes.Axes): The axes object to autoscale.
+        margin (float, optional): The fraction of the total height of the y-data to pad the upper ylims. Default is 0.1.
+
+    Returns:
+        None.
+    """
 
     def get_bottom_top(line):
+        """Helper function to get the minimum and maximum y-values for a given line.
+
+        Args:
+            line (matplotlib.lines.Line2D): The line object to get the y-data from.
+
+        Returns:
+            tuple: A tuple containing the minimum and maximum y-values.
+        """
         xd = line.get_xdata()
         yd = line.get_ydata()
         lo, hi = ax.get_xlim()
@@ -23,8 +39,8 @@ def autoscale_y(ax, margin=0.1):
             else:
                 y_displayed= yd[((xd < lo) & (xd > hi))]
             h = np.max(y_displayed) - np.min(y_displayed)
-            if np.min(y_displayed) - 2 * margin * (np.max(y_displayed) - np.min(y_displayed)) > 0:
-                bot = np.min(y_displayed) - 2 * margin * (np.max(y_displayed) - np.min(y_displayed))
+            if np.min(y_displayed) - 2 * margin * h > 0:
+                bot = np.min(y_displayed) - 2 * margin * h
             else:
                 bot = 0
             top = np.max(y_displayed) + margin * h
@@ -44,39 +60,139 @@ def autoscale_y(ax, margin=0.1):
 
     ax.set_ylim(bot, top)
 
+def model_selector(index: int, strind: str, index_pk: int):
+    """
+    Returns a model based on the index parameter.
+
+    Args:
+        index (int): An integer index to select the model.
+        prefix (str): A string prefix to identify the model.
+        index_pk (int): An integer index to identify the peak.
+
+    Returns:
+        Model: A model selected based on the index parameter.
+    """
+    model_options = {
+        0: GaussianModel(prefix=strind + str(index_pk + 1) + '_'),
+        1: LorentzianModel(prefix=strind + str(index_pk + 1) + '_'),
+        2: VoigtModel(prefix=strind + str(index_pk + 1) + '_'),
+        3: PseudoVoigtModel(prefix=strind + str(index_pk + 1) + '_'),
+        4: ExponentialGaussianModel(prefix=strind + str(index_pk + 1) + '_'),
+        5: SkewedGaussianModel(prefix=strind + str(index_pk + 1) + '_'),
+        6: SkewedVoigtModel(prefix=strind + str(index_pk + 1) + '_'),
+        7: BreitWignerModel(prefix=strind + str(index_pk + 1) + '_'),
+        8: LognormalModel(prefix=strind + str(index_pk + 1) + '_'),
+        9: DoniachModel(prefix=strind + str(index_pk + 1) + '_'),
+        10: ConvGaussianDoniachDublett(prefix=strind + str(index_pk + 1) + '_'),
+        11: ConvGaussianDoniachSinglett(prefix=strind + str(index_pk + 1) + '_'),
+        12: FermiEdgeModel(prefix=strind + str(index_pk + 1) + '_')
+    }
+
+    selected_model = model_options.get(index)
+
+    if selected_model is not None:
+        return selected_model
+    else:
+        raise ValueError(f"No model found for index {index}.")
+
+class DoubleValidator(QDoubleValidator):
+    """Subclass of QDoubleValidator that emits a signal if the input is not valid."""
+
+    # Define a custom signal that will be emitted when the input is not valid.
+    validationChanged = QtCore.pyqtSignal(list)
+
+    def validate(self, input_str, pos):
+        state, input_str, pos = super().validate(input_str, pos)
+        if input_str == "" and state == QValidator.Acceptable:
+            state = QValidator.Intermediate
+        validate_state = [state, input_str, pos]
+        self.validationChanged.emit(validate_state)
+        return state, input_str, pos
 
 
-def modelSelector(index, strind, index_pk):
-    if index == 0:
-        pk_mod = GaussianModel(prefix=strind + str(index_pk + 1) + '_')
-    if index == 1:
-        pk_mod = LorentzianModel(prefix=strind + str(index_pk + 1) + '_')
-    if index == 2:
-        pk_mod = VoigtModel(prefix=strind + str(index_pk + 1) + '_')
-    if index == 3:
-        pk_mod = PseudoVoigtModel(prefix=strind + str(index_pk + 1) + '_')
-    if index == 4:
-        pk_mod = ExponentialGaussianModel(prefix=strind + str(index_pk + 1) + '_')
-    if index == 5:
-        pk_mod = SkewedGaussianModel(prefix=strind + str(index_pk + 1) + '_')
-    if index == 6:
-        pk_mod = SkewedVoigtModel(prefix=strind + str(index_pk + 1) + '_')
-    if index == 7:
-        pk_mod = BreitWignerModel(prefix=strind + str(index_pk + 1) + '_')
-    if index == 8:
-        pk_mod = LognormalModel(prefix=strind + str(index_pk + 1) + '_')
-    if index == 9:
-        pk_mod = DoniachModel(prefix=strind + str(index_pk + 1) + '_')
-    if index == 10:
-        pk_mod = ConvGaussianDoniachDublett(prefix=strind + str(index_pk + 1) + '_')
-    if index == 11:
-        pk_mod = ConvGaussianDoniachSinglett(prefix=strind + str(index_pk + 1) + '_')
-    if index == 12:
-        pk_mod = FermiEdgeModel(prefix=strind + str(index_pk + 1) + '_')
+class TableItemDelegate(QItemDelegate):
+    """Delegate class for QTableWidget cells that validates user input.
 
-    return pk_mod
+    This class creates a line edit widget as the editor for each cell in a
+    QTableWidget. It adds a DoubleValidator to the line edit widget to ensure
+    that the user input is a valid double (floating-point) value.
+
+    Attributes:
+        None
+
+    Methods:
+        createEditor(parent, option, index): Creates a line edit widget as the
+            editor for the cell at the specified index. Returns the editor.
+
+    """
+
+    def createEditor(self, parent, option, index):
+        """Create a line edit widget as the editor for the cell at the specified index.
+
+        Args:
+            parent (QWidget): The parent widget of the editor.
+            option (QStyleOptionViewItem): The style options for the editor.
+            index (QModelIndex): The model index of the cell being edited.
+
+        Returns:
+            editor (QLineEdit): The line edit widget used as the editor.
+
+        """
+        self.editor = QLineEdit(parent)
+        self.editor.setToolTip('Only double values are valid inputs!')
+        validator = DoubleValidator()
+        self.editor.setValidator(validator)
+        validator.validationChanged.connect(self.onValidationChanged)
+        return self.editor
+
+    def onValidationChanged(self, validate_return):
+        """Display a message box when the user enters an invalid input."""
+        state = validate_return[0]
+        if state == QValidator.Invalid:
+            print('Value ' + validate_return[1] + " was entered. However, only double values are valid!")
+
+
+class DoubleLineEdit(QLineEdit):
+    """Custom QLineEdit widget that uses DoubleValidator to validate user input."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.validator = DoubleValidator()
+        self.setValidator(self.validator)
+        self.validator.validationChanged.connect(self.onValidationChanged)
+
+    def onValidationChanged(self, validate_return):
+        """Display a message box when the user enters an invalid input."""
+        state = validate_return[0]
+        if state == QValidator.Invalid:
+            print('Value ' + validate_return[1] + " was entered. However, only double values are valid!")
+
+
+class SubWindow(QtWidgets.QWidget):
+    def __init__(self, params_tab):
+        super(SubWindow, self).__init__()
+        self.layout = QtWidgets.QGridLayout(self)
+        self.resize(800, 500)
+        self.setWindowTitle("Limits")
+        self.layout.addWidget(params_tab, 0, 0, 5, 4)
+
+
+class LayoutHline(QtWidgets.QFrame):
+    def __init__(self):
+        super(LayoutHline, self).__init__()
+        self.setFrameShape(self.HLine)
+        self.setFrameShadow(self.Sunken)
 
 class Window_CrossSection(QtWidgets.QWidget):
+    """
+      A class to create a widget for cross-section calculations.
+
+      Attributes:
+          dataset_cross_sections (list): a list of cross-section data.
+          tougaard_params (list): a list of default Tougaard parameters.
+
+      """
+
     dataset_cross_sections=[]
     tougaard_params=['standard value', 0,2886,1643,1,1]
     def __init__(self):
@@ -111,11 +227,8 @@ class Window_CrossSection(QtWidgets.QWidget):
         layout_bottom=QtWidgets.QHBoxLayout()
         btn_add = QtWidgets.QPushButton('Add cross section', self)
         btn_add.resize(btn_add.sizeHint())
-        btn_add.clicked.connect(self.addCrossSection)
+        btn_add.clicked.connect(self.add_cross_section)
         layout_bottom.addWidget(btn_add)
-        #btn_load = QtWidgets.QPushButton('Load cross section', self)
-        #btn_load.resize(btn_load.sizeHint())
-        #btn_load.clicked.connect(self.addCrossSection)
         self.btn_cc = QtWidgets.QPushButton('Use current cross-section', self)
         self.btn_cc.resize(self.btn_cc.sizeHint())
         #self.btn_cc.clicked.connect(self.pushToMain)
@@ -123,6 +236,16 @@ class Window_CrossSection(QtWidgets.QWidget):
         self.layout.addLayout(layout_top)
         self.layout.addLayout(layout_bottom)
     def load_elements(self):
+        """
+        Loads the elements from a CSV file and updates the dataset_cross_sections list.
+
+        Args:
+            None.
+
+        Returns:
+            list: A list of elements loaded from the CSV file.
+
+        """
         dirPath = os.path.dirname(os.path.abspath(__file__))
         temp_elements=[]
         with open (dirPath+'/../CrossSections/cross_sections.csv') as f:
@@ -134,7 +257,17 @@ class Window_CrossSection(QtWidgets.QWidget):
                 if temp not in self.dataset_cross_sections:
                     self.dataset_cross_sections.append(temp)
         return(temp_elements)
-    def addCrossSection(self):
+    def add_cross_section(self):
+        """
+        Adds a new cross section to the CSV file and updates the list of elements.
+
+        Args:
+            None.
+
+        Returns:
+            None.
+
+        """
         dirPath = os.path.dirname(os.path.abspath(__file__))
         temp_elements = []
         for i in range(self.tougaard_tab.columnCount()):
@@ -153,6 +286,10 @@ class Window_CrossSection(QtWidgets.QWidget):
             print(temp_elements[0]+ ' is already part of the database, please choose a different name!')
 
     def choosenElement(self):
+        """
+          Sets the selected element's parameters in the Tougaard table.
+        """
+
         idx=self.elements.currentIndex()
         for j in range(6):
             if j<4:
@@ -163,14 +300,25 @@ class Window_CrossSection(QtWidgets.QWidget):
         self.tougaard_tab.resizeRowsToContents()
 
 class Element:
-    def __init__(self, name,atomic_number, tb, tc, tcd, td):
+    """
+    Represents an element with its corresponding Tougaard parameters.
+
+    Args:
+        name (str): The name of the element. Default is 'standard value'.
+        atomic_number (int): The atomic number of the element. Default is 0.
+        tb (int): The value of the Tougaard parameter B for the element. Default is 2866.
+        tc (int): The value of the Tougaard parameter C for the element. Default is 1643.
+        tcd (int): The value of the Tougaard parameter C* for the element. Default is 1.
+        td (int): The value of the Tougaard parameter D for the element. Default is 1.
+    """
+    def __init__(self, name=None, atomic_number=None, tb=None, tc=None, tcd=None, td=None):
         self.name = name if name is not None else 'standard value'
         self.atomic_number = atomic_number if atomic_number is not None else 0
         self.tb = tb if tb is not None else 2866
         self.tc = tc if tc is not None else 1643
         self.tcd = tcd if tcd is not None else 1
         self.td = td if td is not None else 1
-        self.tougaard_params = [self.atomic_number,self.tb, self.tc, self.tcd, self.td]
+        self.tougaard_params = [self.atomic_number, self.tb, self.tc, self.tcd, self.td]
 def cross_section():
     window_cross_section = Window_CrossSection()
     window_cross_section.show()

@@ -18,21 +18,57 @@
 # You can create any custom variable you would like, and they will be accessible
 # in the templates via {{ site.myvariable }}.
 
-title: Your awesome title
-email: your-email@example.com
+title: LG4X-V2
+author: Julian Hochhaus
+email: julian.hochhaus@tu-dortmund.de
 description: >- # this means to ignore newlines until "baseurl:"
-  Write an awesome description for your new site here. You can edit this
-  line in _config.yml. It will appear in your document head meta (for
-  Google search results) and in your feed.xml site description.
-baseurl: "" # the subpath of your site, e.g. /blog
-url: "" # the base hostname & protocol for your site, e.g. http://example.com
-twitter_username: jekyllrb
-github_username:  jekyll
+  LG4X-V2 is an open-source GUI for X-ray photoemission spectroscopy (XPS) curve fitting based on the python lmfit package. It streamlines the fitting process for easier validation and consistency. It is inspired by its predecessor software LG4X by Hideki Nakajima.
+#baseurl: "" # the subpath of your site, e.g. /blog
+#url: "" # the base hostname & protocol for your site, e.g. http://example.com
+linkedin: julian-hochhaus
+ORCID: 0000-0002-8328-607X
+github_username:  Julian-Hochhaus
+
+
+
+# The keywords to associate with your website, for SEO purposes
+keywords: "XPS,lmfit,GUI,open-source, curve fitting, spectra analysis, XAS, open-source software, graphical user interface, X-ray photoemission spectroscopy, XPS curve fitting, fitting procedure, data analysis, Julian Hochhaus, Hideki Nakajima "
 
 # Build settings
-theme: minima
+theme: just-the-docs
 plugins:
   - jekyll-feed
+  - jekyll-seo-tag
+
+# Theme-specific settings
+
+
+header_pages:
+ - pages/setup.md
+ - pages/guide.md
+ - pages/versions.md
+ - pages/bugs.md
+ - pages/about.md
+
+defaults:
+  -
+    scope:
+      type: posts
+      path: _posts
+    values:
+      is_post: true
+      layout: post
+      permalink: /:categories/:title/
+  -
+    scope:
+      type: pages
+      path: pages
+    values:
+      is_post: false
+      layout: page
+
+markdown: kramdown
+enable_copy_code_button: true
 
 # Exclude from processing.
 # The following items will not be processed, by default.
