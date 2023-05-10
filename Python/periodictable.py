@@ -78,13 +78,14 @@ class PeriodicTable(QWidget):
         if element['symbol'].values[0] in self.selected_elements_names:
             self.selected_elements_names.remove(element['symbol'].values[0])
             self.selected_elements.remove(element)
+            print(self.selected_elements_names)
         else:
             self.selected_elements.append(element)
             self.selected_elements_names.append(element['symbol'].values[0])
         for i in range(1, 8):
             for j in range(1, 19):
-                if self.grid.itemAtPosition(i, j) is not None:
-                    symbol = self.data[(self.data['period'] == i) & (self.data['group_id'] == j)]['symbol'].values
+                symbol = self.data[(self.data['period'] == i) & (self.data['group_id'] == j)]['symbol'].values
+                if self.grid.itemAtPosition(i, j) is not None and len(symbol) > 0:
                     button = self.grid.itemAtPosition(i, j).widget()
                     cpk_color = \
                         self.data[(self.data['period'] == i) & (self.data['group_id'] == j)]['cpk_color'].values[0]
@@ -99,7 +100,7 @@ class PeriodicTable(QWidget):
         self.selected_elements_names = []
         for i in range(1, 8):
             for j in range(1, 19):
-                if self.grid.itemAtPosition(i, j) is not None:
+                if self.grid.itemAtPosition(i, j) is not None and not self.data[(self.data['period'] == i) & (self.data['group_id'] == j)].empty:
                     button = self.grid.itemAtPosition(i, j).widget()
                     cpk_color = \
                         self.data[(self.data['period'] == i) & (self.data['group_id'] == j)]['cpk_color'].values[0]
