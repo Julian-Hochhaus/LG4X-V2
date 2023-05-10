@@ -43,7 +43,14 @@ plugins:
   - jekyll-seo-tag
 
 # Theme-specific settings
+aux_links:
+  "LG4X-V2 on GitHub":
+    - "//github.com/Julian-Hochhaus/LG4X-V2"
 
+nav_external_links:
+  - title: LG4X-V2 on GitHub
+    url: https://github.com/Julian-Hochhaus/LG4X-V2
+    hide_icon: false # set to true to hide the external link icon - defaults to false
 
 header_pages:
  - pages/setup.md

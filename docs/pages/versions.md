@@ -2,7 +2,7 @@
 layout: default
 title: Versions
 permalink: /pages/versions/
-order : 3
+nav_order : 3
 ---
 ## Version history
 

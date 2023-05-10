@@ -2,7 +2,7 @@
 layout: page
 title: Setup
 permalink: /pages/setup/
-order : 1
+nav_order : 1
 ---
 
 
