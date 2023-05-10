@@ -35,7 +35,9 @@ github_username:  Julian-Hochhaus
 keywords: "XPS,lmfit,GUI,open-source, curve fitting, spectra analysis, XAS, open-source software, graphical user interface, X-ray photoemission spectroscopy, XPS curve fitting, fitting procedure, data analysis, Julian Hochhaus, Hideki Nakajima "
 
 # Build settings
-theme: just-the-docs
+# Theme
+# theme: "just-the-docs"
+remote_theme: pmarsceill/just-the-docs
 plugins:
   - jekyll-feed
   - jekyll-seo-tag
