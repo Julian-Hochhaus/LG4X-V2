@@ -313,3 +313,82 @@ class FermiEdgeModel(lmfit.model.Model):
         self.set_param_hint('sigma', value=(max(x) - min(x)) / len(x), min=0, max=2)
         params = self.make_params()
         return lmfit.models.update_param_vals(params, self.prefix, **kwargs)
+
+
+bgrnd = [[], []]
+
+
+def tougaard(x, y, B, C, C_d, D, only_vary_B=True):
+    """
+    Calculates the Tougaard background of an X-ray photoelectron spectroscopy (XPS) spectrum.
+
+    The following implementation is based on the four-parameter loss function as suggested by R.Hesse (https://doi.org/10.1002/sia.3746).
+    In contrast to R.Hesse, the Tougaard background is not leveled
+    with the data using a constant, but the background on the high-energy side is extended. This approach was
+    found to lead to great convergence empirically, however, the length of the data extension remains arbitrary.
+
+    To reduce computing time, as long as only B should be variated (which makes sense in most cases), if the loss function was already calculated,
+    only b is further optimized.
+
+    Parameters
+    ----------
+    x : array-like
+        1D-array containing the x-values (energies) of the spectrum.
+    y : array-like
+        1D-array containing the y-values (intensities) of the spectrum.
+    B : float
+        Scaling factor of the Tougaard background model.
+    C : float
+    C_d : float
+    D : float
+    only_vary_B : bool, optional
+        Whether to only vary the scaling factor `B` when calculating the background. Defaults to True.
+        Varying all parameters of Tougaard background leads to instabilities and weird shaped backgrounds.
+
+
+    Returns
+    -------
+    array-like
+        The Tougaard background of the XPS spectrum.
+    """
+    global bgrnd
+    if np.array_equal(bgrnd[0], y) and only_vary_B:  # only variating B and loss function was already calculated
+        return [B * elem for elem in bgrnd[1]]
+    else:
+        bgrnd[0] = y
+        bg = []
+        delta_x = abs((x[-1] - x[0]) / len(x))
+        len_padded = int(30 / delta_x)  # sets expansion lenght, values between 15 to 50 work great
+        padded_x = np.concatenate((x, np.linspace(x[-1] + delta_x, x[-1] + delta_x * len_padded, len_padded)))
+        padded_y = np.concatenate((y, np.mean(y[-10:]) * np.ones(len_padded)))
+        for k in range(len(x)):
+            x_k = x[k]
+            bg_temp = 0
+            for j in range(len(padded_y[k:])):
+                padded_x_kj = padded_x[k + j]
+                bg_temp += (padded_x_kj - x_k) / ((C + C_d * (padded_x_kj - x_k) ** 2) ** 2
+                                                  + D * (padded_x_kj - x_k) ** 2) * padded_y[k + j] * delta_x
+            bg.append(bg_temp)
+        bgrnd[1] = bg
+        return [B * elem for elem in bgrnd[1]]
+
+
+class TougaardBG(lmfit.model.Model):
+    __doc__ = "Model of the 4 parameter loss function Tougaard. " \
+              "The implementation is based on the four-parameter loss function as suggested by R.Hesse (https://doi.org/10.1002/sia.3746)." + lmfit.models.COMMON_INIT_DOC
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(tougaard, *args, **kwargs)
+        self._set_paramhints_prefix()
+
+    def _set_paramhints_prefix(self):
+        self.set_param_hint('B', value=2886, min=0)
+        self.set_param_hint('C', value=1643, min=0)
+        self.set_param_hint('C_d', value=1, min=0)
+        self.set_param_hint('D', value=1, min=0)
+
+    def guess(self, data, x=None, **kwargs):
+        if x is None:
+            return
+        params = self.make_params(B=2886, C=1643, C_d=1, D=1)
+        return lmfit.models.update_param_vals(params, self.prefix, **kwargs)

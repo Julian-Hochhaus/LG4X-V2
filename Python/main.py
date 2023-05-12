@@ -12,7 +12,7 @@ from PyQt5.QtCore import QTime
 from PyQt5.QtGui import  QValidator
 from PyQt5.QtWidgets import QItemDelegate, QLineEdit
 from PyQt5.QtGui import QDoubleValidator
-
+from usrmodel import TougaardBG
 from lmfit import Model
 from matplotlib import style
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -28,8 +28,8 @@ import threading
 import traceback  # error handling
 import logging  # error handling
 
-# style.use('ggplot')    
-style.use('seaborn-pastel')
+# style.use('ggplot')
+style.use('seaborn-v0_8-colorblind')
 dictBG = {
     '0': 'static Shirley BG',
     '100': 'active Shirley BG ',
@@ -573,7 +573,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # grid..addWidget(self.res_label, 7, 7, 1, 1)
         self.activeParameters()
         self.show()
-
     def show_citation_dialog(self):
         citation_text = 'J. A. Hochhaus and H. Nakajima, LG4X-V2 (Zenodo, 2023), DOI:10.5281/zenodo.7871174'
         msg_box = QtWidgets.QMessageBox(self)
@@ -1994,7 +1993,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 [bg_mod, bg_toB] = xpy.tougaard_calculate(x, y, toB, toC, toCd, toD, toM)
             self.pre[1][1][1] = bg_toB
         if idx_bg == 101:
-            mod = Model(xpy.tougaard2, independent_vars=["x", "y"], prefix='bg_tougaard_')
+            mod = TougaardBG(independent_vars=["x", "y"], prefix='bg_tougaard_')
             if self.pre[1][1][1] is None or self.pre[1][1][3] is None or self.pre[1][1][5] is None \
                     or self.pre[1][1][7] is None or len(str(self.pre[1][1][1])) == 0 or len(str(self.pre[1][1][3])) == 0 \
                     or len(str(self.pre[1][1][5])) == 0 or len(str(self.pre[1][1][7])) == 0:
@@ -2987,7 +2986,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.stats_tab.setItem(9, 0, item)
         self.stats_tab.resizeColumnsToContents()
         self.stats_tab.resizeRowsToContents()
-        sum_background=0
+        sum_background=np.array([0.]*len(x))
         self.bg_comps=dict()
         for key in comps:
             if 'bg_' in key:

@@ -145,7 +145,7 @@ def shirley_calculate(x, y, tol=1e-5, maxit=10):
         return np.asarray((yr + B)[::-1])
     else:
         # print("Shirley BG: tol (ini = ", tol, ") , iteration (max = ", maxit, "): ", it)
-        returnnp.asarray(yr + B)
+        return np.asarray(yr + B)
 
 
 def tougaard_calculate(x, y, tb=2866, tc=1643, tcd=1, td=1, maxit=100):
