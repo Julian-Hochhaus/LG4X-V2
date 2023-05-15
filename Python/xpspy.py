@@ -76,7 +76,7 @@ def shirley_calculate(x, y, tol=1e-5, maxit=10):
     # print(any(x), any(y), (any(x) and any(y)))
     if not (any(x) and any(y)):
         print("One of the arrays x or y is empty. Returning zero background.")
-        return x * 0
+        return np.asarray(x * 0)
 
     # Next ensure the energy values are *decreasing* in the array,
     # if not, reverse them.
@@ -94,7 +94,7 @@ def shirley_calculate(x, y, tol=1e-5, maxit=10):
     # we can't use this algorithm, we return a zero background.
     if maxidx == 0 or maxidx >= len(y) - 1:
         print("Boundaries too high for algorithm: returning a zero background.")
-        return x * 0
+        return np.asarray(x * 0)
 
     # Locate the minima either side of maxidx.
     lmidx = abs(y[0:maxidx] - y[0:maxidx].min()).argmin()
@@ -142,10 +142,10 @@ def shirley_calculate(x, y, tol=1e-5, maxit=10):
         print("Max iterations exceeded before convergence.")
     if is_reversed:
         # print("Shirley BG: tol (ini = ", tol, ") , iteration (max = ", maxit, "): ", it)
-        return (yr + B)[::-1]
+        return np.asarray((yr + B)[::-1])
     else:
         # print("Shirley BG: tol (ini = ", tol, ") , iteration (max = ", maxit, "): ", it)
-        return yr + B
+        return np.asarray(yr + B)
 
 
 def tougaard_calculate(x, y, tb=2866, tc=1643, tcd=1, td=1, maxit=100):
@@ -154,7 +154,7 @@ def tougaard_calculate(x, y, tb=2866, tc=1643, tcd=1, td=1, maxit=100):
     # Sanity check: Do we actually have data to process here?
     if not (any(x) and any(y)):
         print("One of the arrays x or y is empty. Returning zero background.")
-        return [x * 0, tb]
+        return [np.asarray(x * 0), tb]
 
     # KE in XPS or PE in XAS
     if x[0] < x[-1]:
@@ -193,66 +193,5 @@ def tougaard_calculate(x, y, tb=2866, tc=1643, tcd=1, td=1, maxit=100):
 
     print("Tougaard B:", tb, ", C:", tc, ", C':", tcd, ", D:", td)
 
-    return [y[len(y) - 1] + Btou, tb]
+    return [np.asarray(y[len(y) - 1] + Btou), tb]
 
-
-bgrnd = [[], []]
-
-
-def tougaard2(x, y, B, C, C_d, D):
-    # returns an approximation of the Tougaard BG for a given parameterset
-    if np.array_equal(bgrnd[0], y):
-        return [B * elem for elem in bgrnd[1]]
-    else:
-        bgrnd[0] = y
-        bg = []
-        delta_x = abs((x[-1] - x[0]) / len(x))
-        extend=35
-        len_padded = int(extend / delta_x)
-        # len_padded = 3*len(x)
-        padded_x = np.concatenate((x, np.linspace(x[-1] + delta_x, x[-1] + delta_x * len_padded, len_padded)))
-        padded_y = np.concatenate((y,np.mean(y[-10:]) * np.ones(len_padded)))
-        for k in range(len(x)):
-            x_k = x[k]
-            bg_temp = 0
-            for j in range(len(padded_y[k:])):
-                padded_x_kj = padded_x[k + j]
-                bg_temp += (padded_x_kj - x_k) / ((C + C_d * (padded_x_kj - x_k) ** 2) ** 2
-                                                  + D * (padded_x_kj - x_k) ** 2) * padded_y[k + j] * delta_x
-            bg.append(bg_temp)
-        bgrnd[1] = bg
-        return [B * elem for elem in bgrnd[1]]
-
-
-def tougaard(x, y, B, C, C_d, D):
-    # returns an approximation of the Tougaard BG for a given parameterset
-    if np.array_equal(bgrnd[0], y):
-        return [[B * elem for elem in bgrnd[1]], B]
-    else:
-        bgrnd[0] = y
-        bg = []
-        delta_x = abs((x[-1] - x[0]) / len(x))
-        len_padded = int(50 / delta_x )
-        # len_padded = 3*len(x)
-        padded_x = np.concatenate((x, np.linspace(x[-1] + delta_x, x[-1] + delta_x * len_padded, len_padded)))
-        padded_y = np.concatenate((y, np.mean(y[-1:]) * np.ones(len_padded)))
-        for k in range(len(x)):
-            x_k = x[k]
-            bg_temp = 0
-            for j in range(len(padded_y[k:])):
-                padded_x_kj = padded_x[k + j]
-                bg_temp += (padded_x_kj - x_k) / ((C + C_d * (padded_x_kj - x_k) ** 2) ** 2
-                                                  + D * (padded_x_kj - x_k) ** 2) * padded_y[k + j] * delta_x
-            bg.append(bg_temp)
-        bgrnd[1] = bg
-    return [[B * elem for elem in bg], B]
-
-
-def shirley(y, k, const):
-    n = len(y)
-    y_right = const
-    y_temp = y - y_right
-    bg = []
-    for i in range(n):
-        bg.append(np.sum(y_temp[i:]))
-    return [k * elem + y_right for elem in bg]
