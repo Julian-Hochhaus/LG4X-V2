@@ -315,10 +315,10 @@ class FermiEdgeModel(lmfit.model.Model):
         return lmfit.models.update_param_vals(params, self.prefix, **kwargs)
 
 
-bgrnd = [[], []]
+bgrnd = [[], [], []]
 
 
-def tougaard(x, y, B, C, C_d, D, only_vary_B=True):
+def tougaard(x, y, B, C, C_d, D,extend=30, only_vary_B=True):
     """
     Calculates the Tougaard background of an X-ray photoelectron spectroscopy (XPS) spectrum.
 
@@ -341,6 +341,8 @@ def tougaard(x, y, B, C, C_d, D, only_vary_B=True):
     C : float
     C_d : float
     D : float
+    extend : float, optional
+        Length of the data extension on the high-kinetic-energy side. Defaults to 30.
     only_vary_B : bool, optional
         Whether to only vary the scaling factor `B` when calculating the background. Defaults to True.
         Varying all parameters of Tougaard background leads to instabilities and weird shaped backgrounds.
@@ -350,15 +352,20 @@ def tougaard(x, y, B, C, C_d, D, only_vary_B=True):
     -------
     array-like
         The Tougaard background of the XPS spectrum.
+
+    See Also
+    -------
+    The following implementation is based on the four-parameter loss function as suggested by R.Hesse [https://doi.org/10.1002/sia.3746].
     """
     global bgrnd
-    if np.array_equal(bgrnd[0], y) and only_vary_B:  # only variating B and loss function was already calculated
+    if np.array_equal(bgrnd[0], y) and only_vary_B and bgrnd[2][0]==extend:  # only variating B and loss function was already calculated
         return [B * elem for elem in bgrnd[1]]
     else:
         bgrnd[0] = y
+        bgrnd[2] = [extend]
         bg = []
         delta_x = abs((x[-1] - x[0]) / len(x))
-        len_padded = int(30 / delta_x)  # sets expansion lenght, values between 15 to 50 work great
+        len_padded = int(extend / delta_x)  # sets expansion lenght, values between 15 to 50 work great
         padded_x = np.concatenate((x, np.linspace(x[-1] + delta_x, x[-1] + delta_x * len_padded, len_padded)))
         padded_y = np.concatenate((y, np.mean(y[-10:]) * np.ones(len_padded)))
         for k in range(len(x)):
@@ -375,7 +382,7 @@ def tougaard(x, y, B, C, C_d, D, only_vary_B=True):
 
 class TougaardBG(lmfit.model.Model):
     __doc__ = "Model of the 4 parameter loss function Tougaard. " \
-              "The implementation is based on the four-parameter loss function as suggested by R.Hesse (https://doi.org/10.1002/sia.3746)." + lmfit.models.COMMON_INIT_DOC
+              "The implementation is based on the four-parameter loss function as suggested by R.Hesse [https://doi.org/10.1002/sia.3746]. In addition, the extend parameter is introduced, which improves the agreement between data and Tougaard BG by extending the Data on the high-kinetic energy side (low binding energy side) by the mean intensity value at the rightmost kinetic energy scale. extend represents the length of the data extension on the high-kinetic-energy side in eV. Defaults to 30." + lmfit.models.COMMON_INIT_DOC
 
     def __init__(self, *args, **kwargs):
         super().__init__(tougaard, *args, **kwargs)
@@ -386,9 +393,105 @@ class TougaardBG(lmfit.model.Model):
         self.set_param_hint('C', value=1643, min=0)
         self.set_param_hint('C_d', value=1, min=0)
         self.set_param_hint('D', value=1, min=0)
+        self.set_param_hint('extend', value=30, vary=False)
 
     def guess(self, data, x=None, **kwargs):
         if x is None:
             return
         params = self.make_params(B=2886, C=1643, C_d=1, D=1)
+        return lmfit.models.update_param_vals(params, self.prefix, **kwargs)
+
+
+def shirley(y, k, const):
+    """
+    Calculates the Shirley background of an X-ray photoelectron spectroscopy (XPS) spectrum.
+    This implementation calculates the Shirley background by integrating the step characteristic of the spectrum.
+
+    Parameters
+    ----------
+    y : array-like
+        1D-array containing the y-values (intensities) of the spectrum.
+    k : float
+        Slope of the step characteristic.
+    const : float
+        Constant offset of the step characteristic.
+
+    Returns
+    -------
+    array-like
+        The Shirley background of the XPS spectrum.
+    """
+    n = len(y)
+    y_right = const
+    y_temp = y - y_right  # step characteristic is better approximated, if only the step without background is integrated
+    bg = []
+    for i in range(n):
+        bg.append(np.sum(y_temp[i:]))
+    return np.asarray([k * elem + y_right for elem in bg])
+
+
+class ShirleyBG(lmfit.model.Model):
+    __doc__ = "Model of the Shirley background for X-ray photoelectron spectroscopy (XPS) spectra." + lmfit.models.COMMON_INIT_DOC
+    def __init__(self, *args, **kwargs):
+        super().__init__(shirley, *args, **kwargs)
+        self._set_paramhints_prefix()
+
+    def _set_paramhints_prefix(self):
+        self.set_param_hint('k', value=0.03, min=0)
+        self.set_param_hint('const', value=1000, min=0)
+    def guess(self, data, x=None, **kwargs):
+        if x is None:
+            return
+        params = self.make_params(k=0.03,const=1000)
+        return lmfit.models.update_param_vals(params, self.prefix, **kwargs)
+
+
+def slope(y, k):
+    """
+    Calculates the slope background of an X-ray photoelectron spectroscopy (XPS) spectrum.
+    The slope background has some similarities to the Shirley background, e.g. the slope background is calculated integrating the Shirley background from each data point to the
+    end. Afterwards, a slope parameter k is used for scaling the slope accordingly to the measured data.
+
+    Parameters
+    ----------
+    y : array-like
+        1D-array containing the y-values (intensities) of the spectrum.
+    k : float
+        Slope of the linear function for determining the background.
+
+    Returns
+    -------
+    array-like
+        The slope background of the XPS spectrum.
+
+    See Also
+    --------
+    Slope Background implemented as suggested by A. Herrera-Gomez et al in [DOI: 10.1016/j.elspec.2013.07.006].
+    """
+    n = len(y)
+    y_right = np.min(y)
+    y_temp = y - y_right
+    temp = []
+    bg = []
+    for i in range(n):
+        temp.append(np.sum(y_temp[i:]))
+    for j in range(n):
+        bg.append(np.sum(temp[j:]))
+    return np.asarray([-k * elem for elem in bg])
+
+
+class SlopeBG(lmfit.model.Model):
+    __doc__ = "Model of the Slopey background for X-ray photoelectron spectroscopy (XPS) spectra. Slope Background implemented as suggested by A. Herrera-Gomez et al in [DOI: 10.1016/j.elspec.2013.07.006]." + lmfit.models.COMMON_INIT_DOC
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(slope, *args, **kwargs)
+        self._set_paramhints_prefix()
+
+    def _set_paramhints_prefix(self):
+        self.set_param_hint('k', value=0.01)
+
+    def guess(self, data, x=None, **kwargs):
+        if x is None:
+            return
+        params = self.make_params(k=0.01)
         return lmfit.models.update_param_vals(params, self.prefix, **kwargs)

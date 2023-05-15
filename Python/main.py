@@ -12,7 +12,7 @@ from PyQt5.QtCore import QTime
 from PyQt5.QtGui import  QValidator
 from PyQt5.QtWidgets import QItemDelegate, QLineEdit
 from PyQt5.QtGui import QDoubleValidator
-from usrmodel import TougaardBG
+from usrmodel import TougaardBG, ShirleyBG, SlopeBG
 from lmfit import Model
 from matplotlib import style
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -350,7 +350,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         layout_bottom_mid = QtWidgets.QVBoxLayout()
         # PolyBG Table
         list_bg_col = ['bg_c0', 'bg_c1', 'bg_c2', 'bg_c3', 'bg_c4']
-        list_bg_row = ['Shirley (cv, it, k, c)', 'Tougaard(B, C, C*, D)', 'Polynomial', 'Slope(k,const)',
+        list_bg_row = ['Shirley (cv, it, k, c)', 'Tougaard(B, C, C*, D, extend)', 'Polynomial', 'Slope(k)',
                        'arctan (amp, ctr, sig)', 'erf (amp, ctr, sig)', 'cutoff (ctr, d1-4)']
         self.fitp0 = QtWidgets.QTableWidget(len(list_bg_row), len(list_bg_col) * 2)
         self.fitp0.setItemDelegate(self.delegate)
@@ -360,7 +360,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # set BG table checkbox
         for row in range(len(list_bg_row)):
             for col in range(len(list_bg_colh)):
-                if (row == 2 or row>3 or (row==3 and col<4) or (row == 0 and 8 > col >= 4) or (row == 1 and col == 0)) and col % 2 == 0:
+                if (row == 2 or row>3 or (row==3 and col<2) or (row == 0 and 8 > col >= 4) or (row == 1 and col == 0)) and col % 2 == 0:
                     item = QtWidgets.QTableWidgetItem()
                     item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
                     item.setCheckState(QtCore.Qt.Unchecked)
@@ -372,9 +372,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.fitp0.setItem(row, col, item)
         # set BG table default
         pre_bg = [['', 1e-06, '', 10, 2, 0.0003, 2, 1000, '', ''],
-                  [2, 2866.0, '', 1643.0, '', 1.0, '', 1.0, '', ''],
+                  [2, 2866.0, '', 1643.0, '', 1.0, '', 1.0, '', 50],
                   [2, 0, 2, 0, 2, 0, 2, 0, 2, 0],
-                  [2,0.0,2,1000, '', '', '', '', '', '']]
+                  [2,0.0,'','','', '', '', '', '', '', '']]
         # self.setPreset([0], pre_bg, [])
 
         self.fitp0.resizeColumnsToContents()
@@ -652,7 +652,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.status_label.setStyleSheet("background-color: yellow; border-radius: 9px")
             self.status_text.setText("Limit at 0. ")
             self.status_text.setToolTip(
-                'If one limit reaches zero, a warning is displayed. Usually, such a case is intended because several parameters such as the amplitude are limited to positive values. If e.g. one component gets an amplitude of 0 during the fit, the warning will be displayed.')
+                "<html><head/><body><p>If a limit reaches zero, a warning is displayed. Usually, such a case is intended because several parameters such as the amplitude and the assymetry are limited to positive values.</p></body></html>")
         else:
             self.status_label.setStyleSheet("background-color: blue; border-radius: 9px")
             self.status_text.setText("Error, Unknown state!")
@@ -695,7 +695,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     elif idx == 101 and row == 1:
                         self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
                                                                            col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
-                    elif idx == 6 and row == 3 and col < 4:
+                    elif idx == 6 and row == 3 and col < 2:
                         self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
                                                                            col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
                     elif idx == 3 and row == 4:
@@ -1245,7 +1245,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             for row in range(len(list_pre_bg)):
                 for col in range(len(list_pre_bg[0])):
                     item = self.fitp0.item(row, col)
-                    if (row == 2 or row>3 or (row==3 and col<4) or (row == 0 and 8 > col >= 4) or (row == 1 and col == 0)) and col % 2 == 0:
+                    if (row == 2 or row>3 or (row==3 and col<2) or (row == 0 and 8 > col >= 4) or (row == 1 and col == 0)) and col % 2 == 0:
                         if list_pre_bg[row][col] == 2:
                             item.setCheckState(QtCore.Qt.Checked)
                         else:
@@ -1790,10 +1790,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 return self.raise_error(window_title="Error: could not load .csv file.",
                                         error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
             strpe = (str(strpe).split())
+
             if strpe[0] == 'PE:' and strpe[2] == 'eV':
                 pe = float(strpe[1])
                 item = QtWidgets.QTableWidgetItem(str(pe))
-                self.fitp0.setItem(0, 7, item)
+                self.fitp0.setItem(0, 9, item)
+                self.fitp0.setItem(0, 8, QtWidgets.QTableWidgetItem('Pass energy (eV)'))
             # plt.cla()
             self.ar.cla()
             self.ax.cla()
@@ -1967,7 +1969,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 pars = None
                 bg_mod = xpy.shirley_calculate(x, y, shA, shB)
             else:
-                mod = Model(xpy.shirley, independent_vars=["y"], prefix='bg_shirley_')
+                mod = ShirleyBG(independent_vars=["y"], prefix='bg_shirley_')
                 k = self.pre[1][0][5]
                 const = self.pre[1][0][7]
                 pars = mod.make_params()
@@ -1995,8 +1997,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if idx_bg == 101:
             mod = TougaardBG(independent_vars=["x", "y"], prefix='bg_tougaard_')
             if self.pre[1][1][1] is None or self.pre[1][1][3] is None or self.pre[1][1][5] is None \
-                    or self.pre[1][1][7] is None or len(str(self.pre[1][1][1])) == 0 or len(str(self.pre[1][1][3])) == 0 \
-                    or len(str(self.pre[1][1][5])) == 0 or len(str(self.pre[1][1][7])) == 0:
+                    or self.pre[1][1][7] is None or self.pre[1][1][9] is None or len(str(self.pre[1][1][1])) == 0 or len(str(self.pre[1][1][3])) == 0 \
+                    or len(str(self.pre[1][1][5])) == 0 or len(str(self.pre[1][1][7]))==0 or len(str(self.pre[1][1][9])) == 0:
                 pars = mod.guess(y, x=x, y=y)
             else:
                 pars = mod.make_params()
@@ -2009,6 +2011,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 pars['bg_tougaard_C_d'].vary = False
                 pars['bg_tougaard_D'].value = self.pre[1][1][7]
                 pars['bg_tougaard_D'].vary = False
+                pars['bg_tougaard_extend'].value=self.pre[1][1][9]
+                pars['bg_tougaard_extend'].vary = False
             bg_mod = 0
         if idx_bg == 3:
             mod = StepModel(prefix='bg_arctan_', form='arctan')
@@ -2106,19 +2110,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     if self.pre[1][2][2 * index] == 2:
                         pars['bg_poly_c' + str(index)].vary = False
         if idx_bg ==6:
-            mod=Model(xpy.slope, prefix='bg_slope_')
+            mod=SlopeBG(independent_vars=['y'],prefix='bg_slope_')
             bg_mod=0
-            if self.pre[1][3][1] is None or self.pre[1][3][3] is None or len(str(self.pre[1][3][1])) == 0 \
-                    or len(str(self.pre[1][3][3])) == 0:
+            if self.pre[1][3][1] is None or len(str(self.pre[1][3][1])) == 0:
                 pars = mod.guess(y, x=x)
             else:
                 pars = mod.make_params()
                 pars['bg_slope_k'].value = self.pre[1][3][1]
                 if self.pre[1][3][0] == 2:
                     pars['bg_slope_k'].vary = False
-                pars['bg_slope_const'].value = self.pre[1][3][3]
-                if self.pre[1][3][2] == 2:
-                    pars['bg_slope_const'].vary = False
         if self.fixedBG.isChecked():
             for par in pars:
                 pars[par].vary = False
@@ -2557,7 +2557,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         for idx_bg in idx_bgs:
             if idx_bg == 6:
                 self.pre[1][3][1] = out_params['bg_slope_k'].value
-                self.pre[1][3][3] = out_params['bg_slope_const'].value
             if idx_bg == 100:
                 if mode != "eva":
                     self.pre[1][0][5] = out_params['bg_shirley_k'].value
@@ -2567,6 +2566,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.pre[1][1][3] = out_params['bg_tougaard_C'].value
                 self.pre[1][1][5] = out_params['bg_tougaard_C_d'].value
                 self.pre[1][1][7] = out_params['bg_tougaard_D'].value
+                self.pre[1][1][9] = out_params['bg_tougaard_extend'].value
             if idx_bg == 3:
                 self.pre[1][idx_bg+1][1] = out_params['bg_arctan_amplitude'].value
                 self.pre[1][idx_bg+1][3] = out_params['bg_arctan_center'].value
