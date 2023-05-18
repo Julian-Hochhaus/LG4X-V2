@@ -495,39 +495,3 @@ class SlopeBG(lmfit.model.Model):
             return
         params = self.make_params(k=0.01)
         return lmfit.models.update_param_vals(params, self.prefix, **kwargs)
-
-def zero_return(x, params=None):
-    """
-    Returns a constant value of 0.
-
-    Parameters
-    ----------
-    x : array-like
-        The independent variable.
-    params : lmfit.Parameters, optional
-        Parameters for the model. This parameter is ignored in this case.
-        Defaults to None
-
-    Returns
-    -------
-    array-like
-        An array of zeros with the same shape as `x`.
-    """
-    return np.zeros_like(x)
-
-
-class ZeroModel(lmfit.model.Model):
-    __doc__ = """
-    A model that returns a constant value of 0. Useful if an empty model is needed.
-    """ + lmfit.models.COMMON_INIT_DOC
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(zero_return, *args, **kwargs)
-        self._set_paramhints_prefix()
-
-    def _set_paramhints_prefix(self):
-        # No parameters to set
-
-    def guess(self, data, x=None, **kwargs):
-        # No parameter guessing needed
-        return self.make_params()
