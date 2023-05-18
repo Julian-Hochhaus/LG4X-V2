@@ -182,6 +182,39 @@ class LayoutHline(QtWidgets.QFrame):
         super(LayoutHline, self).__init__()
         self.setFrameShape(self.HLine)
         self.setFrameShadow(self.Sunken)
+class EditHeaderDialog(QtWidgets.QDialog):
+    def __init__(self, header_label, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Edit Header")
+        self.setLayout(QtWidgets.QVBoxLayout())
+
+        self.lineEdit = QLineEdit()
+        self.lineEdit.setText(header_label)
+        self.layout().addWidget(self.lineEdit)
+
+        button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+        self.layout().addWidget(button_box)
+
+    def getHeaderText(self):
+        return self.lineEdit.text()
+class EditableHeaderTableWidget(QtWidgets.QTableWidget):
+    headerTextChanged = QtCore.pyqtSignal(int, str)
+
+    def __init__(self, rows, columns, parent=None):
+        super().__init__(rows, columns, parent)
+        # Enable editing of column headers
+        self.horizontalHeader().sectionDoubleClicked.connect(self.editHeader)
+
+    def editHeader(self, logicalIndex):
+        header_label = self.horizontalHeaderItem(logicalIndex).text()
+        dialog = EditHeaderDialog(header_label, self)
+        if dialog.exec_() == QtWidgets.QDialog.Accepted:
+            new_label = dialog.getHeaderText()
+            self.horizontalHeaderItem(logicalIndex).setText(new_label)
+            self.headerTextChanged.emit(logicalIndex, new_label)
+
 
 class Window_CrossSection(QtWidgets.QWidget):
     """

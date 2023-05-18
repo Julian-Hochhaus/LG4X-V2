@@ -354,8 +354,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
         list_bg_row = ['Shirley (cv, it, k, c)', 'Tougaard(B, C, C*, D, extend)', 'Polynomial', 'Slope(k)',
                        'arctan (amp, ctr, sig)', 'erf (amp, ctr, sig)', 'cutoff (ctr, d1-4)']
         self.fitp0 = QtWidgets.QTableWidget(len(list_bg_row), len(list_bg_col) * 2)
+
         self.fitp0.setItemDelegate(self.delegate)
         list_bg_colh = ['', 'bg_c0', '', 'bg_c1', '', 'bg_c2', '', 'bg_c3', '', 'bg_c4']
+
         self.fitp0.setHorizontalHeaderLabels(list_bg_colh)
         self.fitp0.setVerticalHeaderLabels(list_bg_row)
         # set BG table checkbox
@@ -441,7 +443,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     'gaussian_ref', 'ratio',
                     'asymmetry_ref', 'ratio', 'soc_ref', 'ratio', 'height_ref', 'ratio']
 
-        self.fitp1 = QtWidgets.QTableWidget(len(list_row), len(list_col) * 2)
+        self.fitp1=EditableHeaderTableWidget(len(list_row), len(list_col) * 2)
+        self.fitp1.headerTextChanged.connect(self.updateHeader_lims)
         self.fitp1.setItemDelegate(self.delegate)
         list_colh = ['', 'C_1']
         self.fitp1.setHorizontalHeaderLabels(list_colh)
@@ -453,7 +456,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
             'asymmetry_ratio', 'soc_ratio', 'height_ratio']
         list_colh_limits = ['C_1', 'min', 'max']
 
-        self.fitp1_lims = QtWidgets.QTableWidget(len(self.list_row_limits), len(list_col) * 3)
+        self.fitp1_lims = EditableHeaderTableWidget(len(self.list_row_limits), len(list_col) * 3)
+        self.fitp1_lims.headerTextChanged.connect(self.updateHeader_comps)
         self.fitp1_lims.setItemDelegate(self.delegate)
 
         self.fitp1_lims.setHorizontalHeaderLabels(list_colh_limits)
@@ -576,6 +580,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.activeParameters()
         self.show()
 
+    def updateHeader_lims(self, logicalIndex, new_label):
+        self.fitp1_lims.horizontalHeaderItem((logicalIndex-1)/2*3).setText(new_label)
+    def updateHeader_comps(self, logicalIndex, new_label):
+        self.fitp1.horizontalHeaderItem(logicalIndex/3*2+1).setText(new_label)
     def show_citation_dialog(self):
         citation_text = 'J. A. Hochhaus and H. Nakajima, LG4X-V2 (Zenodo, 2023), DOI:10.5281/zenodo.7871174'
         msg_box = QtWidgets.QMessageBox(self)
@@ -3030,9 +3038,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 # print(index_pk, color)
                 strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
                 strind = strind.split(":", 1)[0]
-
                 self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + sum_background + bg_mod,
-                                     sum_background + bg_mod, label='C_' + str(index_pk + 1))
+                                     sum_background + bg_mod, label=self.fitp1.horizontalHeaderItem(2*index_pk+1).text())
                 self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + sum_background + bg_mod)
                 if index_pk == len_idx_pk - 1:
                     self.ax.plot(x, + sum_background + bg_mod, label='BG')
@@ -3054,7 +3061,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
                 strind = strind.split(":", 1)[0]
                 self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + sum_background,
-                                     bg_mod + sum_background, label='C_' + str(index_pk + 1))
+                                     bg_mod + sum_background, label=self.fitp1.horizontalHeaderItem(2*index_pk+1).text())
                 self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + sum_background)
                 if index_pk == len_idx_pk - 1:
                     self.ax.plot(x, + bg_mod + sum_background, label="BG")
