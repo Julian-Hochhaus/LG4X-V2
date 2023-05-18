@@ -202,18 +202,27 @@ class EditHeaderDialog(QtWidgets.QDialog):
 class EditableHeaderTableWidget(QtWidgets.QTableWidget):
     headerTextChanged = QtCore.pyqtSignal(int, str)
 
-    def __init__(self, rows, columns, parent=None):
+    def __init__(self, rows, columns,editable_condition, parent=None):
         super().__init__(rows, columns, parent)
         # Enable editing of column headers
         self.horizontalHeader().sectionDoubleClicked.connect(self.editHeader)
+        # Store the editable condition
+        self.editable_condition = editable_condition
+    def setHeaderTooltips(self):
+        for logicalIndex in range(self.columnCount()):
+            if self.editable_condition(logicalIndex):
+                header_item = self.horizontalHeaderItem(logicalIndex)
+                if header_item is not None:
+                    header_item.setToolTip("Double-click to edit")
 
     def editHeader(self, logicalIndex):
-        header_label = self.horizontalHeaderItem(logicalIndex).text()
-        dialog = EditHeaderDialog(header_label, self)
-        if dialog.exec_() == QtWidgets.QDialog.Accepted:
-            new_label = dialog.getHeaderText()
-            self.horizontalHeaderItem(logicalIndex).setText(new_label)
-            self.headerTextChanged.emit(logicalIndex, new_label)
+        if self.editable_condition(logicalIndex):
+            header_label = self.horizontalHeaderItem(logicalIndex).text()
+            dialog = EditHeaderDialog(header_label, self)
+            if dialog.exec_() == QtWidgets.QDialog.Accepted:
+                new_label = dialog.getHeaderText()
+                self.horizontalHeaderItem(logicalIndex).setText(new_label)
+                self.headerTextChanged.emit(logicalIndex, new_label)
 
 
 class Window_CrossSection(QtWidgets.QWidget):

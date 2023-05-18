@@ -442,8 +442,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     'fct_coster_kronig', 'center_ref', 'ctr_diff', 'amp_ref', 'ratio', 'lorentzian_ref', 'ratio',
                     'gaussian_ref', 'ratio',
                     'asymmetry_ref', 'ratio', 'soc_ref', 'ratio', 'height_ref', 'ratio']
-
-        self.fitp1=EditableHeaderTableWidget(len(list_row), len(list_col) * 2)
+        def comps_edit_condition(logicalIndex):
+            return logicalIndex % 2 != 0
+        self.fitp1=EditableHeaderTableWidget(len(list_row), len(list_col) * 2, comps_edit_condition)
         self.fitp1.headerTextChanged.connect(self.updateHeader_lims)
         self.fitp1.setItemDelegate(self.delegate)
         list_colh = ['', 'C_1']
@@ -456,7 +457,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
             'asymmetry_ratio', 'soc_ratio', 'height_ratio']
         list_colh_limits = ['C_1', 'min', 'max']
 
-        self.fitp1_lims = EditableHeaderTableWidget(len(self.list_row_limits), len(list_col) * 3)
+        def lims_edit_condition(logicalIndex):
+            return logicalIndex % 3 == 0
+        self.fitp1_lims = EditableHeaderTableWidget(len(self.list_row_limits), len(list_col) * 3, lims_edit_condition)
         self.fitp1_lims.headerTextChanged.connect(self.updateHeader_comps)
         self.fitp1_lims.setItemDelegate(self.delegate)
 
@@ -535,6 +538,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
         self.fitp1.resizeColumnsToContents()
         self.fitp1.resizeRowsToContents()
+        self.fitp1.setHeaderTooltips()
         layout_bottom_mid.addWidget(self.fitp1)
 
         toprow_layout.addLayout(layout_top_mid, 4)
@@ -547,6 +551,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         layout_bottom_right = QtWidgets.QVBoxLayout()
         self.fitp1_lims.resizeColumnsToContents()
         self.fitp1_lims.resizeRowsToContents()
+        self.fitp1_lims.setHeaderTooltips()
         list_res_row = ['gaussian_fwhm', 'lorentzian_fwhm_p1', 'lorentzian_fwhm_p2', 'fwhm_p1', 'fwhm_p2', 'height_p1',
                         'height_p2', 'approx. area_p1', 'approx. area_p2', 'area_total']
         self.res_tab = QtWidgets.QTableWidget(len(list_res_row), len(list_col))
@@ -581,9 +586,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.show()
 
     def updateHeader_lims(self, logicalIndex, new_label):
-        self.fitp1_lims.horizontalHeaderItem((logicalIndex-1)/2*3).setText(new_label)
+        if logicalIndex%2!=0:
+            self.fitp1_lims.horizontalHeaderItem(int((logicalIndex-1)/2*3)).setText(new_label)
     def updateHeader_comps(self, logicalIndex, new_label):
-        self.fitp1.horizontalHeaderItem(logicalIndex/3*2+1).setText(new_label)
+        if logicalIndex%3==0:
+            self.fitp1.horizontalHeaderItem(int(logicalIndex/3*2+1)).setText(new_label)
     def show_citation_dialog(self):
         citation_text = 'J. A. Hochhaus and H. Nakajima, LG4X-V2 (Zenodo, 2023), DOI:10.5281/zenodo.7871174'
         msg_box = QtWidgets.QMessageBox(self)
@@ -1036,6 +1043,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp1_lims.resizeColumnsToContents()
         self.fitp1_lims.resizeRowsToContents()
         self.activeParameters()
+        self.fitp1.setHeaderTooltips()
+        self.fitp1_lims.setHeaderTooltips()
         # self.fitp1.setColumnWidth(1, 55)
 
     def rem_col(self):
