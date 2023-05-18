@@ -886,22 +886,22 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                                                                              3 * col + 2).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
 
     def update_com_vals(self):
-        if self.xmin_item.text() == '':
+        try:
+            self.xmin = float(self.xmin_item.text().strip())
+        except ValueError:
             self.xmin = 0
-        else:
-            self.xmin = float(self.xmin_item.text())
-        if self.xmax_item.text() == '':
-            self.xmax = 0
-        else:
-            self.xmax = float(self.xmax_item.text())
-        if self.hv_item.text() == '':
-            self.hv = 0
-        else:
-            self.hv = float(self.hv_item.text())
-        if self.wf_item.text() == '':
-            self.wf = 0
-        else:
-            self.wf = float(self.wf_item.text())
+        try:
+            self.xmax = float(self.xmax_item.text().strip())
+        except ValueError:
+            self.xmax = 0        
+        try:
+             self.hv = float(self.hv_item.text().strip())
+        except ValueError:
+             self.hv = 0   
+        try:
+             self.wf = float(self.wf_item.text().strip())      
+        except ValueError:
+             self.wf = 0
         self.pre[0] = [self.idx_bg, self.xmin, self.xmax, self.hv, self.wf]
 
     def setLimits(self):
