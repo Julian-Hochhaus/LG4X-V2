@@ -2889,6 +2889,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         plt.xlim(x0[0], x0[-1])
         self.ax.grid(True)
         self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
+        print('*******')
+        print(plottitle)
         if len(plottitle) == 0:
             if mode == 'sim':
                 # simulation mode
@@ -3037,7 +3039,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if mode == "sim":
             self.ar.set_title(r"Simulation mode", fontsize=11)
         if mode == 'eva':
-            plottitle = self.comboBox_file.currentText().split('/')[-1]
+            plottitle=self.plottitle.text()
+            if len(plottitle) == 0:
+                plottitle = self.comboBox_file.currentText().split('/')[-1]
             # ax.plot(x, init+bg_mod, 'b--', lw =2, label='initial')
             if plottitle != '':
                 self.ar.set_title(r"{}".format(plottitle), fontsize=11)
@@ -3062,7 +3066,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         else:
             # ax.plot(x, init+bg_mod, 'k:', label='initial')
-            plottitle = self.comboBox_file.currentText().split('/')[-1]
+            plottitle = self.plottitle.text()
+            if len(plottitle) == 0:
+                plottitle = self.comboBox_file.currentText().split('/')[-1]
             if plottitle != '':
                 self.ar.set_title(r"{}".format(plottitle), fontsize=11)
             len_idx_pk = int(self.fitp1.columnCount() / 2)
