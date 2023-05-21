@@ -311,28 +311,28 @@ class PrettyWidget(QtWidgets.QMainWindow):
         min_form = QtWidgets.QFormLayout()
         self.xmin_item = DoubleLineEdit()
         self.xmin = 270
-        self.xmin_item.insert(str(self.xmin))
+        self.xmin_item.setText(str(self.xmin))
         self.xmin_item.textChanged.connect(self.update_com_vals)
         min_form.addRow("x_min: ", self.xmin_item)
         plot_settings_layout.addLayout(min_form)
         max_form = QtWidgets.QFormLayout()
         self.xmax_item = DoubleLineEdit()
         self.xmax = 300
-        self.xmax_item.insert(str(self.xmax))
+        self.xmax_item.setText(str(self.xmax))
         self.xmax_item.textChanged.connect(self.update_com_vals)
         max_form.addRow("x_max: ", self.xmax_item)
         plot_settings_layout.addLayout(max_form)
         hv_form = QtWidgets.QFormLayout()
         self.hv_item = DoubleLineEdit()
         self.hv = 1486.6
-        self.hv_item.insert(str(self.hv))
+        self.hv_item.setText(str(self.hv))
         self.hv_item.textChanged.connect(self.update_com_vals)
         hv_form.addRow("hv: ", self.hv_item)
         plot_settings_layout.addLayout(hv_form)
         wf_form = QtWidgets.QFormLayout()
         self.wf_item = DoubleLineEdit()
         self.wf = 4
-        self.wf_item.insert(str(self.wf))
+        self.wf_item.setText(str(self.wf))
         self.wf_item.textChanged.connect(self.update_com_vals)
         wf_form.addRow("wf: ", self.wf_item)
         plot_settings_layout.addLayout(wf_form)
@@ -1670,6 +1670,19 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 except Exception as e:
                     return self.raise_error(window_title="Error: could not load VAMAS file.",
                                             error_message='Loading VAMAS file failed. The following traceback may help to solve the issue:')
+                try:
+                    wf = vpy.get_wf(cfilePath)
+                    if isinstance(wf, float):
+                        self.wf= abs(wf)
+                        self.wf_item.setText(str(abs(wf))) #we assume in the following, that the wf is defined positive
+                    else:
+                        self.wf=4.0
+                        self.wf_item.setText(str(4.0))
+                        raise Exception('Different work functions were detected for the different blocks in your Vamas file. Work function is defaulted to 4.0eV and needs to be adjusted manually.')
+                except Exception as e:
+                    return self.raise_error(window_title="Error: could not load VAMAS work function.",
+                                            error_message=e.args[0])
+
                 self.list_file.extend(self.list_vamas)
 
                 # print (self.list_file)
@@ -1701,14 +1714,22 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.repaint()
             # self.ax.texts.remove()
         if self.pt.selected_elements:
-            if self.pre[0][3] != None and self.pre[0][4] != None:
-                pe = self.pre[0][3]
-                wf = self.pre[0][4]
-            else:
-                self.hv = 1486.6
-                self.hv_item.insert(str(self.hv))
-                self.wf = 4
-                self.wf.insert(str(self.wf))
+            if self.pre[0][3] == None:
+                if len(self.hv)==0:
+                    self.pre[0][3]=1486.6
+                    self.hv=1486.6
+                else:
+                    self.pre[0][3] = self.hv
+            if self.pre[0][4] == None:
+                if len(self.wf)==0:
+                    self.pre[0][4]=4
+                    self.wf=4
+                else:
+                    self.pre[0][4]=self.wf
+            self.hv_item.setText(str(self.hv))
+            self.wf.setText(str(self.wf))
+            pe=self.hv
+            wf=self.wf
 
             ymin, ymax = self.ax.get_ylim()
             xmin, xmax = self.ax.get_xlim()

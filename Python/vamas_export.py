@@ -4,6 +4,7 @@ import vamas
 
 def list_vms(filePath):
 	vamas1 = vamas.VAMAS(filePath) # create instance
+	get_wf(filePath)
 	
 	print(str(vamas1.header.format))
 	print('Number of blocks: ' + str(vamas1.header.num_blocks))
@@ -58,3 +59,12 @@ def list_vms(filePath):
 		
 	return list_file
 
+def get_wf(filePath):
+	vamas1 = vamas.VAMAS(filePath) # create instance
+	temp_wf=[]
+	for block in vamas1.blocks:
+		temp_wf.append(block.analyser_work_function)
+	if temp_wf.count(temp_wf[0]) == len(temp_wf):
+		return temp_wf[0]
+	else:
+		return list(set(temp_wf))
