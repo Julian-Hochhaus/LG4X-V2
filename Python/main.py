@@ -2977,17 +2977,30 @@ class PrettyWidget(QtWidgets.QMainWindow):
             strmode = 'Fitting'
         self.statusBar().showMessage(strmode + ' running.', )
         init = mod.eval(pars, x=x, y=y)
-        if mode == 'eva':
-            out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=y)
-        elif mode == 'sim':
-            out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=y)
+        zeros_in_data=False
+        try:
+            if np.any(raw_y == 0):
+                zeros_in_data=True
+                raise Exception('There are zeros in your input data. The reduced chi is therefore not weighted with sqrt(intensity)!')
+        except Exception as e:
+            return self.raise_error(window_title="Error: could not calculated weighted residues.",
+                                    error_message=e.args[0])
+
+        if mode == 'eva' or mode== 'sim':
+            if zeros_in_data:
+                out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)), y=y)
+            else:
+                out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=y)
         else:
             try_me_out = self.history_manager(pars)
             if try_me_out is not None:
                 pars, pre = try_me_out
                 self.pre = pre
                 self.setPreset(pre[0], pre[1], pre[2], pre[3])
-            out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=raw_y)
+            if zeros_in_data:
+                out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)), y=raw_y)
+            else:
+                out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=raw_y)
         comps = out.eval_components(x=x)
         # fit results to be checked
         for key in out.params:
