@@ -2977,30 +2977,36 @@ class PrettyWidget(QtWidgets.QMainWindow):
             strmode = 'Fitting'
         self.statusBar().showMessage(strmode + ' running.', )
         init = mod.eval(pars, x=x, y=y)
+        print(raw_y)
+        print(np.any(raw_y==0))
+        raw_y[0]=0
+        print(np.any(raw_y==0))
+        print(np.sqrt(self.rows_lightened))
         zeros_in_data=False
+        if np.any(raw_y == 0):
+            zeros_in_data=True
+            print('There were 0\'s in your data. The residuals are therefore not weighted by sqrt(data)!')
         try:
-            if np.any(raw_y == 0):
-                zeros_in_data=True
-                raise Exception('There are zeros in your input data. The reduced chi is therefore not weighted with sqrt(intensity)!')
-        except Exception as e:
-            return self.raise_error(window_title="Error: could not calculated weighted residues.",
-                                    error_message=e.args[0])
+            if mode == 'eva' or mode== 'sim':
+                if zeros_in_data:
+                    out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)), y=y)
+                else:
+                    out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=y)
+            else:
+                try_me_out = self.history_manager(pars)
+                if try_me_out is not None:
+                    pars, pre = try_me_out
+                    self.pre = pre
+                    self.setPreset(pre[0], pre[1], pre[2], pre[3])
+                if zeros_in_data:
+                    out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)), y=raw_y)
 
-        if mode == 'eva' or mode== 'sim':
-            if zeros_in_data:
-                out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)), y=y)
-            else:
-                out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=y)
-        else:
-            try_me_out = self.history_manager(pars)
-            if try_me_out is not None:
-                pars, pre = try_me_out
-                self.pre = pre
-                self.setPreset(pre[0], pre[1], pre[2], pre[3])
-            if zeros_in_data:
-                out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)), y=raw_y)
-            else:
-                out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=raw_y)
+                else:
+                    out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=raw_y)
+
+        except Exception as e:
+            return self.raise_error(window_title="Error: NaN in Model/data!.",
+                                error_message=e.args[0])
         comps = out.eval_components(x=x)
         # fit results to be checked
         for key in out.params:
@@ -3056,7 +3062,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.stats_tab.setItem(5, 0, item)
             item = QtWidgets.QTableWidgetItem(str(format(out.chisqr, self.floating)))
             self.stats_tab.setItem(6, 0, item)
-            item = QtWidgets.QTableWidgetItem(str(format(out.redchi, self.floating)))
+            if zeros_in_data:
+                item = QtWidgets.QTableWidgetItem(str(format(out.redchi, self.floating))+' not weigthed by sqrt(data)')
+            else:
+                item = QtWidgets.QTableWidgetItem(str(format(out.redchi, self.floating)))
             self.stats_tab.setItem(7, 0, item)
             item = QtWidgets.QTableWidgetItem(str(format(out.aic, self.floating)))
             self.stats_tab.setItem(8, 0, item)
