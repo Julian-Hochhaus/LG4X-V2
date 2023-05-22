@@ -68,3 +68,12 @@ def get_wf(filePath):
 		return temp_wf[0]
 	else:
 		return list(set(temp_wf))
+def get_hv(filePath):
+	vamas1 = vamas.VAMAS(filePath) # create instance
+	temp_hv=[]
+	for block in vamas1.blocks:
+		temp_hv.append(block.source_energy)
+	if temp_hv.count(temp_hv[0]) == len(temp_hv):
+		return temp_hv[0]
+	else:
+		return list(set(temp_hv))

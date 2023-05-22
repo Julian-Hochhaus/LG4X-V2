@@ -1675,12 +1675,30 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     if isinstance(wf, float):
                         self.wf= abs(wf)
                         self.wf_item.setText(str(abs(wf))) #we assume in the following, that the wf is defined positive
+                        self.pre[0][4]=self.wf
                     else:
                         self.wf=4.0
                         self.wf_item.setText(str(4.0))
+                        self.pre[0][4]=self.wf
                         raise Exception('Different work functions were detected for the different blocks in your Vamas file. Work function is defaulted to 4.0eV and needs to be adjusted manually.')
                 except Exception as e:
                     return self.raise_error(window_title="Error: could not load VAMAS work function.",
+                                            error_message=e.args[0])
+                try:
+                    hv = vpy.get_hv(cfilePath)
+                    if isinstance(hv, float):
+                        self.hv = hv
+                        self.hv_item.setText(str(hv))
+                        self.pre[0][3] = self.hv
+                    else:
+                        self.hv = 1486.6
+                        self.hv_item.setText(str(1486.6))
+                        self.pre[0][3] = self.hv
+
+                        raise Exception(
+                            'Different source energies were detected for the different blocks in your Vamas file. Source energy (hv) is defaulted to 1486.6eV and needs to be adjusted manually.')
+                except Exception as e:
+                    return self.raise_error(window_title="Error: could not load VAMAS source energy.",
                                             error_message=e.args[0])
 
                 self.list_file.extend(self.list_vamas)
@@ -1727,7 +1745,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 else:
                     self.pre[0][4]=self.wf
             self.hv_item.setText(str(self.hv))
-            self.wf.setText(str(self.wf))
+            self.wf_item.setText(str(self.wf))
             pe=self.hv
             wf=self.wf
 
@@ -2977,11 +2995,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
             strmode = 'Fitting'
         self.statusBar().showMessage(strmode + ' running.', )
         init = mod.eval(pars, x=x, y=y)
-        print(raw_y)
-        print(np.any(raw_y==0))
-        raw_y[0]=0
-        print(np.any(raw_y==0))
-        print(np.sqrt(self.rows_lightened))
         zeros_in_data=False
         if np.any(raw_y == 0):
             zeros_in_data=True
