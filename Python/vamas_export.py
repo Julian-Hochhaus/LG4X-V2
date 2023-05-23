@@ -40,9 +40,9 @@ def list_vms(filePath):
 			Para = block.technique + ' source:' + str(block.source_energy) + ', spec:' + str(ElemD) + ', ' + strMode + ':' + str(block.abscissa_start) + ', dE:' + str(block.abscissa_increment) + ', pnts:' + str(numData)
 			print(Para)
 			if block.technique in ['XPS', 'UPS']:
-				Text = 'BE/eV' + '\t' + 'PE: ' + str(block.source_energy) + ' eV'  + '\n'                                # header of exported txt
+				Text = 'BE/eV' + '\t' + 'PE: ' + str(block.analyser_pass_energy) + ' eV'  + '\n'                                # header of exported txt
 			else:
-				Text = strMode + '\t' + 'EE: ' + str(block.source_energy) + ' eV'  + '\n' 
+				Text = strMode + '\t' + 'EE: ' + str(block.analyser_pass_energy) + ' eV'  + '\n'
 			print(Text)
 			for j in range(numData):
 				if block.technique in ['XPS', 'UPS']:

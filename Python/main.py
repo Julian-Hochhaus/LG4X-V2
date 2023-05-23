@@ -336,6 +336,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.wf_item.textChanged.connect(self.update_com_vals)
         wf_form.addRow("wf: ", self.wf_item)
         plot_settings_layout.addLayout(wf_form)
+        correct_energy_form = QtWidgets.QFormLayout()
+        self.correct_energy_item = DoubleLineEdit()
+        self.correct_energy = 0
+        self.correct_energy_item.setText(str(self.correct_energy))
+        self.correct_energy_item.textChanged.connect(self.update_com_vals)
+        correct_energy_form.addRow("shift energy: ", self.correct_energy_item)
+        plot_settings_layout.addLayout(correct_energy_form)
         layout_top_left.addLayout(plottitle_form)
         layout_top_left.addLayout(plot_settings_layout)
         layout_top_left.addStretch(1)
@@ -534,7 +541,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         pre_pk = [[0, 0], [2, 284.6], [0, 20000], [2, 0.2], [2, 0.2], [2, 0.02], [2, 0], [2, 0], [2, 0.0], [2, 0.026],
                   [2, 1], [2, 0.7], [2, 1], [0, 0], [2, 0.1], [0, 0], [2, 0.5], [0, 0], [2, 1], [0, 0], [2, 1],
                   [0, 0], [2, 1], [0, 0], [2, 1], [0, 0], [2, 1]]
-        self.pre = [[self.idx_bg, self.xmin, self.xmax, self.hv, self.wf], pre_bg, pre_pk, [[0, '', '']] * 19]
+        self.pre = [[self.idx_bg, self.xmin, self.xmax, self.hv, self.wf, self.correct_energy], pre_bg, pre_pk, [[0, '', '']] * 19]
         self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
         self.fitp1.resizeColumnsToContents()
         self.fitp1.resizeRowsToContents()
@@ -921,7 +928,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.wf = float(self.wf_item.text().strip())
         except ValueError:
             self.wf = 0
-        self.pre[0] = [self.idx_bg, self.xmin, self.xmax, self.hv, self.wf]
+        try:
+            self.correct_energy = float(self.correct_energy_item.text().strip())
+        except ValueError:
+            self.correct_energy = 0
+        self.pre[0] = [self.idx_bg, self.xmin, self.xmax, self.hv, self.wf, self.correct_energy]
 
     def setLimits(self):
         self.sub_window = SubWindow(params_tab=self.fitp1_lims)
@@ -1259,6 +1270,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.hv_item.setText(str(format(self.hv, self.floating)))
             self.wf = list_pre_com[4]
             self.wf_item.setText(str(format(self.wf, self.floating)))
+            if len(list_pre_com)==6:
+                self.correct_energy = list_pre_com[5]
+                self.correct_energy_item.setText(str(format(self.correct_energy, self.floating)))
         self.displayChoosenBG.setText(
             'Choosen Background: {}'.format('+ '.join([dictBG[str(idx)] for idx in self.idx_bg])))
         # load preset for bg
@@ -1474,11 +1488,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # [BG type]]\n\n' + str(self.comboBox_bg.currentIndex()) + '\n\n[[BG parameters]]\n\n' + str(list_pre_bg) +
         # '\n\n[[component parameters]]\n\n' + str(list_pre_pk) print(Text)
 
-        self.parText = [[self.idx_bg, self.xmin, self.xmax, self.hv, self.wf]]
+        self.parText = [[self.idx_bg, self.xmin, self.xmax, self.hv, self.wf, self.correct_energy]]
         self.parText.append(list_pre_bg)
         self.parText.append(list_pre_pk)
         self.parText.append(list_pre_lims)
-        self.pre = [[self.idx_bg, self.xmin, self.xmax, self.hv, self.wf]]
+        self.pre = [[self.idx_bg, self.xmin, self.xmax, self.hv, self.wf, self.correct_energy]]
         self.pre.append(list_pre_bg)
         self.pre.append(list_pre_pk)
         self.pre.append(list_pre_lims)
@@ -1744,9 +1758,16 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.wf=4
                 else:
                     self.pre[0][4]=self.wf
+            if self.pre[0][5] == None:
+                if len(self.correct_energy) == 0:
+                    self.pre[0][5] = 0
+                    self.correct_energy = 0
+                else:
+                    self.pre[0][5] = self.correct_energy
             self.hv_item.setText(str(self.hv))
             self.wf_item.setText(str(self.wf))
-            pe=self.hv
+            self.correct_energy_item.setText(str(self.correct_energy))
+            hv=self.hv
             wf=self.wf
 
             ymin, ymax = self.ax.get_ylim()
@@ -1758,7 +1779,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         if xmin > xmax:
                             en = float(alka['be'][orb])
                         else:
-                            en = pe - wf - float(alka['be'][orb])
+                            en = hv - wf - float(alka['be'][orb])-self.correct_energy
                         if (xmin > xmax and xmin > en > xmax) or (xmin < xmax and xmin < en < xmax):
                             elem_x = np.asarray([en])
                             elem_y = np.asarray([float(alka['rsf'][orb])])
@@ -1770,7 +1791,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if len(aes['trans']) > 0:
                     for orb in range(len(aes['trans'])):
                         if xmin > xmax:
-                            en = pe - wf - float(aes['ke'][orb])
+                            en = hv - wf - float(aes['ke'][orb])-self.correct_energy
                         else:
                             en = float(aes['ke'][orb])
                         if (xmin > xmax and xmin > en > xmax) or (xmin < xmax and xmin < en < xmax):
@@ -1856,9 +1877,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
             if strpe[0] == 'PE:' and strpe[2] == 'eV':
                 pe = float(strpe[1])
-                item = QtWidgets.QTableWidgetItem(str(pe))
-                self.fitp0.setItem(0, 9, item)
-                self.fitp0.setItem(0, 8, QtWidgets.QTableWidgetItem('Pass energy (eV)'))
+                print('Current Pass energy is PE= ', pe, 'eV')
+                #item = QtWidgets.QTableWidgetItem(str(pe))
+                #self.fitp0.setItem(0, 9, item)
+                #self.fitp0.setItem(0, 8, QtWidgets.QTableWidgetItem('Pass energy (eV)'))
             # plt.cla()
             self.ar.cla()
             self.ax.cla()
@@ -2902,6 +2924,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
         plottitle = self.plottitle.text()
         # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
         x0 = self.df[:, 0]
+        x0_corrected=np.copy(x0)
+        if self.correct_energy is not None:
+            x0_corrected -= self.correct_energy
         y0 = self.df[:, 1]
         # print(x0[0], x0[len(x0)-1])
 
@@ -2912,20 +2937,20 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.ar.cla()
         # ax = self.figure.add_subplot(211)
         if mode == 'fit':
-            self.ax.plot(x0, y0, 'o', color='b', label='raw')
+            self.ax.plot(x0_corrected, y0, 'o', color='b', label='raw')
         else:
             # simulation mode
             if mode == 'sim':
-                self.ax.plot(x0, y0, ',', color='b', label='raw')
+                self.ax.plot(x0_corrected, y0, ',', color='b', label='raw')
             # evaluation mode
             else:
-                self.ax.plot(x0, y0, 'o', mfc='none', color='b', label='raw')
+                self.ax.plot(x0_corrected, y0, 'o', mfc='none', color='b', label='raw')
 
-        if x0[0] > x0[-1]:
+        if x0_corrected[0] > x0_corrected[-1]:
             self.ax.set_xlabel('Binding energy (eV)', fontsize=11)
         else:
             self.ax.set_xlabel('Energy (eV)', fontsize=11)
-        plt.xlim(x0[0], x0[-1])
+        plt.xlim(x0_corrected[0], x0_corrected[-1])
         self.ax.grid(True)
         self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
         print('*******')
@@ -2944,23 +2969,26 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         # if no range is specified, fill it from data
         if self.pre[0][1] is None or len(str(self.pre[0][1])) == 0:
-            self.pre[0][1] = x0[0]
+            self.pre[0][1] = x0_corrected[0]
         if self.pre[0][2] is None or len(str(self.pre[0][2])) == 0:
-            self.pre[0][2] = x0[-1]
+            self.pre[0][2] = x0_corrected[-1]
         # check if limits are out of of data range, If incorrect, back to default
         x1 = self.pre[0][1]
-        if ((x1 > x0[0] or x1 < x0[-1]) and x0[0] > x0[-1]) or (
-                (x1 < x0[0] or x1 > x0[-1]) and x0[0] < x0[-1]):
-            x1 = x0[0]
+        if ((x1 > x0_corrected[0] or x1 < x0_corrected[-1]) and x0_corrected[0] > x0[-1]) or (
+                (x1 < x0_corrected[0] or x1 > x0_corrected[-1]) and x0_corrected[0] < x0_corrected[-1]):
+            x1 = x0_corrected[0]
             self.pre[0][1] = x1
         x2 = self.pre[0][2]
-        if ((x2 < x0[-1] or x2 > x1) and x0[0] > x0[-1]) or (
-                (x2 > x0[-1] or x2 < x1) and x0[0] < x0[-1]):
-            x2 = x0[-1]
+        if ((x2 < x0_corrected[-1] or x2 > x1) and x0_corrected[0] > x0_corrected[-1]) or (
+                (x2 > x0_corrected[-1] or x2 < x1) and x0_corrected[0] < x0[-1]):
+            x2 = x0_corrected[-1]
             self.pre[0][2] = x2
 
-        [x, y] = xpy.fit_range(x0, y0, x1, x2)
+        [x, y] = xpy.fit_range(x0_corrected, y0, x1, x2)
         raw_y = y.copy()
+        raw_x = x.copy()
+        if self.correct_energy is not None:
+            raw_x += self.correct_energy
         # BG model selection and call shirley and tougaard
         # colPosition = self.fitp1.columnCount()
 
@@ -3154,19 +3182,20 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # for key in out.params:
         # print(key, "=", out.params[key].value)
         # make dataFrame and concat to export
-        df_x = pd.DataFrame(x, columns=['x'])
+        df_raw_x = pd.DataFrame(raw_x, columns=['raw_x'])
         df_raw_y = pd.DataFrame(raw_y, columns=['raw_y'])
+        df_corrected_x = pd.DataFrame(x, columns=['corrected x'])
         df_y = pd.DataFrame(raw_y - sum_background - bg_mod, columns=['data-bg'])
         df_pks = pd.DataFrame(out.best_fit - sum_background - bg_mod, columns=['sum_components'])
         df_sum = pd.DataFrame(out.best_fit, columns=['sum_fit'])
         df_b = pd.DataFrame(sum_background + bg_mod, columns=['bg'])
-        self.result = pd.concat([df_x, df_raw_y, df_y, df_pks, df_b, df_sum], axis=1)
+        self.result = pd.concat([df_raw_x, df_raw_y,df_corrected_x, df_y, df_pks, df_b, df_sum], axis=1)
         df_bg_comps = pd.DataFrame.from_dict(self.bg_comps, orient='columns')
         self.result = pd.concat([self.result, df_bg_comps], axis=1)
         for index_pk in range(int(self.fitp1.columnCount() / 2)):
             strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
             strind = strind.split(":", 1)[0]
-            df_c = pd.DataFrame(comps[strind + str(index_pk + 1) + '_'], columns=[strind + str(index_pk + 1)])
+            df_c = pd.DataFrame(comps[strind + str(index_pk + 1) + '_'], columns=[self.fitp1.horizontalHeaderItem(2*index_pk+1).text()])
             self.result = pd.concat([self.result, df_c], axis=1)
         print(out.fit_report())
         lim_reached = False
