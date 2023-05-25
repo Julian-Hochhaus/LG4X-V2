@@ -2240,6 +2240,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     pars[strind + str(index_pk + 1) + '_center'].vary = False
             if self.pre[2][2][2 * index_pk + 1] is not None and len(str(self.pre[2][2][2 * index_pk + 1])) > 0:
                 pars[strind + str(index_pk + 1) + '_amplitude'].value = float(self.pre[2][2][2 * index_pk + 1])
+                pars[strind + str(index_pk + 1) + '_amplitude'].min = 0.0
                 if self.pre[2][2][2 * index_pk] == 2:
                     pars[strind + str(index_pk + 1) + '_amplitude'].vary = False
             if self.pre[2][14][2 * index_pk + 1] is not None and len(str(self.pre[2][14][2 * index_pk + 1])) > 0:
@@ -2254,61 +2255,71 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if index == 0 or index == 2 or index == 4 or index == 5 or index == 6 or index == 7 or index == 8 or index == 12:
                 if self.pre[2][4][2 * index_pk + 1] is not None and len(str(self.pre[2][4][2 * index_pk + 1])) > 0:
                     pars[strind + str(index_pk + 1) + '_sigma'].value = float(self.pre[2][4][2 * index_pk + 1])
+                    pars[strind + str(index_pk + 1) + '_sigma'].min = 0
                     if self.pre[2][4][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_sigma'].vary = False
                 if self.pre[2][20][2 * index_pk + 1] is not None and len(str(self.pre[2][20][2 * index_pk + 1])) > 0:
                     pars.add(strind + str(index_pk + 1) + "_gaussian_ratio",
-                             value=float(self.pre[2][20][2 * index_pk + 1]))
+                             value=float(self.pre[2][20][2 * index_pk + 1]), min=0)
                     if self.pre[2][20][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_gaussian_ratio'].vary = False
             if index == 10 or index == 11:
                 if self.pre[2][4][2 * index_pk + 1] is not None and len(str(self.pre[2][4][2 * index_pk + 1])) > 0:
                     pars[strind + str(index_pk + 1) + '_gaussian_sigma'].value = float(self.pre[2][4][2 * index_pk + 1])
+                    pars[strind + str(index_pk + 1) + '_gaussian_sigma'].min = 0
                     if self.pre[2][4][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_gaussian_sigma'].vary = False
                 if self.pre[2][20][2 * index_pk + 1] is not None and len(str(self.pre[2][20][2 * index_pk + 1])) > 0:
                     pars.add(strind + str(index_pk + 1) + "_gaussian_ratio",
-                             value=float(self.pre[2][20][2 * index_pk + 1]))
+                             value=float(self.pre[2][20][2 * index_pk + 1]), min=0)
                     if self.pre[2][20][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_gaussian_ratio'].vary = False
             if index == 1 or index == 3 or index == 9 or index == 10 or index == 11:
                 if self.pre[2][3][2 * index_pk + 1] is not None and len(str(self.pre[2][3][2 * index_pk + 1])) > 0:
                     pars[strind + str(index_pk + 1) + '_sigma'].value = float(self.pre[2][3][2 * index_pk + 1])
+                    pars[strind + str(index_pk + 1) + '_sigma'].min = 0
                     if self.pre[2][3][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_sigma'].vary = False
                 if self.pre[2][18][2 * index_pk + 1] is not None and len(str(self.pre[2][18][2 * index_pk + 1])) > 0:
                     pars.add(strind + str(index_pk + 1) + "_lorentzian_ratio",
-                             value=float(self.pre[2][18][2 * index_pk + 1]))
+                             value=float(self.pre[2][18][2 * index_pk + 1]), min=0)
                     if self.pre[2][18][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_lorentzian_ratio'].vary = False
             if index == 2 or index == 6:
                 if self.pre[2][3][2 * index_pk + 1] is not None and len(str(self.pre[2][3][2 * index_pk + 1])) > 0:
                     pars[strind + str(index_pk + 1) + '_gamma'].value = float(self.pre[2][3][2 * index_pk + 1])
+                    pars[strind + str(index_pk + 1) + '_gamma'].min = 0
                     if self.pre[2][3][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_gamma'].vary = False
                 if self.pre[2][18][2 * index_pk + 1] is not None and len(str(self.pre[2][18][2 * index_pk + 1])) > 0:
                     pars.add(strind + str(index_pk + 1) + "_lorentzian_ratio",
-                             value=float(self.pre[2][18][2 * index_pk + 1]))
+                             value=float(self.pre[2][18][2 * index_pk + 1]), min=0)
                     if self.pre[2][18][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_lorentzian_ratio'].vary = False
             if index == 4 or index == 5 or index == 9 or index == 10 or index == 11:
                 if self.pre[2][5][2 * index_pk + 1] is not None and len(str(self.pre[2][5][2 * index_pk + 1])) > 0:
                     pars[strind + str(index_pk + 1) + '_gamma'].value = float(self.pre[2][5][2 * index_pk + 1])
+                    pars[strind + str(index_pk + 1) + '_gamma'].min = 0
+                    pars[strind + str(index_pk + 1) + '_gamma'].max=1
                     if self.pre[2][5][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_gamma'].vary = False
                 if self.pre[2][22][2 * index_pk + 1] is not None and len(str(self.pre[2][22][2 * index_pk + 1])) > 0:
                     pars.add(strind + str(index_pk + 1) + "_gamma_ratio",
-                             value=float(self.pre[2][22][2 * index_pk + 1]))
+                             value=float(self.pre[2][22][2 * index_pk + 1]), min=0)
                     if self.pre[2][22][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_gamma_ratio'].vary = False
             if index == 3:
                 if self.pre[2][6][2 * index_pk + 1] is not None and len(str(self.pre[2][6][2 * index_pk + 1])) > 0:
                     pars[strind + str(index_pk + 1) + '_fraction'].value = float(self.pre[2][6][2 * index_pk + 1])
+                    pars[strind + str(index_pk + 1) + '_fraction'].min = 0
+                    pars[strind + str(index_pk + 1) + '_fraction'].max = 1
                     if self.pre[2][6][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_fraction'].vary = False
             if index == 6:
                 if self.pre[2][7][2 * index_pk + 1] is not None and len(str(self.pre[2][7][2 * index_pk + 1])) > 0:
                     pars[strind + str(index_pk + 1) + '_skew'].value = float(self.pre[2][7][2 * index_pk + 1])
+                    pars[strind + str(index_pk + 1) + '_skew'].min = -1
+                    pars[strind + str(index_pk + 1) + '_skew'].max = 1
                     if self.pre[2][7][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_skew'].vary = False
             if index == 7:
@@ -2319,6 +2330,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if index == 12:
                 if self.pre[2][9][2 * index_pk + 1] is not None and len(str(self.pre[2][9][2 * index_pk + 1])) > 0:
                     pars[strind + str(index_pk + 1) + '_kt'].value = float(self.pre[2][9][2 * index_pk + 1])
+                    pars[strind + str(index_pk + 1) + '_kt'].min = 0
+                    pars[strind + str(index_pk + 1) + '_kt'].max = 1
                     if self.pre[2][9][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_kt'].vary = False
 
@@ -2328,21 +2341,22 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     if self.pre[2][10][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_soc'].vary = False
                 if self.pre[2][24][2 * index_pk + 1] is not None and len(str(self.pre[2][24][2 * index_pk + 1])) > 0:
-                    pars.add(strind + str(index_pk + 1) + "_soc_ratio", value=float(self.pre[2][24][2 * index_pk + 1]))
+                    pars.add(strind + str(index_pk + 1) + "_soc_ratio", value=float(self.pre[2][24][2 * index_pk + 1]), min=0)
                     if self.pre[2][24][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_soc_ratio'].vary = False
                 if self.pre[2][11][2 * index_pk + 1] is not None and len(str(self.pre[2][11][2 * index_pk + 1])) > 0:
                     pars[strind + str(index_pk + 1) + '_height_ratio'].value = float(self.pre[2][11][2 * index_pk + 1])
+                    pars[strind + str(index_pk + 1) + '_height_ratio'].min = 0
                     if self.pre[2][11][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_height_ratio'].vary = False
                 if self.pre[2][26][2 * index_pk + 1] is not None and len(str(self.pre[2][26][2 * index_pk + 1])) > 0:
                     pars.add(strind + str(index_pk + 1) + "_rel_height_ratio",
-                             value=float(self.pre[2][26][2 * index_pk + 1]))
+                             value=float(self.pre[2][26][2 * index_pk + 1]), min=0)
                     if self.pre[2][26][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_rel_height_ratio'].vary = False
                 if self.pre[2][12][2 * index_pk + 1] is not None and len(str(self.pre[2][12][2 * index_pk + 1])) > 0:
-                    pars[strind + str(index_pk + 1) + '_fct_coster_kronig'].value = float(
-                        self.pre[2][12][2 * index_pk + 1])
+                    pars[strind + str(index_pk + 1) + '_fct_coster_kronig'].value = float(self.pre[2][12][2 * index_pk + 1])
+                    pars[strind + str(index_pk + 1) + '_fct_coster_kronig'].min = 0
                     if self.pre[2][12][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_fct_coster_kronig'].vary = False
             pars = self.ratio_setup(pars, index_pk, strind, index)
@@ -2953,8 +2967,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         plt.xlim(x0_corrected[0], x0_corrected[-1])
         self.ax.grid(True)
         self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
-        print('*******')
-        print(plottitle)
         if len(plottitle) == 0:
             if mode == 'sim':
                 # simulation mode
