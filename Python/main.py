@@ -2774,7 +2774,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     str(format(out.params[strind + str(index_pk + 1) + '_height'].value, self.floating)))
                 self.res_tab.setItem(5, index_pk, item)
                 y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
-                area = integrate.simps([y for y, x in zip(y_area, x)])
+                area = abs(integrate.simps([y for y, x in zip(y_area, x)], x))
                 item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                 self.res_tab.setItem(7, index_pk, item)
                 item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
@@ -2795,7 +2795,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         self.res_tab.setItem(row, index_pk, item)
                     # included area
                     y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
-                    area = integrate.simps([y for y, x in zip(y_area, x)])
+                    area = abs(integrate.simps([y for y, x in zip(y_area, x)], x))
                     item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                     self.res_tab.setItem(7, index_pk, item)
                     item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
@@ -2831,7 +2831,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     item = QtWidgets.QTableWidgetItem("Error in calculation")
                     self.res_tab.setItem(3, index_pk, item)
                 # included area
-                area = integrate.simps([y for y, x in zip(y_area, x)])
+                area = abs(integrate.simps([y for y, x in zip(y_area, x)], x))
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f'))))
                 self.res_tab.setItem(7, index_pk, item)
@@ -2895,7 +2895,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     str(format(area_p2, '.1f') + r' ({}%)'.format(format(area_p2 / area_ges * 100, '.2f'))))
                 self.res_tab.setItem(8, index_pk, item)
                 y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
-                area = integrate.simps([y for y, x in zip(y_area, x)])
+                area = abs(integrate.simps([y for y, x in zip(y_area, x)], x))
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f'))))
                 self.res_tab.setItem(9, index_pk, item)
