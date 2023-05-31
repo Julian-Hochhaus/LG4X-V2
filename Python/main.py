@@ -1989,9 +1989,14 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def clickOnBtnBG(self):
         checked_actions = [action for action in self.bgMenu.actions() if action.isChecked()]
         idx_bg = set()
+        self.fixedBG.setChecked(False)
+        self.fixedBG.setEnabled(True)
         for checked_action in checked_actions:
             if checked_action.text() == '&Static &Shirley BG':
                 idx_bg.add(0)
+                self.fixedBG.setChecked(False)
+                self.fixedBG.setEnabled(False)
+                self.fixedBG.setToolTip('Keeping the background fixed is not available \n if Static Shirley BG/Static Tougaard BG is used.')
             elif checked_action.text() == '&Active &Shirley BG' and '&Static &Shirley BG' in [checked_act.text() for
                                                                                               checked_act in
                                                                                               checked_actions]:
@@ -2005,6 +2010,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                                                                                   checked_actions]:
                 idx_bg.add(100)
             elif checked_action.text() == '&Static &Tougaard BG':
+                self.fixedBG.setChecked(False)
+                self.fixedBG.setEnabled(False)
+                self.fixedBG.setToolTip('Keeping the background fixed is not available \n if Static Shirley BG/Static Tougaard BG is used.')
                 idx_bg.add(1)
             elif checked_action.text() == '&Active &Tougaard BG' and '&Static &Tougaard BG' in [
                 checked_act.text() for checked_act in checked_actions]:
