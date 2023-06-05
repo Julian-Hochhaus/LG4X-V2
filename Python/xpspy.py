@@ -71,12 +71,12 @@ def shirley_calculate(x, y, tol=1e-5, maxit=10):
     # Make sure we've been passed arrays and not lists.
     # x = array(x)
     # y = array(y)
-
+    n=len(y)
     # Sanity check: Do we actually have data to process here?
     # print(any(x), any(y), (any(x) and any(y)))
     if not (any(x) and any(y)):
         print("One of the arrays x or y is empty. Returning zero background.")
-        return np.asarray(x * 0)
+        return x * 0
 
     # Next ensure the energy values are *decreasing* in the array,
     # if not, reverse them.
@@ -88,43 +88,30 @@ def shirley_calculate(x, y, tol=1e-5, maxit=10):
         is_reversed = False
 
     # Locate the biggest peak.
-    maxidx = abs(y - y.max()).argmin()
 
-    # It's possible that maxidx will be 0 or -1. If that is the case,
-    # we can't use this algorithm, we return a zero background.
-    if maxidx == 0 or maxidx >= len(y) - 1:
-        print("Boundaries too high for algorithm: returning a zero background.")
-        return np.asarray(x * 0)
-
-    # Locate the minima either side of maxidx.
-    lmidx = abs(y[0:maxidx] - y[0:maxidx].min()).argmin()
-    rmidx = abs(y[maxidx:] - y[maxidx:].min()).argmin() + maxidx
-
-    xl = x[lmidx]
-    yl = y[lmidx]
-    xr = x[rmidx]
-    yr = y[rmidx]
+    yl = y[0]
+    yr = y[-1]
 
     # Max integration index
-    imax = rmidx - 1
+    imax = n - 1
 
     # Initial value of the background shape B. The total background S = yr + B,
     # and B is equal to (yl - yr) below lmidx and initially zero above.
     B = y * 0
-    B[:lmidx] = yl - yr
+
     Bnew = B.copy()
 
     it = 0
     while it < maxit:
         # Calculate new k = (yl - yr) / (int_(xl)^(xr) J(x') - yr - B(x') dx')
         ksum = 0.0
-        for i in range(lmidx, imax):
+        for i in range(n-1):
             ksum += (x[i] - x[i + 1]) * 0.5 * (y[i] + y[i + 1] - 2 * yr - B[i] - B[i + 1])
         k = (yl - yr) / ksum
         # Calculate new B
-        for i in range(lmidx, rmidx):
+        for i in range(n):
             ysum = 0.0
-            for j in range(i, imax):
+            for j in range(i, n-1):
                 ysum += (x[j] - x[j + 1]) * 0.5 * (y[j] + y[j + 1] - 2 * yr - B[j] - B[j + 1])
             Bnew[i] = k * ysum
         # If Bnew is close to B, exit.
@@ -142,10 +129,10 @@ def shirley_calculate(x, y, tol=1e-5, maxit=10):
         print("Max iterations exceeded before convergence.")
     if is_reversed:
         # print("Shirley BG: tol (ini = ", tol, ") , iteration (max = ", maxit, "): ", it)
-        return np.asarray((yr + B)[::-1])
+        return (yr + B)[::-1]
     else:
         # print("Shirley BG: tol (ini = ", tol, ") , iteration (max = ", maxit, "): ", it)
-        return np.asarray(yr + B)
+        return yr + B
 
 
 def tougaard_calculate(x, y, tb=2866, tc=1643, tcd=1, td=1, maxit=100):
