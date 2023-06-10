@@ -1,4 +1,3 @@
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7777422.svg)](https://doi.org/10.5281/zenodo.7777422)
 ## Introduction
 LG4X-V2 is based on the great work of  [Hideki NAKAJIMA](https://github.com/hidecode221b) who developed the software [LG4X](https://github.com/hidecode221b/LG4X). LGX4 was published under the MIT License. For more information please refer to the License of [LG4X-V2](https://github.com/Julian-Hochhaus/LG4X-V2/blob/638f548e9daca3363f4a7f898de0cc8c1303c80b/LICENSE). The following README was not yet updated and was written by [Hideki NAKAJIMA](https://github.com/hidecode221b) for [LG4X](https://github.com/hidecode221b/LG4X), therefore the interface of LG4X-V2 is different to the examples shown in the README and several features of LG4X-V2 are not yet documented!
 
@@ -129,7 +128,7 @@ You can change the HOME directory in the main.py edited in a way below. `#` make
 
 ## Citing
 
-[https://doi.org/10.5281/zenodo.3901523](https://doi.org/10.5281/zenodo.3901523)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7777422.svg)](https://doi.org/10.5281/zenodo.7777422)
 
 ## Video
 
