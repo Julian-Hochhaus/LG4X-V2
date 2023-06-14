@@ -1,9 +1,36 @@
 ## Introduction
  LG4X-V2 is an open-source GUI for X-ray photoemission spectroscopy (XPS) curve fitting based on the python lmfit package. It streamlines the fitting process for easier validation and consistency. It is inspired by its predecessor software [LG4X](https://github.com/hidecode221b/LG4X) by [Hideki Nakajima](https://github.com/hidecode221b).
 
-LG4X-V2 is &copy; 2022-{{ "now" | date: "%Y" }} by [Julian Andreas Hochhaus](https://github.com/Julian-Hochhaus). It is based on [LG4X](https://github.com/hidecode221b/LG4X)  &copy; 2020-{{ "now" | date: "%Y" }} by [Hideki Nakajima](https://github.com/hidecode221b).
+LG4X-V2 is &copy; 2022-2023 by [Julian Andreas Hochhaus](https://github.com/Julian-Hochhaus). It is based on [LG4X](https://github.com/hidecode221b/LG4X)  &copy; 2020-2023 by [Hideki Nakajima](https://github.com/hidecode221b).
 
 LG4X-V2 is build upon the ['lmfit'-package](https://github.com/lmfit/lmfit-py) using 'PyQt5' for the GUI.
+
+## Installation:
+
+LG4X-V2 is build upon the 'lmfit'-package using 'PyQt5' for the GUI.
+LG4X-V2 could be installed by cloning the repository and afterwards installing all package requirements:
+
+```
+git clone https://github.com/Julian-Hochhaus/LG4X-V2.git
+cd LG4X-V2/
+```
+
+LG4X-V2 depends on the following packages and versions:
+```
+asteval>=0.9.28
+lmfit>=1.1.0
+matplotlib>=3.6
+numpy>=1.19
+pandas>=2.0
+PyQt5>=5.15
+scipy>=1.6
+uncertainties>=3.1.4
+```
+
+These requirements could be installed using ``pip``:
+```
+pip install -r requirements.txt
+```
 
 ### Cite the project
 
@@ -36,76 +63,35 @@ We would love your help, either as ideas, documentation, or code. If you have a 
 If you need any additional help, please visit our [GitHub discussions page](https://github.com/Julian-Hochhaus/LG4X-V2/discussions).
 #### Thank you to the contributors of LG4X-V2!
 
-<ul class="list-style-none">
-{% for contributor in site.github.contributors %}
-  <li class="d-inline-block mr-1">
-     <a href="{{ contributor.html_url }}"><img src="{{ contributor.avatar_url }}" width="32" height="32" alt="{{ contributor.login }}"></a>
-  </li>
-{% endfor %}
-</ul>
+
+
+<div align="center">
+
+[<img src="https://avatars.githubusercontent.com/u/22680429?v=4" width="100" height="100">](https://github.com/Julian-Hochhaus) | [<img src="https://avatars.githubusercontent.com/u/3158208?v=4" width="100" height="100">](https://github.com/hidecode221b) | [<img src="https://avatars.githubusercontent.com/u/100384348?v=4" width="100" height="100">](https://github.com/Hexanders) | [<img src="https://avatars.githubusercontent.com/u/32986815?v=4" width="100" height="100">](https://github.com/SHilgers) | [<img src="https://avatars.githubusercontent.com/in/29110?v=4" width="100" height="100">](https://github.com/apps/dependabot) |
+|---|---|---|---|---|
+[Julian-Hochhaus](https://github.com/Julian-Hochhaus) | [hidecode221b](https://github.com/hidecode221b) | [Hexanders](https://github.com/Hexanders) | [SHilgers](https://github.com/SHilgers) | [dependabot[bot]](https://github.com/apps/dependabot) |
+
+</div>
+
+
+
+
+
+
+
 
 ### Code of Conduct
 
 LG4X-V2 is committed to fostering a welcoming community. Please have a look at our [Code of Conduct](https://github.com/Julian-Hochhaus/LG4X-V2/blob/master/CODE_OF_CONDUCT.md).
 
 
-## Note: **The following README was not yet updated and was written by [Hideki NAKAJIMA](https://github.com/hidecode221b) for [LG4X](https://github.com/hidecode221b/LG4X), therefore the interface of LG4X-V2 is different to the examples shown in the README and several features of LG4X-V2 are not yet documented!**
+## Note: 
+
+**The following README was not yet updated and was written by [Hideki NAKAJIMA](https://github.com/hidecode221b) for [LG4X](https://github.com/hidecode221b/LG4X), therefore the interface of LG4X-V2 is different to the examples shown in the README and several features of LG4X-V2 are not yet documented!**
 
 
 LG4X provides a graphical user interface for [XPS](https://en.wikipedia.org/wiki/X-ray_photoelectron_spectroscopy) curve fitting analysis based on the [lmfit](https://pypi.org/project/lmfit/) package, which is the non-linear least-square minimization method on python platform. LG4X facilitates the curve fitting analysis for python beginners. LG4X was developed on [Python 3](https://www.python.org/), and [PyQt5](https://pypi.org/project/PyQt5/) was used for its graphical interface design. [Shirley](https://doi.org/10.1103/PhysRevB.5.4709) and [Tougaard](https://doi.org/10.1002/sia.740110902) iterated methods are implemented as a supplementary code for XPS background subtraction. LG4X tidies up all fitting parameters with their bound conditions in table forms. Fitting parameters can be imported and exported as a preset file before and after analysis to streamline the fitting procedures. Fitting results are also exported as a text for parameters and csv file for spectral data. In addition, LG4X simulates the curve without importing data and evaluates the initial parameters over the data plot prior to optimization.
 ## Methods
-### Installation
-Download and install [Python 3](https://www.python.org/) and additional packages.
-
-> `brew install python3`
->
-
-If you want to include the background into the fit-model, the so-called *active background method* as described i.e. by [Alberto Herrera-Gomez: The active background method in XPS data peak-fitting](https://rdataa.com/static/docs/Active_Background.pdf) , you need to install the latest development version of lmfit by:
- > `git clone https://github.com/lmfit/lmfit-py.git`
- 
- > `python setup.py install`
- 
-
-Otherwise, install lmfit via pip:
-
-> `pip3 install lmfit`
->
-
-Additionally, you need to install:
-
-> `pip3 install pandas`
->
-> `pip3 install matplotlib`
->
-> `pip3 install PyQt5`
-
-The OS dependence of installation of python, pip, and brew is described in the [link](https://appdividend.com/2020/04/22/how-to-upgrade-pip-in-mac-update-pip-on-windows-and-linux/).
-
-#### Update package if necessary
-
-> `pip3 install --upgrade lmfit`
-
-#### Miniconda3
-
-If you have Miniconda3, you can create the environment to install lmfit from [conda-forge](https://github.com/conda-forge/lmfit-feedstock). Below is an example for environment name *vpy3.9* on python version 3.9 ([YouTube video](https://youtu.be/cEbo6ZHlK-U)). 
-
-> `conda config --add channels conda-forge`
->
-> `conda config --set channel_priority strict`
->
-> `conda create -n vpy3.9 python=3.9`
->
-> `conda activate vpy3.9`
->
-> `conda install lmfit`
->
-> `conda install matplotlib`
->
-> `conda install pandas`
-> 
-> `python main.python`
->
-
 
 #### Supplementary codes for XPS analysis
 
@@ -312,26 +298,12 @@ You can find the VAMAS format data of various spectra from [Spectroscopy Hub](ht
 
 ## Planned features/Improvements
 
-- [ ] redesign the parameter table so that the limits are placed next to the corresponding parameters, redesign clutty GUI [#16](https://github.com/Julian-Hochhaus/LG4X-V2/issues/16) e.g. by using tabs for parameters, limits, results etc. (Add Tab indicator for the user as a reminder that limits were set)
 - [ ] add tooltip info to GUI [#18](https://github.com/Julian-Hochhaus/LG4X-V2/issues/18)
 - [ ] rework the export files, so that additional informations such as fwhm and areas are exported in readable format as well
-- [ ] check lmfit version and catch UserWarning for independent vars as described in [#10](https://github.com/Julian-Hochhaus/LG4X-V2/issues/10)
 - [ ] Pause/Interrupt fit button [#5](https://github.com/Julian-Hochhaus/LG4X-V2/issues/5)
 - [ ] rewrite the Readme to explain the features introduced in LG4X-V2
-- [ ] Undo button (log of last parameter sets, as suggested in [#13](https://github.com/Julian-Hochhaus/LG4X-V2/issues/13), introduced on [dev branch]
-(https://github.com/Julian-Hochhaus/LG4X-V2/tree/undo-fct))
 - [ ] Export fit parameters as readable table to be able to use them in e.g. a presentation
 - [ ] Introduce 'Clear all' button for clearing all parameters/limits etc.
-- [x] remove fwhm's and area calculation from the usermodels and instead calculate them after fitting based on the ModelResult() parameters to be able to use error propagation [#27](https://github.com/Julian-Hochhaus/LG4X-V2/issues/27)
-- [x] introduce relative parameter for gamma and coster-kronig factor
-- [x] save the active background parameter checkbox to the parameter-files.
-- [x] keep the programm running if an error occurs in the fitting procedure
-     - error handling introduced for errors during file import, parameter import, saving parameters, exporting results (Thanks to [@Hexanders](https://github.com/Hexanders))
-
-- [x] show only relevant parameter for the used model and grey the others out [#17](https://github.com/Julian-Hochhaus/LG4X-V2/issues/17)
-- [x] add asymmetry ratio
-- [x] add limits for all parameters
-- [x] introduce class/function which converts .dat export/internal preset array to lmfit parameter set and vice versa 
 
 
 
