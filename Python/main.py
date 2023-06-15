@@ -562,9 +562,14 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp1_lims.setHeaderTooltips()
         list_res_row = ['gaussian_fwhm', 'lorentzian_fwhm_p1', 'lorentzian_fwhm_p2', 'fwhm_p1', 'fwhm_p2', 'height_p1',
                         'height_p2', 'approx. area_p1', 'approx. area_p2', 'area_total']
-        self.res_tab = QtWidgets.QTableWidget(len(list_res_row), len(list_col))
+
+        def res_edit_condition(logicalIndex):
+            return logicalIndex % 1== 0
+
+        self.res_tab = EditableHeaderTableWidget(len(list_res_row), len(list_col) , res_edit_condition)
         self.res_tab.setHorizontalHeaderLabels(list_col)
         self.res_tab.setVerticalHeaderLabels(list_res_row)
+        self.res_tab.headerTextChanged.connect(self.updateHeader_res)
         self.res_tab.resizeColumnsToContents()
         self.res_tab.resizeRowsToContents()
         layout_bottom_right.addWidget(self.res_tab)
@@ -596,9 +601,17 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def updateHeader_lims(self, logicalIndex, new_label):
         if logicalIndex%2!=0:
             self.fitp1_lims.horizontalHeaderItem(int((logicalIndex-1)/2*3)).setText(new_label)
+            self.res_tab.horizontalHeaderItem(int((logicalIndex-1)/2)).setText(new_label)
+
     def updateHeader_comps(self, logicalIndex, new_label):
         if logicalIndex%3==0:
             self.fitp1.horizontalHeaderItem(int(logicalIndex/3*2+1)).setText(new_label)
+            self.res_tab.horizontalHeaderItem(int(logicalIndex / 3)).setText(new_label)
+
+    def updateHeader_res(self, logicalIndex, new_label):
+        self.fitp1.horizontalHeaderItem(int(logicalIndex * 2 + 1)).setText(new_label)
+        self.fitp1_lims.horizontalHeaderItem(int(logicalIndex * 3)).setText(new_label)
+
     def show_citation_dialog(self):
         citation_text = 'J. A. Hochhaus and H. Nakajima, LG4X-V2 (Zenodo, 2023), DOI:10.5281/zenodo.7871174'
         msg_box = QtWidgets.QMessageBox(self)
