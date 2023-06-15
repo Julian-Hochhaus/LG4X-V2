@@ -17,6 +17,7 @@ from lmfit import Model
 from matplotlib import style
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.widgets import RectangleSelector
 
 import vamas_export as vpy
 import xpspy as xpy
@@ -1802,7 +1803,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             self.ax.text(elem_x, ymin + (ymax - ymin) * math.log(elem_y + 1, 10),
                                          obj['symbol'].values[0] + elem_z,
                                          color="g", rotation="vertical")
-
             self.canvas.draw()
             self.repaint()
 
@@ -1989,17 +1989,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def clickOnBtnBG(self):
         checked_actions = [action for action in self.bgMenu.actions() if action.isChecked()]
         idx_bg = set()
-        self.fixedBG.setChecked(False)
-        self.fixedBG.setEnabled(True)
         for checked_action in checked_actions:
-            if checked_action.text() == '&Static &Shirley BG':
+            if checked_action.text() == '&Static &Shirley BG' and '&Static &Tougaard BG' not in [
+                checked_act.text() for checked_act in checked_actions]:
                 idx_bg.add(0)
-                self.fixedBG.setChecked(False)
-                self.fixedBG.setEnabled(False)
-                self.fixedBG.setToolTip('Keeping the background fixed is not available \n if Static Shirley BG/Static Tougaard BG is used.')
             elif checked_action.text() == '&Active &Shirley BG' and '&Static &Shirley BG' in [checked_act.text() for
-                                                                                              checked_act in
-                                                                                              checked_actions]:
+                                                                                                  checked_act in
+                                                                                                  checked_actions]:
                 QtWidgets.QMessageBox.warning(self, 'Warning', 'You cannot choose both Active Shirley BG and Static '
                                                                'Shirley BG at the same time! Static Shirley BG set! To use Active Shirley BG, please uncheck Static '
                                                                'Shirley BG!')
@@ -2009,10 +2005,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                                                                                   checked_act in
                                                                                                   checked_actions]:
                 idx_bg.add(100)
-            elif checked_action.text() == '&Static &Tougaard BG':
-                self.fixedBG.setChecked(False)
-                self.fixedBG.setEnabled(False)
-                self.fixedBG.setToolTip('Keeping the background fixed is not available \n if Static Shirley BG/Static Tougaard BG is used.')
+            elif checked_action.text() == '&Static &Tougaard BG' and '&Static &Shirley BG' not in [
+                checked_act.text() for checked_act in checked_actions]:
                 idx_bg.add(1)
             elif checked_action.text() == '&Active &Tougaard BG' and '&Static &Tougaard BG' in [
                 checked_act.text() for checked_act in checked_actions]:
@@ -2036,6 +2030,16 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 idx_bg.add(4)
             elif checked_action.text() == '&VBM/Cutoff BG':
                 idx_bg.add(5)
+        if '&Static &Shirley BG' in [
+            checked_act.text() for checked_act in checked_actions] and '&Static &Tougaard BG' in [
+            checked_act.text() for checked_act in checked_actions]:
+            QtWidgets.QMessageBox.warning(self, 'Warning',
+                                      'You cannot choose both Static Shirley BG and Static Tougaard BG at '
+                                      'the same time! Background was set to Static Shirley BG.')
+            idx_bg.add(0)
+            for checked_action in checked_actions:
+                if checked_action.text() == '&Static &Tougaard BG':
+                    checked_action.setChecked(False)
         if len(checked_actions) == 0:
             QtWidgets.QMessageBox.information(self, 'Info',
                                               'No background was choosen, a polynomial BG was set as default.')
@@ -2218,7 +2222,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 pars['bg_slope_k'].value = self.pre[1][3][1]
                 if self.pre[1][3][0] == 2:
                     pars['bg_slope_k'].vary = False
-        if self.fixedBG.isChecked():
+        if self.fixedBG.isChecked() and pars!=None:
             for par in pars:
                 pars[par].vary = False
         return [mod, bg_mod, pars]
