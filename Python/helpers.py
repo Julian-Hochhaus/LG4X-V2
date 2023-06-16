@@ -182,6 +182,72 @@ class LayoutHline(QtWidgets.QFrame):
         super(LayoutHline, self).__init__()
         self.setFrameShape(self.HLine)
         self.setFrameShadow(self.Sunken)
+class RemoveHeaderDialog(QtWidgets.QDialog):
+    removeOptionChanged = QtCore.pyqtSignal(int, str)
+    def __init__(self, header_label, header_texts, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Edit Header")
+        self.setLayout(QtWidgets.QVBoxLayout())
+
+        self.lineEdit = QLineEdit()
+        self.lineEdit.setText(header_label)
+        self.layout().addWidget(self.lineEdit)
+
+        self.remove_combo = QtWidgets.QComboBox()
+        self.remove_combo.addItem('--')
+        self.remove_combo.addItem("Remove Last Column")
+        for header in header_texts:
+            self.remove_combo.addItem(header)
+        self.layout().addWidget(self.remove_combo)
+
+        button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+        self.layout().addWidget(button_box)
+
+    def getHeaderText(self):
+        return self.lineEdit.text()
+
+    def getRemoveOption(self):
+        return self.remove_combo.currentIndex(), self.remove_combo.currentText()
+
+    def accept(self):
+        remove_idx, remove_text = self.getRemoveOption()
+        self.removeOptionChanged.emit(remove_idx,remove_text)
+        super().accept()
+
+class RemoveAndEditTableWidget(QtWidgets.QTableWidget):
+    headerTextChanged = QtCore.pyqtSignal(int, str)
+    removeOptionChanged = QtCore.pyqtSignal(int, str)
+
+    def __init__(self, rows, columns,editable_condition, parent=None):
+        super().__init__(rows, columns, parent)
+        # Enable editing of column headers
+        self.horizontalHeader().sectionDoubleClicked.connect(self.editHeader)
+        # Store the editable condition
+        self.editable_condition = editable_condition
+    def setHeaderTooltips(self):
+        for logicalIndex in range(self.columnCount()):
+            if self.editable_condition(logicalIndex):
+                header_item = self.horizontalHeaderItem(logicalIndex)
+                if header_item is not None:
+                    header_item.setToolTip("Double-click to edit \n header text or remove column.")
+
+    def editHeader(self, logicalIndex):
+        if self.editable_condition(logicalIndex):
+            header_label = self.horizontalHeaderItem(logicalIndex).text()
+            header_texts = []
+            for column in range(int(self.columnCount()+1/2)):
+                header_item = self.horizontalHeaderItem(int(column*2+1))
+                if header_item is not None:
+                    header_texts.append(header_item.text())
+            dialog = RemoveHeaderDialog(header_label,header_texts, self)
+            if dialog.exec_() == QtWidgets.QDialog.Accepted:
+                new_label = dialog.getHeaderText()
+                remove_idx,remove_text = dialog.getRemoveOption()
+                self.horizontalHeaderItem(logicalIndex).setText(new_label)
+                self.headerTextChanged.emit(logicalIndex, new_label)
+                self.removeOptionChanged.emit(remove_idx, remove_text)
 class EditHeaderDialog(QtWidgets.QDialog):
     def __init__(self, header_label, parent=None):
         super().__init__(parent)

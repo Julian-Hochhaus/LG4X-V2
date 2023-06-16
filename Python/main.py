@@ -413,7 +413,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # Remove Button
         btn_rem = QtWidgets.QPushButton('rem component', self)
         btn_rem.resize(btn_rem.sizeHint())
-        btn_rem.clicked.connect(self.rem_col)
+        btn_rem.clicked.connect(lambda: self.removeCol(idx=None,text=None ))
         componentbuttons_layout.addWidget(btn_rem)
 
         btn_limit_set = QtWidgets.QPushButton('&Set/Show Limits', self)
@@ -452,8 +452,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     'asymmetry_ref', 'ratio', 'soc_ref', 'ratio', 'height_ref', 'ratio']
         def comps_edit_condition(logicalIndex):
             return logicalIndex % 2 != 0
-        self.fitp1=EditableHeaderTableWidget(len(list_row), len(list_col) * 2, comps_edit_condition)
+        self.fitp1=RemoveAndEditTableWidget(len(list_row), len(list_col) * 2, comps_edit_condition)
         self.fitp1.headerTextChanged.connect(self.updateHeader_lims)
+        self.fitp1.removeOptionChanged.connect(self.removeCol)
         self.fitp1.setItemDelegate(self.delegate)
         list_colh = ['', 'C_1']
         self.fitp1.setHorizontalHeaderLabels(list_colh)
@@ -480,7 +481,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                            's: SkewedGaussian', 'a: SkewedVoigt', 'b: BreitWigner', 'n: Lognormal', 'd: Doniach',
                            'gdd: Convolution Gaussian/Doniach-Dublett', 'gds: Convolution Gaussian/Doniach-Singlett',
                            'fe:Convolution FermiDirac/Gaussian']
-        self.list_component = ['', '1']
+        self.list_component = ['', 'C_1']
 
         # set DropDown component model
         for col in range(len(list_col)):
@@ -564,8 +565,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         'height_p2', 'approx. area_p1', 'approx. area_p2', 'area_total']
 
         def res_edit_condition(logicalIndex):
-            return logicalIndex % 1== 0
-
+            return logicalIndex % 1 == 0
         self.res_tab = EditableHeaderTableWidget(len(list_res_row), len(list_col) , res_edit_condition)
         self.res_tab.setHorizontalHeaderLabels(list_col)
         self.res_tab.setVerticalHeaderLabels(list_res_row)
@@ -1001,10 +1001,43 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                    self.floating)))
                     self.fitp1.setItem(row + 1, colPosition_fitp1 + 1, item)
 
+        # add table header
+        item = QtWidgets.QTableWidgetItem()
+        self.fitp1.setHorizontalHeaderItem(colPosition_fitp1, item)
+        item = QtWidgets.QTableWidgetItem('C_' + str(int(1 + colPosition_fitp1 / 2)))
+        self.fitp1.setHorizontalHeaderItem(colPosition_fitp1 + 1, item)
+
+        item = QtWidgets.QTableWidgetItem('C_' + str(int(1 + colPosition_res)))
+        self.res_tab.setHorizontalHeaderItem(colPosition_res, item)
+        self.res_tab.resizeColumnsToContents()
+        self.res_tab.resizeRowsToContents()
+        item = QtWidgets.QTableWidgetItem('C_' + str(int(1 + colPosition_fitp1 / 2)))
+        self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims, item)
+        item = QtWidgets.QTableWidgetItem('min')
+        self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims + 1, item)
+        item = QtWidgets.QTableWidgetItem('max')
+        self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims + 2, item)
+        self.fitp1_lims.resizeColumnsToContents()
+        self.fitp1_lims.resizeRowsToContents()
+        self.fitp1.setHeaderTooltips()
+        self.fitp1_lims.setHeaderTooltips()
+        self.fitp1.resizeColumnsToContents()
+        for column in range(self.fitp1.columnCount()):
+            if column % 2 == 1:
+                self.fitp1.setColumnWidth(column, 55)
+
+
         # add DropDown component selection for amp_ref and ctr_ref and keep values as it is
-        self.list_component.append(str(int(1 + colPosition_fitp1 / 2)))
+        header_texts = ['']
+        for column in range(int(self.fitp1.columnCount() / 2)):
+            header_item = self.fitp1.horizontalHeaderItem(int(column * 2 + 1))
+
+            print(column, header_item.text())
+            if header_item is not None:
+                header_texts.append(header_item.text())
+        self.list_component=header_texts
         for i in range(7):
-            for col in range(int(colPosition_fitp1 / 2) + 1):
+            for col in range(int(colPosition_fitp1 / 2+1)):
                 if col < int(colPosition_fitp1 / 2):
                     index = self.fitp1.cellWidget(13 + 2 * i, 2 * col + 1).currentIndex()
                 comboBox = QtWidgets.QComboBox()
@@ -1049,29 +1082,50 @@ class PrettyWidget(QtWidgets.QMainWindow):
             item.setText('')
             self.fitp1_lims.setItem(row, colPosition_fitp1_lims + 2, item)
 
-        # add table header
-        item = QtWidgets.QTableWidgetItem()
-        self.fitp1.setHorizontalHeaderItem(colPosition_fitp1, item)
-        item = QtWidgets.QTableWidgetItem('C_' + str(int(1 + colPosition_fitp1 / 2)))
-        self.fitp1.setHorizontalHeaderItem(colPosition_fitp1 + 1, item)
-        self.fitp1.resizeColumnsToContents()
-        item = QtWidgets.QTableWidgetItem('C_' + str(int(1 + colPosition_res)))
-        self.res_tab.setHorizontalHeaderItem(colPosition_res, item)
-        self.res_tab.resizeColumnsToContents()
-        self.res_tab.resizeRowsToContents()
-        item = QtWidgets.QTableWidgetItem('C_' + str(int(1 + colPosition_fitp1 / 2)))
-        self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims, item)
-        item = QtWidgets.QTableWidgetItem('min')
-        self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims + 1, item)
-        item = QtWidgets.QTableWidgetItem('max')
-        self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims + 2, item)
-        self.fitp1_lims.resizeColumnsToContents()
-        self.fitp1_lims.resizeRowsToContents()
         self.activeParameters()
-        self.fitp1.setHeaderTooltips()
-        self.fitp1_lims.setHeaderTooltips()
-        # self.fitp1.setColumnWidth(1, 55)
 
+
+    def removeCol(self, idx=None, text=None):
+        if text=='--':
+            print('test')
+            pass
+        else:
+            if idx==None or text=="Remove Last Column":
+                colPosition = self.fitp1.columnCount()-2
+                colPosition_lims = self.fitp1_lims.columnCount()-3
+                colPosition_res = self.res_tab.columnCount()-1
+            elif idx!=None:
+                colPosition = idx
+                print('colposition',colPosition)
+                colPosition_lims = int(colPosition/2*3)
+                colPosition_res = int(colPosition/2)
+            if self.res_tab.columnCount() > 1:
+                self.res_tab.removeColumn(colPosition_res)
+            if self.fitp1_lims.columnCount() > 3:
+                self.fitp1_lims.removeColumn(colPosition_lims+2)
+                self.fitp1_lims.removeColumn(colPosition_lims+1)
+                self.fitp1_lims.removeColumn(colPosition_lims)
+            if self.fitp1.columnCount() > 2:
+                print('pos',colPosition)
+                print(self.fitp1.columnCount())
+                self.fitp1.removeColumn(colPosition)
+                self.fitp1.removeColumn(colPosition)
+                print(self.fitp1.columnCount())
+                print(self.list_component)
+                self.list_component.pop((int(colPosition/ 2+1)))
+                print(self.list_component)
+
+                # remove component in dropdown menu and keep values as it is
+                for i in range(7):
+                    for col in range(int(self.fitp1.columnCount()/2)):
+                        print(col)
+                        index = self.fitp1.cellWidget(13 + 2 * i, 2 * col + 1).currentIndex()
+                        comboBox = QtWidgets.QComboBox()
+                        comboBox.addItems(self.list_component)
+                        comboBox.setMaximumWidth(55)
+                        if index > 0:
+                            comboBox.setCurrentIndex(index)
+                        self.fitp1.setCellWidget(13 + 2 * i, 2 * col + 1, comboBox)
     def rem_col(self):
         colPosition = self.fitp1.columnCount()
         colPosition_lims = self.fitp1_lims.columnCount()
@@ -1159,7 +1213,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if index == 1:
             if colPosition > 2:
                 for col in range(int(colPosition / 2) - 1):
-                    self.rem_col()
+                    self.removeCol(idx=None)
             # load default preset
             if self.comboBox_file.currentIndex() > 0:
                 # self.df = np.loadtxt(str(self.comboBox_file.currentText()),	delimiter=',', skiprows=1)
@@ -1312,7 +1366,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 # print(int(colPosition), int(len(list_pre_pk[0])/2), list_pre_pk[0])
                 if colPosition > int(len(list_pre_pk[0]) / 2):
                     for col in range(colPosition - int(len(list_pre_pk[0]) / 2)):
-                        self.rem_col()
+                        self.removeCol(idx=None)
                 if colPosition < int(len(list_pre_pk[0]) / 2):
                     for col in range(int(len(list_pre_pk[0]) / 2) - colPosition):
                         self.add_col()
