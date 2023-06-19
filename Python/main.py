@@ -597,20 +597,62 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # grid..addWidget(self.res_label, 7, 7, 1, 1)
         self.activeParameters()
         self.show()
+    def duplicateComponentNames(self, new_label):
+        if new_label in self.list_component:
+            QtWidgets.QMessageBox.warning(self, "Duplicate Name", "Component name already exists.\n Defaulted to next free name in format 'C_xx' ")
+            corrected_label=self.nextFreeComponentName()
+            return corrected_label
+        else:
+            return new_label
+    def nextFreeComponentName(self):
+        max_num=0
+        for comp_name in self.list_component:
+            if 'C_' in comp_name:
+                num=int(comp_name.split('_')[1])
+                if num>max_num:
+                    max_num=num
+        return 'C_'+str(max_num+1)
 
     def updateHeader_lims(self, logicalIndex, new_label):
         if logicalIndex%2!=0:
+            new_label=self.duplicateComponentNames(new_label)
             self.fitp1_lims.horizontalHeaderItem(int((logicalIndex-1)/2*3)).setText(new_label)
             self.res_tab.horizontalHeaderItem(int((logicalIndex-1)/2)).setText(new_label)
+            self.updateDropdown()
 
     def updateHeader_comps(self, logicalIndex, new_label):
         if logicalIndex%3==0:
+            new_label=self.duplicateComponentNames(new_label)
             self.fitp1.horizontalHeaderItem(int(logicalIndex/3*2+1)).setText(new_label)
             self.res_tab.horizontalHeaderItem(int(logicalIndex / 3)).setText(new_label)
+            self.updateDropdown()
 
     def updateHeader_res(self, logicalIndex, new_label):
+        new_label = self.duplicateComponentNames(new_label)
         self.fitp1.horizontalHeaderItem(int(logicalIndex * 2 + 1)).setText(new_label)
         self.fitp1_lims.horizontalHeaderItem(int(logicalIndex * 3)).setText(new_label)
+        self.updateDropdown()
+    def updateDropdown(self, colposition=None):
+        if colposition is None:
+            colPosition_fitp1 = self.fitp1.columnCount()
+        else:
+            colPosition_fitp1 = colposition
+        header_texts = ['']
+        for column in range(int(self.fitp1.columnCount() / 2)):
+            header_item = self.fitp1.horizontalHeaderItem(int(column * 2 + 1))
+            if header_item is not None:
+                header_texts.append(header_item.text())
+        self.list_component=header_texts
+        for i in range(7):
+            for col in range(int(colPosition_fitp1 / 2 + 1)):
+                if col < int(colPosition_fitp1 / 2):
+                    index = self.fitp1.cellWidget(13 + 2 * i, 2 * col + 1).currentIndex()
+                comboBox = QtWidgets.QComboBox()
+                comboBox.addItems(self.list_component)
+                comboBox.setMaximumWidth(55)
+                if index > 0 and col < int(colPosition_fitp1 / 2):
+                    comboBox.setCurrentIndex(index)
+                self.fitp1.setCellWidget(13 + 2 * i, 2 * col + 1, comboBox)
 
     def show_citation_dialog(self):
         citation_text = 'J. A. Hochhaus and H. Nakajima, LG4X-V2 (Zenodo, 2023), DOI:10.5281/zenodo.7871174'
@@ -1002,16 +1044,17 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.fitp1.setItem(row + 1, colPosition_fitp1 + 1, item)
 
         # add table header
+        comp_name=self.nextFreeComponentName()
         item = QtWidgets.QTableWidgetItem()
         self.fitp1.setHorizontalHeaderItem(colPosition_fitp1, item)
-        item = QtWidgets.QTableWidgetItem('C_' + str(int(1 + colPosition_fitp1 / 2)))
+        item = QtWidgets.QTableWidgetItem(comp_name)
         self.fitp1.setHorizontalHeaderItem(colPosition_fitp1 + 1, item)
 
-        item = QtWidgets.QTableWidgetItem('C_' + str(int(1 + colPosition_res)))
+        item = QtWidgets.QTableWidgetItem(comp_name)
         self.res_tab.setHorizontalHeaderItem(colPosition_res, item)
         self.res_tab.resizeColumnsToContents()
         self.res_tab.resizeRowsToContents()
-        item = QtWidgets.QTableWidgetItem('C_' + str(int(1 + colPosition_fitp1 / 2)))
+        item = QtWidgets.QTableWidgetItem(comp_name)
         self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims, item)
         item = QtWidgets.QTableWidgetItem('min')
         self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims + 1, item)
@@ -1028,24 +1071,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
 
         # add DropDown component selection for amp_ref and ctr_ref and keep values as it is
-        header_texts = ['']
-        for column in range(int(self.fitp1.columnCount() / 2)):
-            header_item = self.fitp1.horizontalHeaderItem(int(column * 2 + 1))
-
-            print(column, header_item.text())
-            if header_item is not None:
-                header_texts.append(header_item.text())
-        self.list_component=header_texts
-        for i in range(7):
-            for col in range(int(colPosition_fitp1 / 2+1)):
-                if col < int(colPosition_fitp1 / 2):
-                    index = self.fitp1.cellWidget(13 + 2 * i, 2 * col + 1).currentIndex()
-                comboBox = QtWidgets.QComboBox()
-                comboBox.addItems(self.list_component)
-                comboBox.setMaximumWidth(55)
-                if index > 0 and col < int(colPosition_fitp1 / 2):
-                    comboBox.setCurrentIndex(index)
-                self.fitp1.setCellWidget(13 + 2 * i, 2 * col + 1, comboBox)
+        self.updateDropdown(colposition=colPosition_fitp1)
 
         # add checkbox
         for row in range(rowPosition - 1):
@@ -1087,7 +1113,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
     def removeCol(self, idx=None, text=None):
         if text=='--':
-            print('test')
             pass
         else:
             if idx==None or text=="Remove Last Column":
@@ -1095,37 +1120,19 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 colPosition_lims = self.fitp1_lims.columnCount()-3
                 colPosition_res = self.res_tab.columnCount()-1
             elif idx!=None:
-                colPosition = idx
-                print('colposition',colPosition)
-                colPosition_lims = int(colPosition/2*3)
-                colPosition_res = int(colPosition/2)
-            if self.res_tab.columnCount() > 1:
+                colPosition = (idx-2)*2
+                colPosition_lims = int((idx-2)*3)
+                colPosition_res = int(idx-2)
+            if self.res_tab.columnCount() > 1 and self.fitp1_lims.columnCount() > 3 and self.fitp1.columnCount() > 2:
                 self.res_tab.removeColumn(colPosition_res)
-            if self.fitp1_lims.columnCount() > 3:
                 self.fitp1_lims.removeColumn(colPosition_lims+2)
                 self.fitp1_lims.removeColumn(colPosition_lims+1)
                 self.fitp1_lims.removeColumn(colPosition_lims)
-            if self.fitp1.columnCount() > 2:
-                print('pos',colPosition)
-                print(self.fitp1.columnCount())
+                self.fitp1.removeColumn(colPosition+1)
                 self.fitp1.removeColumn(colPosition)
-                self.fitp1.removeColumn(colPosition)
-                print(self.fitp1.columnCount())
-                print(self.list_component)
-                self.list_component.pop((int(colPosition/ 2+1)))
-                print(self.list_component)
-
-                # remove component in dropdown menu and keep values as it is
-                for i in range(7):
-                    for col in range(int(self.fitp1.columnCount()/2)):
-                        print(col)
-                        index = self.fitp1.cellWidget(13 + 2 * i, 2 * col + 1).currentIndex()
-                        comboBox = QtWidgets.QComboBox()
-                        comboBox.addItems(self.list_component)
-                        comboBox.setMaximumWidth(55)
-                        if index > 0:
-                            comboBox.setCurrentIndex(index)
-                        self.fitp1.setCellWidget(13 + 2 * i, 2 * col + 1, comboBox)
+                self.updateDropdown()
+            else:
+                print('Cannot remove the last remaining column.')
     def rem_col(self):
         colPosition = self.fitp1.columnCount()
         colPosition_lims = self.fitp1_lims.columnCount()

@@ -244,10 +244,13 @@ class RemoveAndEditTableWidget(QtWidgets.QTableWidget):
             dialog = RemoveHeaderDialog(header_label,header_texts, self)
             if dialog.exec_() == QtWidgets.QDialog.Accepted:
                 new_label = dialog.getHeaderText()
-                remove_idx,remove_text = dialog.getRemoveOption()
-                self.horizontalHeaderItem(logicalIndex).setText(new_label)
-                self.headerTextChanged.emit(logicalIndex, new_label)
-                self.removeOptionChanged.emit(remove_idx, remove_text)
+                remove_idx, remove_text = dialog.getRemoveOption()
+                if new_label != header_label:
+                    self.horizontalHeaderItem(logicalIndex).setText(new_label)
+                    self.headerTextChanged.emit(logicalIndex, new_label)
+
+                if remove_idx > 0:  # Only emit the signal if a valid removal option is selected
+                    self.removeOptionChanged.emit(remove_idx, remove_text)
 class EditHeaderDialog(QtWidgets.QDialog):
     def __init__(self, header_label, parent=None):
         super().__init__(parent)
