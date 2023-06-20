@@ -2843,7 +2843,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if index == 0:
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_fwhm'].value, self.floating)))
-                print(str(format(out.params[strind + str(index_pk + 1) + '_fwhm'].value, self.floating)))
                 self.res_tab.setItem(0, index_pk, item)
                 item = QtWidgets.QTableWidgetItem('')
                 self.res_tab.setItem(1, index_pk, item)
