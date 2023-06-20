@@ -2843,6 +2843,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if index == 0:
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_fwhm'].value, self.floating)))
+                print(str(format(out.params[strind + str(index_pk + 1) + '_fwhm'].value, self.floating)))
                 self.res_tab.setItem(0, index_pk, item)
                 item = QtWidgets.QTableWidgetItem('')
                 self.res_tab.setItem(1, index_pk, item)
@@ -2908,7 +2909,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if np.max(y_area) != 0:
                     y_temp = y_area / np.max(y_area)
                     x_ = [i for i, j in zip(x, y_temp) if j >= 0.5]
-                    fwhm_temp = x_[-1] - x_[0]
+                    fwhm_temp = abs(x_[-1] - x_[0])
                     item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp, self.floating)))
                     self.res_tab.setItem(3, index_pk, item)
                 else:
@@ -2954,12 +2955,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if np.max(y_area_p1) != 0 and np.max(y_area_p2) != 0:
                     y_temp_p1 = y_area_p1 / np.max(y_area_p1)
                     x_p1 = [i for i, j in zip(x, y_temp_p1) if j >= 0.5]
-                    fwhm_temp_p1 = x_p1[-1] - x_p1[0]
+                    fwhm_temp_p1 = abs(x_p1[-1] - x_p1[0])
                     item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp_p1, self.floating)))
                     self.res_tab.setItem(3, index_pk, item)
                     y_temp_p2 = y_area_p2 / np.max(y_area_p2)
                     x_p2 = [i for i, j in zip(x, y_temp_p2) if j >= 0.5]
-                    fwhm_temp_p2 = x_p2[-1] - x_p2[0]
+                    fwhm_temp_p2 = abs(x_p2[-1] - x_p2[0])
                     item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp_p2, self.floating)))
                     self.res_tab.setItem(4, index_pk, item)
                 else:
@@ -2971,8 +2972,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.res_tab.setItem(4, index_pk, item)
 
                     # included area
-                area_p1 = integrate.simps([y for y, x in zip(y_area_p1, x)], x)
-                area_p2 = integrate.simps([y for y, x in zip(y_area_p2, x)], x)
+                area_p1 = abs(integrate.simps([y for y, x in zip(y_area_p1, x)], x))
+                area_p2 = abs(integrate.simps([y for y, x in zip(y_area_p2, x)], x))
                 area_ges = area_p1 + area_p2
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area_p1, '.1f') + r' ({}%)'.format(format(area_p1 / area_ges * 100, '.2f'))))
