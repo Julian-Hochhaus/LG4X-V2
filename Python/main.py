@@ -2971,8 +2971,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.res_tab.setItem(4, index_pk, item)
 
                     # included area
-                area_p1 = integrate.simps([y for y, x in zip(y_area_p1, x)])
-                area_p2 = integrate.simps([y for y, x in zip(y_area_p2, x)])
+                area_p1 = integrate.simps([y for y, x in zip(y_area_p1, x)], x)
+                area_p2 = integrate.simps([y for y, x in zip(y_area_p2, x)], x)
                 area_ges = area_p1 + area_p2
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area_p1, '.1f') + r' ({}%)'.format(format(area_p1 / area_ges * 100, '.2f'))))
