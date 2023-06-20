@@ -1010,7 +1010,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.error_dialog.showMessage(error_message)
         logging.error(error_message)
 
-    def add_col(self):
+    def add_col(self, loaded=False):
         rowPosition = self.fitp1.rowCount()
         colPosition_fitp1 = self.fitp1.columnCount()
         colPosition_fitp1_lims = self.fitp1_lims.columnCount()
@@ -1044,22 +1044,30 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.fitp1.setItem(row + 1, colPosition_fitp1 + 1, item)
 
         # add table header
-        comp_name=self.nextFreeComponentName()
-        item = QtWidgets.QTableWidgetItem()
-        self.fitp1.setHorizontalHeaderItem(colPosition_fitp1, item)
-        item = QtWidgets.QTableWidgetItem(comp_name)
-        self.fitp1.setHorizontalHeaderItem(colPosition_fitp1 + 1, item)
+        print(self.list_component)
+        if loaded:
+            fitp1_comps=[item for string in self.list_component[1:] for item in ["", string]]
+            fitp1_lims=[item for string in self.list_component[1:] for item in [string, 'min', 'max']]
+            self.fitp1.setHorizontalHeaderLabels(fitp1_comps)
+            self.fitp1_lims.setHorizontalHeaderLabels(fitp1_lims)
+            self.res_tab.setHorizontalHeaderLabels(self.list_component[1:])
+        else:
+            comp_name=self.nextFreeComponentName()
+            item = QtWidgets.QTableWidgetItem()
+            self.fitp1.setHorizontalHeaderItem(colPosition_fitp1, item)
+            item = QtWidgets.QTableWidgetItem(comp_name)
+            self.fitp1.setHorizontalHeaderItem(colPosition_fitp1 + 1, item)
 
-        item = QtWidgets.QTableWidgetItem(comp_name)
-        self.res_tab.setHorizontalHeaderItem(colPosition_res, item)
+            item = QtWidgets.QTableWidgetItem(comp_name)
+            self.res_tab.setHorizontalHeaderItem(colPosition_res, item)
+            item = QtWidgets.QTableWidgetItem(comp_name)
+            self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims, item)
+            item = QtWidgets.QTableWidgetItem('min')
+            self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims + 1, item)
+            item = QtWidgets.QTableWidgetItem('max')
+            self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims + 2, item)
         self.res_tab.resizeColumnsToContents()
         self.res_tab.resizeRowsToContents()
-        item = QtWidgets.QTableWidgetItem(comp_name)
-        self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims, item)
-        item = QtWidgets.QTableWidgetItem('min')
-        self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims + 1, item)
-        item = QtWidgets.QTableWidgetItem('max')
-        self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims + 2, item)
         self.fitp1_lims.resizeColumnsToContents()
         self.fitp1_lims.resizeRowsToContents()
         self.fitp1.setHeaderTooltips()
@@ -1376,10 +1384,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         self.removeCol(idx=None)
                 if colPosition < int(len(list_pre_pk[0]) / 2):
                     for col in range(int(len(list_pre_pk[0]) / 2) - colPosition):
-                        self.add_col()
+                        self.add_col(loaded='Preset')
             else:
                 for col in range(int(len(list_pre_pk[0]) / 2)):
-                    self.add_col()
+                    self.add_col(loaded='Preset')
 
         for row in range(len(list_pre_pk)):
             for col in range(len(list_pre_pk[0])):
@@ -1462,6 +1470,19 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.idx_bg = [self.pre[0][0]]
             else:
                 self.idx_bg = self.pre[0][0]
+            if len(self.pre)==5:
+                self.list_component= self.pre[4]
+            else:
+                list_component = ['']
+                for i in range(int(len(self.pre[2][0])/2)):
+                    list_component.append('C_{}'.format(str(int(i+1))))
+                self.list_component = list_component
+            fitp1_comps = [item for string in self.list_component[1:] for item in ["", string]]
+            fitp1_lims = [item for string in self.list_component[1:] for item in [string, 'min', 'max']]
+            self.fitp1.setHorizontalHeaderLabels(fitp1_comps)
+            self.fitp1_lims.setHorizontalHeaderLabels(fitp1_lims)
+            self.res_tab.setHorizontalHeaderLabels(self.list_component[1:])
+
             self.setButtonState(self.idx_bg)
             # self.pre = json.loads(self.pre) #json does not work due to the None issue
             # print(self.pre, type(self.pre))
@@ -1567,6 +1588,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.parText.append(list_pre_bg)
         self.parText.append(list_pre_pk)
         self.parText.append(list_pre_lims)
+        self.parText.append(self.list_component)
         self.pre = [[self.idx_bg, self.xmin, self.xmax, self.hv, self.wf, self.correct_energy]]
         self.pre.append(list_pre_bg)
         self.pre.append(list_pre_pk)
