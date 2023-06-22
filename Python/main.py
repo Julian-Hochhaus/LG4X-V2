@@ -7,6 +7,7 @@ import sys
 import pickle
 import webbrowser
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from PyQt5.QtCore import QTime
 from PyQt5.QtGui import QValidator
@@ -1406,9 +1407,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             self.fitp1.setCellWidget(row, col + colPosition * 2, comboBox)
                             if list_pre_pk[row][col] != 0:
                                 if row == 0:
-                                    comboBox.setCurrentIndex(int(list_pre_pk[row][col]))
+                                    comboBox.setCurrentIndex(int(float(list_pre_pk[row][col])))
                                 else:
-                                    comboBox.setCurrentIndex(int(list_pre_pk[row][col] + colPosition))
+                                    print('test',list_pre_pk[row][col], colPosition)
+                                    comboBox.setCurrentIndex(int(float(list_pre_pk[row][col]) + colPosition))
                             else:
                                 comboBox.setCurrentIndex(int(list_pre_pk[row][col]))
                     else:
@@ -1423,7 +1425,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             if str(list_pre_pk[row][col]) == '':
                                 item.setText('')
                             else:
-                                item.setText(str(format(list_pre_pk[row][col], self.floating)))
+                                print(list_pre_pk[row][col])
+                                item.setText(str(format(float(list_pre_pk[row][col]), self.floating)))
 
 
                 else:
@@ -1502,7 +1505,19 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 temp_pre = file.read()
             file.close()
             # print(self.pre, type(self.pre))
-            self.pre = ast.literal_eval(temp_pre)
+            temp_settings = self.pre[0]
+            temp_bg = self.pre[1]
+            temp_pre=ast.literal_eval(temp_pre)
+            temp_peaks=np.concatenate((self.pre[2], temp_pre[2]), axis=1)
+            temp_lims = np.concatenate((self.pre[3], temp_pre[3]), axis=1)
+            if len(temp_pre) == 5:
+                self.list_component=np.concatenate((self.list_component, temp_pre[4]), axis=0)
+            else:
+                list_component = ['']
+                for i in range(int(len(temp_peaks[0]) / 2)):
+                    list_component.append('C_{}'.format(str(int(i + 1))))
+                self.list_component = list_component
+            self.pre=[temp_settings,temp_bg,temp_peaks,temp_lims, self.list_component]
             # self.pre = json.loads(self.pre) #json does not work due to the None issue
             # print(self.pre, type(self.pre))
             # self.comboBox_pres.clear()
