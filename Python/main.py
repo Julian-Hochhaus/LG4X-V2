@@ -63,7 +63,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.parText = None
         self.res_tab = None
         self.fitp0 = None
-        self.addition = None
         self.comboBox_file = None
         self.list_file = None
         self.toolbar = None
@@ -107,7 +106,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.idx_bg = [2]
 
         self.idx_pres = 0
-        self.addition = 0
         # Menu bar
         menubar = self.menuBar()
         ## Import sub menue
@@ -607,12 +605,29 @@ class PrettyWidget(QtWidgets.QMainWindow):
             return new_label
     def nextFreeComponentName(self):
         max_num=0
+        print(self.list_component)
         for comp_name in self.list_component:
             if 'C_' in comp_name:
                 num=int(comp_name.split('_')[1])
                 if num>max_num:
                     max_num=num
         return 'C_'+str(max_num+1)
+
+    def renameDuplicates(self, headers):
+        header_dict = {}
+        result_header = []
+
+        for header in headers:
+            if header not in header_dict:
+                header_dict[header] = 1
+                result_header.append(header)
+            else:
+                idx = header_dict[header]
+                header_dict[header] += 1
+                result_header.append(header +"_x"+ str(idx))
+
+        return result_header
+
 
     def updateHeader_lims(self, logicalIndex, new_label):
         if logicalIndex%2!=0:
@@ -643,13 +658,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
             header_item = self.fitp1.horizontalHeaderItem(int(column * 2 + 1))
             if header_item is not None:
                 header_texts.append(header_item.text())
-        self.list_component=header_texts
         for i in range(7):
             for col in range(int(colPosition_fitp1 / 2 + 1)):
                 if col < int(colPosition_fitp1 / 2):
                     index = self.fitp1.cellWidget(13 + 2 * i, 2 * col + 1).currentIndex()
                 comboBox = QtWidgets.QComboBox()
-                comboBox.addItems(self.list_component)
+                comboBox.addItems(header_texts)
                 comboBox.setMaximumWidth(55)
                 if index > 0 and col < int(colPosition_fitp1 / 2):
                     comboBox.setCurrentIndex(index)
@@ -1045,13 +1059,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.fitp1.setItem(row + 1, colPosition_fitp1 + 1, item)
 
         # add table header
-        print(self.list_component)
         if loaded:
-            fitp1_comps=[item for string in self.list_component[1:] for item in ["", string]]
-            fitp1_lims=[item for string in self.list_component[1:] for item in [string, 'min', 'max']]
-            self.fitp1.setHorizontalHeaderLabels(fitp1_comps)
+            fitp1=[item for string in loaded[1:] for item in ['',string]]
+            fitp1_lims=[item for string in loaded[1:] for item in [string, 'min', 'max']]
+            self.fitp1.setHorizontalHeaderLabels(fitp1)
             self.fitp1_lims.setHorizontalHeaderLabels(fitp1_lims)
-            self.res_tab.setHorizontalHeaderLabels(self.list_component[1:])
+            self.res_tab.setHorizontalHeaderLabels(loaded[1:])
+
         else:
             comp_name=self.nextFreeComponentName()
             item = QtWidgets.QTableWidgetItem()
@@ -1077,7 +1091,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         for column in range(self.fitp1.columnCount()):
             if column % 2 == 1:
                 self.fitp1.setColumnWidth(column, 55)
-
 
         # add DropDown component selection for amp_ref and ctr_ref and keep values as it is
         self.updateDropdown(colposition=colPosition_fitp1)
@@ -1118,6 +1131,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.fitp1_lims.setItem(row, colPosition_fitp1_lims + 2, item)
 
         self.activeParameters()
+        self.savePreset()
+
+
 
 
     def removeCol(self, idx=None, text=None):
@@ -1142,31 +1158,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.updateDropdown()
             else:
                 print('Cannot remove the last remaining column.')
-    def rem_col(self):
-        colPosition = self.fitp1.columnCount()
-        colPosition_lims = self.fitp1_lims.columnCount()
-        colPosition_res = self.res_tab.columnCount()
-        if colPosition_res > 1:
-            self.res_tab.removeColumn(colPosition_res - 1)
-        if colPosition_lims > 3:
-            self.fitp1_lims.removeColumn(colPosition_lims - 1)
-            self.fitp1_lims.removeColumn(colPosition_lims - 2)
-            self.fitp1_lims.removeColumn(colPosition_lims - 3)
-        if colPosition > 2:
-            self.fitp1.removeColumn(colPosition - 1)
-            self.fitp1.removeColumn(colPosition - 2)
-            self.list_component.remove(str(int(colPosition / 2)))
-            # remove component in dropdown menu and keep values as it is
-            for i in range(7):
-                for col in range(int(colPosition / 2) - 1):
-                    if col < int(colPosition / 2):
-                        index = self.fitp1.cellWidget(13 + 2 * i, 2 * col + 1).currentIndex()
-                    comboBox = QtWidgets.QComboBox()
-                    comboBox.addItems(self.list_component)
-                    comboBox.setMaximumWidth(55)
-                    if index > 0 and col < int(colPosition / 2):
-                        comboBox.setCurrentIndex(index)
-                    self.fitp1.setCellWidget(13 + 2 * i, 2 * col + 1, comboBox)
+        self.savePreset()
+        header_texts = ['']
+        for column in range(int(self.fitp1.columnCount() / 2)):
+            header_item = self.fitp1.horizontalHeaderItem(int(column * 2 + 1))
+            if header_item is not None:
+                header_texts.append(header_item.text())
+        self.list_component=header_texts
 
     def clickOnBtnPreset(self, idx):
         self.idx_pres = idx
@@ -1360,7 +1358,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.displayChoosenBG.setText(
             'Choosen Background: {}'.format('+ '.join([dictBG[str(idx)] for idx in self.idx_bg])))
         # load preset for bg
-        if len(list_pre_bg) != 0 and self.addition == 0:
+        if len(list_pre_bg) != 0:
             for row in range(len(list_pre_bg)):
                 for col in range(len(list_pre_bg[0])):
                     item = self.fitp0.item(row, col)
@@ -1378,18 +1376,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # adjust ncomponent before load
         if len(list_pre_pk) != 0:
             colPosition = int(self.fitp1.columnCount() / 2)
-            if self.addition == 0:
-                # print(int(colPosition), int(len(list_pre_pk[0])/2), list_pre_pk[0])
-                if colPosition > int(len(list_pre_pk[0]) / 2):
-                    for col in range(colPosition - int(len(list_pre_pk[0]) / 2)):
-                        self.removeCol(idx=None)
-                if colPosition < int(len(list_pre_pk[0]) / 2):
-                    for col in range(int(len(list_pre_pk[0]) / 2) - colPosition):
-                        self.add_col(loaded='Preset')
-            else:
-                for col in range(int(len(list_pre_pk[0]) / 2)):
-                    self.add_col(loaded='Preset')
-
+            # print(int(colPosition), int(len(list_pre_pk[0])/2), list_pre_pk[0])
+            if colPosition > int(len(list_pre_pk[0]) / 2):
+                for col in range(colPosition - int(len(list_pre_pk[0]) / 2)):
+                     self.removeCol(idx=None)
+            if colPosition < int(len(list_pre_pk[0]) / 2):
+                for col in range(int(len(list_pre_pk[0]) / 2) - colPosition):
+                    self.add_col(loaded=self.list_component)
         for row in range(len(list_pre_pk)):
             for col in range(len(list_pre_pk[0])):
                 if (col % 2) != 0:
@@ -1400,41 +1393,17 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             comboBox.currentTextChanged.connect(self.activeParameters)
                         else:
                             comboBox.addItems(self.list_component)
-                        if self.addition == 0:
-                            self.fitp1.setCellWidget(row, col, comboBox)
-                            comboBox.setCurrentIndex(int(list_pre_pk[row][col]))
-                        else:
-                            self.fitp1.setCellWidget(row, col + colPosition * 2, comboBox)
-                            if list_pre_pk[row][col] != 0:
-                                if row == 0:
-                                    comboBox.setCurrentIndex(int(float(list_pre_pk[row][col])))
-                                else:
-                                    print('test',list_pre_pk[row][col], colPosition)
-                                    comboBox.setCurrentIndex(int(float(list_pre_pk[row][col]) + colPosition))
-                            else:
-                                comboBox.setCurrentIndex(int(list_pre_pk[row][col]))
+                        self.fitp1.setCellWidget(row, col, comboBox)
+                        comboBox.setCurrentIndex(int(float(list_pre_pk[row][col])))
                     else:
-                        if self.addition == 0:
-                            item = self.fitp1.item(row, col)
-                            if str(list_pre_pk[row][col]) == '':
-                                item.setText('')
-                            else:
-                                item.setText(str(format(list_pre_pk[row][col], self.floating)))
+                        item = self.fitp1.item(row, col)
+                        if str(list_pre_pk[row][col]) == '':
+                            item.setText('')
                         else:
-                            item = self.fitp1.item(row, col + colPosition * 2)
-                            if str(list_pre_pk[row][col]) == '':
-                                item.setText('')
-                            else:
-                                print(list_pre_pk[row][col])
-                                item.setText(str(format(float(list_pre_pk[row][col]), self.floating)))
-
-
+                            item.setText(str(format(float(list_pre_pk[row][col]), self.floating)))
                 else:
                     if row != 0 and row != 13 and row != 15 and row != 17 and row != 19 and row != 21 and row != 23 and row != 25:
-                        if self.addition == 0:
-                            item = self.fitp1.item(row, col)
-                        else:
-                            item = self.fitp1.item(row, col + colPosition * 2)
+                        item = self.fitp1.item(row, col)
                         item.setText('')
                         if list_pre_pk[row][col] == 2:
                             item.setCheckState(QtCore.Qt.Checked)
@@ -1442,15 +1411,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             item.setCheckState(QtCore.Qt.Unchecked)
             for row in range(len(list_pre_pk_lims)):
                 for col in range(len(list_pre_pk_lims[0])):
-                    if self.addition == 0:
-                        item = self.fitp1_lims.item(row, col)
-                    else:
-                        item = self.fitp1_lims.item(row, col + colPosition * 3)
+                    item = self.fitp1_lims.item(row, col)
                     if (col % 3) != 0:
                         if str(list_pre_pk_lims[row][col]) == '':
                             item.setText('')
                         else:
-                            item.setText(str(format(list_pre_pk_lims[row][col], self.floating)))
+                            item.setText(str(format(float(list_pre_pk_lims[row][col]), self.floating)))
                     else:
                         if list_pre_pk_lims[row][col] == 2:
                             item.setCheckState(QtCore.Qt.Checked)
@@ -1458,6 +1424,14 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             item.setCheckState(QtCore.Qt.Unchecked)
         self.activeParameters()
         self.lims_changed()
+        self.list_component=self.renameDuplicates(self.list_component)
+        fitp1_comps = [item for string in self.list_component[1:] for item in ["", string]]
+        fitp1_lims = [item for string in self.list_component[1:] for item in [string, 'min', 'max']]
+        self.fitp1.setHorizontalHeaderLabels(fitp1_comps)
+        self.fitp1_lims.setHorizontalHeaderLabels(fitp1_lims)
+        if self.res_tab:
+            self.res_tab.setHorizontalHeaderLabels(self.list_component[1:])
+        self.savePreset()
 
     def loadPreset(self):
         cfilePath, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open data file', self.filePath, "DAT Files (*.dat)")
@@ -1480,6 +1454,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 for i in range(int(len(self.pre[2][0])/2)):
                     list_component.append('C_{}'.format(str(int(i+1))))
                 self.list_component = list_component
+            self.list_component=self.renameDuplicates(self.list_component)
             fitp1_comps = [item for string in self.list_component[1:] for item in ["", string]]
             fitp1_lims = [item for string in self.list_component[1:] for item in [string, 'min', 'max']]
             self.fitp1.setHorizontalHeaderLabels(fitp1_comps)
@@ -1492,7 +1467,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
             # self.comboBox_pres.clear()
             # self.comboBox_pres.setCurrentIndex(0)
             self.idx_pres = 0
-            self.addition = 0
         else:
             self.pre = [[], [], [], []]
 
@@ -1508,22 +1482,35 @@ class PrettyWidget(QtWidgets.QMainWindow):
             temp_settings = self.pre[0]
             temp_bg = self.pre[1]
             temp_pre=ast.literal_eval(temp_pre)
-            temp_peaks=np.concatenate((self.pre[2], temp_pre[2]), axis=1)
+            temp_pks=temp_pre[2]
+            print(len(temp_pks))
+            print(len(temp_pks[0]))
+            print(temp_pks)
+            current_len=int(len(self.pre[2][0])/2)
+            for col in range(int(len(temp_pks[0])/2)):
+                for row in range(len(temp_pks)):
+                    if row == 13 or row == 15 or row == 17 or row == 19 or row == 21 or row == 23 or row == 25:
+                        if not temp_pks[row][2*col+1] == 0:
+                            temp_pks[row][2*col+1] = temp_pks[row][2*col+1] + current_len
+            print(temp_pks)
+            temp_peaks=np.concatenate((self.pre[2], temp_pks), axis=1)
             temp_lims = np.concatenate((self.pre[3], temp_pre[3]), axis=1)
             if len(temp_pre) == 5:
-                self.list_component=np.concatenate((self.list_component, temp_pre[4]), axis=0)
+                self.list_component=np.concatenate((self.list_component, temp_pre[4][1:]), axis=0)
             else:
-                list_component = ['']
-                for i in range(int(len(temp_peaks[0]) / 2)):
+                print('test')
+                list_component = []
+                for i in range(int(len(temp_pre[2][0]) / 2)):
                     list_component.append('C_{}'.format(str(int(i + 1))))
-                self.list_component = list_component
+                self.list_component = np.concatenate((self.list_component, list_component), axis=0)
+            self.list_component=self.renameDuplicates(self.list_component)
             self.pre=[temp_settings,temp_bg,temp_peaks,temp_lims, self.list_component]
-            # self.pre = json.loads(self.pre) #json does not work due to the None issue
-            # print(self.pre, type(self.pre))
-            # self.comboBox_pres.clear()
-            # self.comboBox_pres.setCurrentIndex(0)
+            fitp1_comps = [item for string in self.list_component[1:] for item in ["", string]]
+            fitp1_lims = [item for string in self.list_component[1:] for item in [string, 'min', 'max']]
+            self.fitp1.setHorizontalHeaderLabels(fitp1_comps)
+            self.fitp1_lims.setHorizontalHeaderLabels(fitp1_lims)
+            self.res_tab.setHorizontalHeaderLabels(self.list_component[1:])
             self.idx_pres = 0
-            self.addition = 1
         else:
             self.pre = [[], [], [], []]
 
@@ -1608,6 +1595,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.pre.append(list_pre_bg)
         self.pre.append(list_pre_pk)
         self.pre.append(list_pre_lims)
+        self.pre.append(self.list_component)
 
     def savePresetDia(self):
         if self.comboBox_file.currentIndex() > 0:
