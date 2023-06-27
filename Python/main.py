@@ -3002,6 +3002,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.res_tab.setItem(4, index_pk, item)
 
                     # included area
+
                 if self.binding_ener:
                     area_p1 = abs(integrate.simps([y for y, x in zip(y_area_p1, x[::-1])], x[::-1]))
                     area_p2 = abs(integrate.simps([y for y, x in zip(y_area_p2, x[::-1])], x[::-1]))
