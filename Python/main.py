@@ -7,9 +7,10 @@ import sys
 import pickle
 import webbrowser
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from PyQt5.QtCore import QTime
-from PyQt5.QtGui import  QValidator
+from PyQt5.QtGui import QValidator
 from PyQt5.QtWidgets import QItemDelegate, QLineEdit
 from PyQt5.QtGui import QDoubleValidator
 from usrmodel import TougaardBG, ShirleyBG, SlopeBG
@@ -17,6 +18,7 @@ from lmfit import Model
 from matplotlib import style
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.widgets import RectangleSelector
 
 import vamas_export as vpy
 import xpspy as xpy
@@ -43,6 +45,7 @@ dictBG = {
 
 }
 
+
 class PrettyWidget(QtWidgets.QMainWindow):
     def __init__(self):
         super(PrettyWidget, self).__init__()
@@ -60,7 +63,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.parText = None
         self.res_tab = None
         self.fitp0 = None
-        self.addition = None
         self.comboBox_file = None
         self.list_file = None
         self.toolbar = None
@@ -81,9 +83,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.error_dialog = QtWidgets.QErrorMessage()
         self.displayChoosenBG = QtWidgets.QLabel()
         self.delegate = TableItemDelegate()
+        self.binding_ener=False
         self.initUI()
 
     def initUI(self):
+        self.fit_thread=FitThread(self)
         self.version = 'LG4X: LMFit GUI for XPS curve fitting v2.0.4'
         self.floating = '.4f'
         self.setGeometry(700, 500, 1600, 900)
@@ -98,13 +102,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.df = []
         self.result = pd.DataFrame()
         outer_layout = QtWidgets.QVBoxLayout()
-
+        self.static_bg=int(0)
         self.idx_imp = 0
 
         self.idx_bg = [2]
 
         self.idx_pres = 0
-        self.addition = 0
         # Menu bar
         menubar = self.menuBar()
         ## Import sub menue
@@ -239,14 +242,14 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.bgMenu.addAction(btn_tougaard_cross_section)
 
         menubar.addSeparator()
-        links_menu= menubar.addMenu('&Help/Info')
-        #manual_link= QtWidgets.QAction('&Manual', self)
-        #manual_link.triggered.connect(lambda: webbrowser.open('https://julian-hochhaus.github.io/LG4X-V2/'))
-        #links_menu.addAction(manual_link)
-        github_link= QtWidgets.QAction('See on &Github', self)
+        links_menu = menubar.addMenu('&Help/Info')
+        # manual_link= QtWidgets.QAction('&Manual', self)
+        # manual_link.triggered.connect(lambda: webbrowser.open('https://julian-hochhaus.github.io/LG4X-V2/'))
+        # links_menu.addAction(manual_link)
+        github_link = QtWidgets.QAction('See on &Github', self)
         github_link.triggered.connect(lambda: webbrowser.open('https://github.com/Julian-Hochhaus/LG4X-V2'))
         links_menu.addAction(github_link)
-        about_link= QtWidgets.QAction('&How to cite', self)
+        about_link = QtWidgets.QAction('&How to cite', self)
         about_link.triggered.connect(self.show_citation_dialog)
         links_menu.addAction(about_link)
 
@@ -289,7 +292,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_undoFit.clicked.connect(self.one_step_back_in_params_history)
         fitbuttons_layout.addWidget(btn_undoFit)
         # Interrupt fit Button
-        btn_interrupt = QtWidgets.QPushButton('Interrupt fitting (not implemented)', self)
+        btn_interrupt = QtWidgets.QPushButton('Interrupt fitting', self)
         btn_interrupt.resize(btn_interrupt.sizeHint())
         btn_interrupt.clicked.connect(self.interrupt_fit)
         fitbuttons_layout.addWidget(btn_interrupt)
@@ -310,31 +313,38 @@ class PrettyWidget(QtWidgets.QMainWindow):
         min_form = QtWidgets.QFormLayout()
         self.xmin_item = DoubleLineEdit()
         self.xmin = 270
-        self.xmin_item.insert(str(self.xmin))
+        self.xmin_item.setText(str(self.xmin))
         self.xmin_item.textChanged.connect(self.update_com_vals)
         min_form.addRow("x_min: ", self.xmin_item)
         plot_settings_layout.addLayout(min_form)
         max_form = QtWidgets.QFormLayout()
         self.xmax_item = DoubleLineEdit()
         self.xmax = 300
-        self.xmax_item.insert(str(self.xmax))
+        self.xmax_item.setText(str(self.xmax))
         self.xmax_item.textChanged.connect(self.update_com_vals)
         max_form.addRow("x_max: ", self.xmax_item)
         plot_settings_layout.addLayout(max_form)
         hv_form = QtWidgets.QFormLayout()
         self.hv_item = DoubleLineEdit()
         self.hv = 1486.6
-        self.hv_item.insert(str(self.hv))
+        self.hv_item.setText(str(self.hv))
         self.hv_item.textChanged.connect(self.update_com_vals)
         hv_form.addRow("hv: ", self.hv_item)
         plot_settings_layout.addLayout(hv_form)
         wf_form = QtWidgets.QFormLayout()
         self.wf_item = DoubleLineEdit()
         self.wf = 4
-        self.wf_item.insert(str(self.wf))
+        self.wf_item.setText(str(self.wf))
         self.wf_item.textChanged.connect(self.update_com_vals)
         wf_form.addRow("wf: ", self.wf_item)
         plot_settings_layout.addLayout(wf_form)
+        correct_energy_form = QtWidgets.QFormLayout()
+        self.correct_energy_item = DoubleLineEdit()
+        self.correct_energy = 0
+        self.correct_energy_item.setText(str(self.correct_energy))
+        self.correct_energy_item.textChanged.connect(self.update_com_vals)
+        correct_energy_form.addRow("shift energy: ", self.correct_energy_item)
+        plot_settings_layout.addLayout(correct_energy_form)
         layout_top_left.addLayout(plottitle_form)
         layout_top_left.addLayout(plot_settings_layout)
         layout_top_left.addStretch(1)
@@ -353,14 +363,17 @@ class PrettyWidget(QtWidgets.QMainWindow):
         list_bg_row = ['Shirley (cv, it, k, c)', 'Tougaard(B, C, C*, D, extend)', 'Polynomial', 'Slope(k)',
                        'arctan (amp, ctr, sig)', 'erf (amp, ctr, sig)', 'cutoff (ctr, d1-4)']
         self.fitp0 = QtWidgets.QTableWidget(len(list_bg_row), len(list_bg_col) * 2)
+
         self.fitp0.setItemDelegate(self.delegate)
         list_bg_colh = ['', 'bg_c0', '', 'bg_c1', '', 'bg_c2', '', 'bg_c3', '', 'bg_c4']
+
         self.fitp0.setHorizontalHeaderLabels(list_bg_colh)
         self.fitp0.setVerticalHeaderLabels(list_bg_row)
         # set BG table checkbox
         for row in range(len(list_bg_row)):
             for col in range(len(list_bg_colh)):
-                if (row == 2 or row>3 or (row==3 and col<2) or (row == 0 and 8 > col >= 4) or (row == 1 and col == 0)) and col % 2 == 0:
+                if (row == 2 or row > 3 or (row == 3 and col < 2) or (row == 0 and 8 > col >= 4) or (
+                        row == 1 and col == 0)) and col % 2 == 0:
                     item = QtWidgets.QTableWidgetItem()
                     item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
                     item.setCheckState(QtCore.Qt.Unchecked)
@@ -374,7 +387,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         pre_bg = [['', 1e-06, '', 10, 2, 0.0003, 2, 1000, '', ''],
                   [2, 2866.0, '', 1643.0, '', 1.0, '', 1.0, '', 50],
                   [2, 0, 2, 0, 2, 0, 2, 0, 2, 0],
-                  [2,0.0,'','','', '', '', '', '', '', '']]
+                  [2, 0.0, '', '', '', '', '', '', '', '', '']]
         # self.setPreset([0], pre_bg, [])
 
         self.fitp0.resizeColumnsToContents()
@@ -401,7 +414,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # Remove Button
         btn_rem = QtWidgets.QPushButton('rem component', self)
         btn_rem.resize(btn_rem.sizeHint())
-        btn_rem.clicked.connect(self.rem_col)
+        btn_rem.clicked.connect(lambda: self.removeCol(idx=None,text=None ))
         componentbuttons_layout.addWidget(btn_rem)
 
         btn_limit_set = QtWidgets.QPushButton('&Set/Show Limits', self)
@@ -438,8 +451,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     'fct_coster_kronig', 'center_ref', 'ctr_diff', 'amp_ref', 'ratio', 'lorentzian_ref', 'ratio',
                     'gaussian_ref', 'ratio',
                     'asymmetry_ref', 'ratio', 'soc_ref', 'ratio', 'height_ref', 'ratio']
-
-        self.fitp1 = QtWidgets.QTableWidget(len(list_row), len(list_col) * 2)
+        def comps_edit_condition(logicalIndex):
+            return logicalIndex % 2 != 0
+        self.fitp1=RemoveAndEditTableWidget(len(list_row), len(list_col) * 2, comps_edit_condition)
+        self.fitp1.headerTextChanged.connect(self.updateHeader_lims)
+        self.fitp1.removeOptionChanged.connect(self.removeCol)
         self.fitp1.setItemDelegate(self.delegate)
         list_colh = ['', 'C_1']
         self.fitp1.setHorizontalHeaderLabels(list_colh)
@@ -451,7 +467,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
             'asymmetry_ratio', 'soc_ratio', 'height_ratio']
         list_colh_limits = ['C_1', 'min', 'max']
 
-        self.fitp1_lims = QtWidgets.QTableWidget(len(self.list_row_limits), len(list_col) * 3)
+        def lims_edit_condition(logicalIndex):
+            return logicalIndex % 3 == 0
+        self.fitp1_lims = EditableHeaderTableWidget(len(self.list_row_limits), len(list_col) * 3, lims_edit_condition)
+        self.fitp1_lims.headerTextChanged.connect(self.updateHeader_comps)
         self.fitp1_lims.setItemDelegate(self.delegate)
 
         self.fitp1_lims.setHorizontalHeaderLabels(list_colh_limits)
@@ -463,7 +482,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                            's: SkewedGaussian', 'a: SkewedVoigt', 'b: BreitWigner', 'n: Lognormal', 'd: Doniach',
                            'gdd: Convolution Gaussian/Doniach-Dublett', 'gds: Convolution Gaussian/Doniach-Singlett',
                            'fe:Convolution FermiDirac/Gaussian']
-        self.list_component = ['', '1']
+        self.list_component = ['', 'C_1']
 
         # set DropDown component model
         for col in range(len(list_col)):
@@ -525,10 +544,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
         pre_pk = [[0, 0], [2, 284.6], [0, 20000], [2, 0.2], [2, 0.2], [2, 0.02], [2, 0], [2, 0], [2, 0.0], [2, 0.026],
                   [2, 1], [2, 0.7], [2, 1], [0, 0], [2, 0.1], [0, 0], [2, 0.5], [0, 0], [2, 1], [0, 0], [2, 1],
                   [0, 0], [2, 1], [0, 0], [2, 1], [0, 0], [2, 1]]
-        self.pre = [[self.idx_bg, self.xmin, self.xmax, self.hv, self.wf], pre_bg, pre_pk, [[0, '', '']] * 19]
+        self.pre = [[self.idx_bg, self.xmin, self.xmax, self.hv, self.wf, self.correct_energy], pre_bg, pre_pk, [[0, '', '']] * 19]
         self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
         self.fitp1.resizeColumnsToContents()
         self.fitp1.resizeRowsToContents()
+        self.fitp1.setHeaderTooltips()
         layout_bottom_mid.addWidget(self.fitp1)
 
         toprow_layout.addLayout(layout_top_mid, 4)
@@ -541,11 +561,16 @@ class PrettyWidget(QtWidgets.QMainWindow):
         layout_bottom_right = QtWidgets.QVBoxLayout()
         self.fitp1_lims.resizeColumnsToContents()
         self.fitp1_lims.resizeRowsToContents()
+        self.fitp1_lims.setHeaderTooltips()
         list_res_row = ['gaussian_fwhm', 'lorentzian_fwhm_p1', 'lorentzian_fwhm_p2', 'fwhm_p1', 'fwhm_p2', 'height_p1',
                         'height_p2', 'approx. area_p1', 'approx. area_p2', 'area_total']
-        self.res_tab = QtWidgets.QTableWidget(len(list_res_row), len(list_col))
+
+        def res_edit_condition(logicalIndex):
+            return logicalIndex % 1 == 0
+        self.res_tab = EditableHeaderTableWidget(len(list_res_row), len(list_col) , res_edit_condition)
         self.res_tab.setHorizontalHeaderLabels(list_col)
         self.res_tab.setVerticalHeaderLabels(list_res_row)
+        self.res_tab.headerTextChanged.connect(self.updateHeader_res)
         self.res_tab.resizeColumnsToContents()
         self.res_tab.resizeRowsToContents()
         layout_bottom_right.addWidget(self.res_tab)
@@ -573,13 +598,85 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # grid..addWidget(self.res_label, 7, 7, 1, 1)
         self.activeParameters()
         self.show()
+    def duplicateComponentNames(self, new_label):
+        if new_label in self.list_component:
+            QtWidgets.QMessageBox.warning(self, "Duplicate Name", "Component name already exists.\n Defaulted to next free name in format 'C_xx' ")
+            corrected_label=self.nextFreeComponentName()
+            return corrected_label
+        else:
+            return new_label
+    def nextFreeComponentName(self):
+        max_num=0
+        for comp_name in self.list_component:
+            if 'C_' in comp_name:
+                num=int(comp_name.split('_')[1])
+                if num>max_num:
+                    max_num=num
+        return 'C_'+str(max_num+1)
+
+    def renameDuplicates(self, headers):
+        header_dict = {}
+        result_header = []
+
+        for header in headers:
+            if header not in header_dict:
+                header_dict[header] = 1
+                result_header.append(header)
+            else:
+                idx = header_dict[header]
+                header_dict[header] += 1
+                result_header.append(header +"_x"+ str(idx))
+
+        return result_header
+
+
+    def updateHeader_lims(self, logicalIndex, new_label):
+        if logicalIndex%2!=0:
+            new_label=self.duplicateComponentNames(new_label)
+            self.fitp1_lims.horizontalHeaderItem(int((logicalIndex-1)/2*3)).setText(new_label)
+            self.res_tab.horizontalHeaderItem(int((logicalIndex-1)/2)).setText(new_label)
+            self.updateDropdown()
+
+    def updateHeader_comps(self, logicalIndex, new_label):
+        if logicalIndex%3==0:
+            new_label=self.duplicateComponentNames(new_label)
+            self.fitp1.horizontalHeaderItem(int(logicalIndex/3*2+1)).setText(new_label)
+            self.res_tab.horizontalHeaderItem(int(logicalIndex / 3)).setText(new_label)
+            self.updateDropdown()
+
+    def updateHeader_res(self, logicalIndex, new_label):
+        new_label = self.duplicateComponentNames(new_label)
+        self.fitp1.horizontalHeaderItem(int(logicalIndex * 2 + 1)).setText(new_label)
+        self.fitp1_lims.horizontalHeaderItem(int(logicalIndex * 3)).setText(new_label)
+        self.updateDropdown()
+    def updateDropdown(self, colposition=None):
+        if colposition is None:
+            colPosition_fitp1 = self.fitp1.columnCount()
+        else:
+            colPosition_fitp1 = colposition
+        header_texts = ['']
+        for column in range(int(self.fitp1.columnCount() / 2)):
+            header_item = self.fitp1.horizontalHeaderItem(int(column * 2 + 1))
+            if header_item is not None:
+                header_texts.append(header_item.text())
+        for i in range(7):
+            for col in range(int(colPosition_fitp1 / 2 + 1)):
+                if col < int(colPosition_fitp1 / 2):
+                    index = self.fitp1.cellWidget(13 + 2 * i, 2 * col + 1).currentIndex()
+                comboBox = QtWidgets.QComboBox()
+                comboBox.addItems(header_texts)
+                comboBox.setMaximumWidth(55)
+                if index > 0 and col < int(colPosition_fitp1 / 2):
+                    comboBox.setCurrentIndex(index)
+                self.fitp1.setCellWidget(13 + 2 * i, 2 * col + 1, comboBox)
+
     def show_citation_dialog(self):
         citation_text = 'J. A. Hochhaus and H. Nakajima, LG4X-V2 (Zenodo, 2023), DOI:10.5281/zenodo.7871174'
         msg_box = QtWidgets.QMessageBox(self)
         msg_box.setWindowTitle('How to cite')
         msg_box.setTextFormat(QtCore.Qt.RichText)
         msg_box.setText(citation_text)
-        copy_button = msg_box.addButton('Copy to clipboard',QtWidgets.QMessageBox.AcceptRole)
+        copy_button = msg_box.addButton('Copy to clipboard', QtWidgets.QMessageBox.AcceptRole)
         open_zenodo_button = msg_box.addButton('Open on Zenodo(DOI)', QtWidgets.QMessageBox.ActionRole)
 
         msg_box.exec_()
@@ -593,24 +690,25 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
     def setButtonState(self, indices):
         for i in indices:
-            if i==0:
+            if i == 0:
                 self.btn_bg_shirley_static.setChecked(True)
-            elif i==1:
+            elif i == 1:
                 self.btn_bg_tougaard_static.setChecked(True)
-            elif i==2:
+            elif i == 2:
                 self.btn_bg_polynomial.setChecked(True)
-            elif i==3:
+            elif i == 3:
                 self.btn_bg_arctan.setChecked(True)
-            elif i==4:
+            elif i == 4:
                 self.btn_bg_erf.setChecked(True)
-            elif i==5:
+            elif i == 5:
                 self.btn_bg_vbm.setChecked(True)
-            elif i==6:
+            elif i == 6:
                 self.btn_bg_slope.setChecked(True)
-            elif i==100:
+            elif i == 100:
                 self.btn_bg_shirley_act.setChecked(True)
-            elif i==101:
+            elif i == 101:
                 self.btn_bg_tougaard_act.setChecked(True)
+
     def lims_changed(self, row=0, column=0):
         """Handle the cellChanged signal emitted by fitp1 table (the limits table)
           Args:
@@ -678,7 +776,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         for col in range(ncols):
             for row in range(nrows):
                 self.fitp0.item(row, col).setFlags(self.fitp0.item(row,
-                                                                       col).flags() & ~QtCore.Qt.ItemIsEditable & ~QtCore.Qt.ItemIsEnabled & ~QtCore.Qt.ItemIsSelectable)
+                                                                   col).flags() & ~QtCore.Qt.ItemIsEditable & ~QtCore.Qt.ItemIsEnabled & ~QtCore.Qt.ItemIsSelectable)
 
         for idx in self.idx_bg:
             for col in range(ncols):
@@ -886,23 +984,27 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                                                                              3 * col + 2).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
 
     def update_com_vals(self):
-        if self.xmin_item.text() == '':
+        try:
+            self.xmin = float(self.xmin_item.text().strip())
+        except ValueError:
             self.xmin = 0
-        else:
-            self.xmin = float(self.xmin_item.text())
-        if self.xmax_item.text() == '':
+        try:
+            self.xmax = float(self.xmax_item.text().strip())
+        except ValueError:
             self.xmax = 0
-        else:
-            self.xmax = float(self.xmax_item.text())
-        if self.hv_item.text() == '':
+        try:
+            self.hv = float(self.hv_item.text().strip())
+        except ValueError:
             self.hv = 0
-        else:
-            self.hv = float(self.hv_item.text())
-        if self.wf_item.text() == '':
+        try:
+            self.wf = float(self.wf_item.text().strip())
+        except ValueError:
             self.wf = 0
-        else:
-            self.wf = float(self.wf_item.text())
-        self.pre[0] = [self.idx_bg, self.xmin, self.xmax, self.hv, self.wf]
+        try:
+            self.correct_energy = float(self.correct_energy_item.text().strip())
+        except ValueError:
+            self.correct_energy = 0
+        self.pre[0] = [self.idx_bg, self.xmin, self.xmax, self.hv, self.wf, self.correct_energy]
 
     def setLimits(self):
         self.sub_window = SubWindow(params_tab=self.fitp1_lims)
@@ -924,7 +1026,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.error_dialog.showMessage(error_message)
         logging.error(error_message)
 
-    def add_col(self):
+    def add_col(self, loaded=False):
         rowPosition = self.fitp1.rowCount()
         colPosition_fitp1 = self.fitp1.columnCount()
         colPosition_fitp1_lims = self.fitp1_lims.columnCount()
@@ -957,18 +1059,42 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                    self.floating)))
                     self.fitp1.setItem(row + 1, colPosition_fitp1 + 1, item)
 
+        # add table header
+        if loaded:
+            fitp1=[item for string in loaded[1:] for item in ['',string]]
+            fitp1_lims=[item for string in loaded[1:] for item in [string, 'min', 'max']]
+            self.fitp1.setHorizontalHeaderLabels(fitp1)
+            self.fitp1_lims.setHorizontalHeaderLabels(fitp1_lims)
+            self.res_tab.setHorizontalHeaderLabels(loaded[1:])
+
+        else:
+            comp_name=self.nextFreeComponentName()
+            item = QtWidgets.QTableWidgetItem()
+            self.fitp1.setHorizontalHeaderItem(colPosition_fitp1, item)
+            item = QtWidgets.QTableWidgetItem(comp_name)
+            self.fitp1.setHorizontalHeaderItem(colPosition_fitp1 + 1, item)
+
+            item = QtWidgets.QTableWidgetItem(comp_name)
+            self.res_tab.setHorizontalHeaderItem(colPosition_res, item)
+            item = QtWidgets.QTableWidgetItem(comp_name)
+            self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims, item)
+            item = QtWidgets.QTableWidgetItem('min')
+            self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims + 1, item)
+            item = QtWidgets.QTableWidgetItem('max')
+            self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims + 2, item)
+        self.res_tab.resizeColumnsToContents()
+        self.res_tab.resizeRowsToContents()
+        self.fitp1_lims.resizeColumnsToContents()
+        self.fitp1_lims.resizeRowsToContents()
+        self.fitp1.setHeaderTooltips()
+        self.fitp1_lims.setHeaderTooltips()
+        self.fitp1.resizeColumnsToContents()
+        for column in range(self.fitp1.columnCount()):
+            if column % 2 == 1:
+                self.fitp1.setColumnWidth(column, 55)
+
         # add DropDown component selection for amp_ref and ctr_ref and keep values as it is
-        self.list_component.append(str(int(1 + colPosition_fitp1 / 2)))
-        for i in range(7):
-            for col in range(int(colPosition_fitp1 / 2) + 1):
-                if col < int(colPosition_fitp1 / 2):
-                    index = self.fitp1.cellWidget(13 + 2 * i, 2 * col + 1).currentIndex()
-                comboBox = QtWidgets.QComboBox()
-                comboBox.addItems(self.list_component)
-                comboBox.setMaximumWidth(55)
-                if index > 0 and col < int(colPosition_fitp1 / 2):
-                    comboBox.setCurrentIndex(index)
-                self.fitp1.setCellWidget(13 + 2 * i, 2 * col + 1, comboBox)
+        self.updateDropdown(colposition=colPosition_fitp1)
 
         # add checkbox
         for row in range(rowPosition - 1):
@@ -1005,52 +1131,41 @@ class PrettyWidget(QtWidgets.QMainWindow):
             item.setText('')
             self.fitp1_lims.setItem(row, colPosition_fitp1_lims + 2, item)
 
-        # add table header
-        item = QtWidgets.QTableWidgetItem()
-        self.fitp1.setHorizontalHeaderItem(colPosition_fitp1, item)
-        item = QtWidgets.QTableWidgetItem('C_' + str(int(1 + colPosition_fitp1 / 2)))
-        self.fitp1.setHorizontalHeaderItem(colPosition_fitp1 + 1, item)
-        self.fitp1.resizeColumnsToContents()
-        item = QtWidgets.QTableWidgetItem('C_' + str(int(1 + colPosition_res)))
-        self.res_tab.setHorizontalHeaderItem(colPosition_res, item)
-        self.res_tab.resizeColumnsToContents()
-        self.res_tab.resizeRowsToContents()
-        item = QtWidgets.QTableWidgetItem('C_' + str(int(1 + colPosition_fitp1 / 2)))
-        self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims, item)
-        item = QtWidgets.QTableWidgetItem('min')
-        self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims + 1, item)
-        item = QtWidgets.QTableWidgetItem('max')
-        self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims + 2, item)
-        self.fitp1_lims.resizeColumnsToContents()
-        self.fitp1_lims.resizeRowsToContents()
         self.activeParameters()
-        # self.fitp1.setColumnWidth(1, 55)
+        self.savePreset()
 
-    def rem_col(self):
-        colPosition = self.fitp1.columnCount()
-        colPosition_lims = self.fitp1_lims.columnCount()
-        colPosition_res = self.res_tab.columnCount()
-        if colPosition_res > 1:
-            self.res_tab.removeColumn(colPosition_res - 1)
-        if colPosition_lims > 3:
-            self.fitp1_lims.removeColumn(colPosition_lims - 1)
-            self.fitp1_lims.removeColumn(colPosition_lims - 2)
-            self.fitp1_lims.removeColumn(colPosition_lims - 3)
-        if colPosition > 2:
-            self.fitp1.removeColumn(colPosition - 1)
-            self.fitp1.removeColumn(colPosition - 2)
-            self.list_component.remove(str(int(colPosition / 2)))
-            # remove component in dropdown menu and keep values as it is
-            for i in range(7):
-                for col in range(int(colPosition / 2) - 1):
-                    if col < int(colPosition / 2):
-                        index = self.fitp1.cellWidget(13 + 2 * i, 2 * col + 1).currentIndex()
-                    comboBox = QtWidgets.QComboBox()
-                    comboBox.addItems(self.list_component)
-                    comboBox.setMaximumWidth(55)
-                    if index > 0 and col < int(colPosition / 2):
-                        comboBox.setCurrentIndex(index)
-                    self.fitp1.setCellWidget(13 + 2 * i, 2 * col + 1, comboBox)
+
+
+
+    def removeCol(self, idx=None, text=None):
+        if text=='--':
+            pass
+        else:
+            if idx==None or text=="Remove Last Column":
+                colPosition = self.fitp1.columnCount()-2
+                colPosition_lims = self.fitp1_lims.columnCount()-3
+                colPosition_res = self.res_tab.columnCount()-1
+            elif idx!=None:
+                colPosition = (idx-2)*2
+                colPosition_lims = int((idx-2)*3)
+                colPosition_res = int(idx-2)
+            if self.res_tab.columnCount() > 1 and self.fitp1_lims.columnCount() > 3 and self.fitp1.columnCount() > 2:
+                self.res_tab.removeColumn(colPosition_res)
+                self.fitp1_lims.removeColumn(colPosition_lims+2)
+                self.fitp1_lims.removeColumn(colPosition_lims+1)
+                self.fitp1_lims.removeColumn(colPosition_lims)
+                self.fitp1.removeColumn(colPosition+1)
+                self.fitp1.removeColumn(colPosition)
+                self.updateDropdown()
+            else:
+                print('Cannot remove the last remaining column.')
+        self.savePreset()
+        header_texts = ['']
+        for column in range(int(self.fitp1.columnCount() / 2)):
+            header_item = self.fitp1.horizontalHeaderItem(int(column * 2 + 1))
+            if header_item is not None:
+                header_texts.append(header_item.text())
+        self.list_component=header_texts
 
     def clickOnBtnPreset(self, idx):
         self.idx_pres = idx
@@ -1113,7 +1228,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if index == 1:
             if colPosition > 2:
                 for col in range(int(colPosition / 2) - 1):
-                    self.rem_col()
+                    self.removeCol(idx=None)
             # load default preset
             if self.comboBox_file.currentIndex() > 0:
                 # self.df = np.loadtxt(str(self.comboBox_file.currentText()),	delimiter=',', skiprows=1)
@@ -1238,14 +1353,18 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.hv_item.setText(str(format(self.hv, self.floating)))
             self.wf = list_pre_com[4]
             self.wf_item.setText(str(format(self.wf, self.floating)))
+            if len(list_pre_com)==6:
+                self.correct_energy = list_pre_com[5]
+                self.correct_energy_item.setText(str(format(self.correct_energy, self.floating)))
         self.displayChoosenBG.setText(
             'Choosen Background: {}'.format('+ '.join([dictBG[str(idx)] for idx in self.idx_bg])))
         # load preset for bg
-        if len(list_pre_bg) != 0 and self.addition == 0:
+        if len(list_pre_bg) != 0:
             for row in range(len(list_pre_bg)):
                 for col in range(len(list_pre_bg[0])):
                     item = self.fitp0.item(row, col)
-                    if (row == 2 or row>3 or (row==3 and col<2) or (row == 0 and 8 > col >= 4) or (row == 1 and col == 0)) and col % 2 == 0:
+                    if (row == 2 or row > 3 or (row == 3 and col < 2) or (row == 0 and 8 > col >= 4) or (
+                            row == 1 and col == 0)) and col % 2 == 0:
                         if list_pre_bg[row][col] == 2:
                             item.setCheckState(QtCore.Qt.Checked)
                         else:
@@ -1258,18 +1377,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # adjust ncomponent before load
         if len(list_pre_pk) != 0:
             colPosition = int(self.fitp1.columnCount() / 2)
-            if self.addition == 0:
-                # print(int(colPosition), int(len(list_pre_pk[0])/2), list_pre_pk[0])
-                if colPosition > int(len(list_pre_pk[0]) / 2):
-                    for col in range(colPosition - int(len(list_pre_pk[0]) / 2)):
-                        self.rem_col()
-                if colPosition < int(len(list_pre_pk[0]) / 2):
-                    for col in range(int(len(list_pre_pk[0]) / 2) - colPosition):
-                        self.add_col()
-            else:
-                for col in range(int(len(list_pre_pk[0]) / 2)):
-                    self.add_col()
-
+            # print(int(colPosition), int(len(list_pre_pk[0])/2), list_pre_pk[0])
+            if colPosition > int(len(list_pre_pk[0]) / 2):
+                for col in range(colPosition - int(len(list_pre_pk[0]) / 2)):
+                     self.removeCol(idx=None)
+            if colPosition < int(len(list_pre_pk[0]) / 2):
+                for col in range(int(len(list_pre_pk[0]) / 2) - colPosition):
+                    self.add_col(loaded=self.list_component)
         for row in range(len(list_pre_pk)):
             for col in range(len(list_pre_pk[0])):
                 if (col % 2) != 0:
@@ -1280,39 +1394,17 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             comboBox.currentTextChanged.connect(self.activeParameters)
                         else:
                             comboBox.addItems(self.list_component)
-                        if self.addition == 0:
-                            self.fitp1.setCellWidget(row, col, comboBox)
-                            comboBox.setCurrentIndex(int(list_pre_pk[row][col]))
-                        else:
-                            self.fitp1.setCellWidget(row, col + colPosition * 2, comboBox)
-                            if list_pre_pk[row][col] != 0:
-                                if row==0:
-                                    comboBox.setCurrentIndex(int(list_pre_pk[row][col]))
-                                else:
-                                    comboBox.setCurrentIndex(int(list_pre_pk[row][col] + colPosition))
-                            else:
-                                comboBox.setCurrentIndex(int(list_pre_pk[row][col]))
+                        self.fitp1.setCellWidget(row, col, comboBox)
+                        comboBox.setCurrentIndex(int(float(list_pre_pk[row][col])))
                     else:
-                        if self.addition == 0:
-                            item = self.fitp1.item(row, col)
-                            if str(list_pre_pk[row][col]) == '':
-                                item.setText('')
-                            else:
-                                item.setText(str(format(list_pre_pk[row][col], self.floating)))
+                        item = self.fitp1.item(row, col)
+                        if str(list_pre_pk[row][col]) == '':
+                            item.setText('')
                         else:
-                            item = self.fitp1.item(row, col+colPosition*2)
-                            if str(list_pre_pk[row][col]) == '':
-                                item.setText('')
-                            else:
-                                item.setText(str(format(list_pre_pk[row][col], self.floating)))
-
-
+                            item.setText(str(format(float(list_pre_pk[row][col]), self.floating)))
                 else:
                     if row != 0 and row != 13 and row != 15 and row != 17 and row != 19 and row != 21 and row != 23 and row != 25:
-                        if self.addition == 0:
-                            item = self.fitp1.item(row, col)
-                        else:
-                            item = self.fitp1.item(row, col+colPosition*2)
+                        item = self.fitp1.item(row, col)
                         item.setText('')
                         if list_pre_pk[row][col] == 2:
                             item.setCheckState(QtCore.Qt.Checked)
@@ -1320,15 +1412,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             item.setCheckState(QtCore.Qt.Unchecked)
             for row in range(len(list_pre_pk_lims)):
                 for col in range(len(list_pre_pk_lims[0])):
-                    if self.addition == 0:
-                        item = self.fitp1_lims.item(row, col)
-                    else:
-                        item = self.fitp1_lims.item(row, col+colPosition*3)
+                    item = self.fitp1_lims.item(row, col)
                     if (col % 3) != 0:
                         if str(list_pre_pk_lims[row][col]) == '':
                             item.setText('')
                         else:
-                            item.setText(str(format(list_pre_pk_lims[row][col], self.floating)))
+                            item.setText(str(format(float(list_pre_pk_lims[row][col]), self.floating)))
                     else:
                         if list_pre_pk_lims[row][col] == 2:
                             item.setCheckState(QtCore.Qt.Checked)
@@ -1336,6 +1425,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             item.setCheckState(QtCore.Qt.Unchecked)
         self.activeParameters()
         self.lims_changed()
+        self.list_component=self.renameDuplicates(self.list_component)
+        fitp1_comps = [item for string in self.list_component[1:] for item in ["", string]]
+        fitp1_lims = [item for string in self.list_component[1:] for item in [string, 'min', 'max']]
+        self.fitp1.setHorizontalHeaderLabels(fitp1_comps)
+        self.fitp1_lims.setHorizontalHeaderLabels(fitp1_lims)
+        if self.res_tab:
+            self.res_tab.setHorizontalHeaderLabels(self.list_component[1:])
+        self.savePreset()
+
     def loadPreset(self):
         cfilePath, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open data file', self.filePath, "DAT Files (*.dat)")
         if cfilePath != "":
@@ -1346,17 +1444,30 @@ class PrettyWidget(QtWidgets.QMainWindow):
             file.close()
             # print(self.pre, type(self.pre))
             self.pre = ast.literal_eval(temp_pre)
-            if type(self.pre[0][0])==int:#backwards compatibility for old presets which only allowed one single BG
+            if type(self.pre[0][0]) == int:  # backwards compatibility for old presets which only allowed one single BG
                 self.idx_bg = [self.pre[0][0]]
             else:
                 self.idx_bg = self.pre[0][0]
+            if len(self.pre)==5:
+                self.list_component= self.pre[4]
+            else:
+                list_component = ['']
+                for i in range(int(len(self.pre[2][0])/2)):
+                    list_component.append('C_{}'.format(str(int(i+1))))
+                self.list_component = list_component
+            self.list_component=self.renameDuplicates(self.list_component)
+            fitp1_comps = [item for string in self.list_component[1:] for item in ["", string]]
+            fitp1_lims = [item for string in self.list_component[1:] for item in [string, 'min', 'max']]
+            self.fitp1.setHorizontalHeaderLabels(fitp1_comps)
+            self.fitp1_lims.setHorizontalHeaderLabels(fitp1_lims)
+            self.res_tab.setHorizontalHeaderLabels(self.list_component[1:])
+
             self.setButtonState(self.idx_bg)
             # self.pre = json.loads(self.pre) #json does not work due to the None issue
             # print(self.pre, type(self.pre))
             # self.comboBox_pres.clear()
             # self.comboBox_pres.setCurrentIndex(0)
             self.idx_pres = 0
-            self.addition = 0
         else:
             self.pre = [[], [], [], []]
 
@@ -1368,14 +1479,33 @@ class PrettyWidget(QtWidgets.QMainWindow):
             with open(cfilePath, 'r') as file:
                 temp_pre = file.read()
             file.close()
-            # print(self.pre, type(self.pre))
-            self.pre = ast.literal_eval(temp_pre)
-            # self.pre = json.loads(self.pre) #json does not work due to the None issue
-            # print(self.pre, type(self.pre))
-            # self.comboBox_pres.clear()
-            # self.comboBox_pres.setCurrentIndex(0)
+            temp_settings = self.pre[0]
+            temp_bg = self.pre[1]
+            temp_pre=ast.literal_eval(temp_pre)
+            temp_pks=temp_pre[2]
+            current_len=int(len(self.pre[2][0])/2)
+            for col in range(int(len(temp_pks[0])/2)):
+                for row in range(len(temp_pks)):
+                    if row == 13 or row == 15 or row == 17 or row == 19 or row == 21 or row == 23 or row == 25:
+                        if not temp_pks[row][2*col+1] == 0:
+                            temp_pks[row][2*col+1] = temp_pks[row][2*col+1] + current_len
+            temp_peaks=np.concatenate((self.pre[2], temp_pks), axis=1)
+            temp_lims = np.concatenate((self.pre[3], temp_pre[3]), axis=1)
+            if len(temp_pre) == 5:
+                self.list_component=np.concatenate((self.list_component, temp_pre[4][1:]), axis=0)
+            else:
+                list_component = []
+                for i in range(int(len(temp_pre[2][0]) / 2)):
+                    list_component.append('C_{}'.format(str(int(i + 1))))
+                self.list_component = np.concatenate((self.list_component, list_component), axis=0)
+            self.list_component=self.renameDuplicates(self.list_component)
+            self.pre=[temp_settings,temp_bg,temp_peaks,temp_lims, self.list_component]
+            fitp1_comps = [item for string in self.list_component[1:] for item in ["", string]]
+            fitp1_lims = [item for string in self.list_component[1:] for item in [string, 'min', 'max']]
+            self.fitp1.setHorizontalHeaderLabels(fitp1_comps)
+            self.fitp1_lims.setHorizontalHeaderLabels(fitp1_lims)
+            self.res_tab.setHorizontalHeaderLabels(self.list_component[1:])
             self.idx_pres = 0
-            self.addition = 1
         else:
             self.pre = [[], [], [], []]
 
@@ -1451,14 +1581,16 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # [BG type]]\n\n' + str(self.comboBox_bg.currentIndex()) + '\n\n[[BG parameters]]\n\n' + str(list_pre_bg) +
         # '\n\n[[component parameters]]\n\n' + str(list_pre_pk) print(Text)
 
-        self.parText = [[self.idx_bg, self.xmin, self.xmax, self.hv, self.wf]]
+        self.parText = [[self.idx_bg, self.xmin, self.xmax, self.hv, self.wf, self.correct_energy]]
         self.parText.append(list_pre_bg)
         self.parText.append(list_pre_pk)
         self.parText.append(list_pre_lims)
-        self.pre = [[self.idx_bg, self.xmin, self.xmax, self.hv, self.wf]]
+        self.parText.append(self.list_component)
+        self.pre = [[self.idx_bg, self.xmin, self.xmax, self.hv, self.wf, self.correct_energy]]
         self.pre.append(list_pre_bg)
         self.pre.append(list_pre_pk)
         self.pre.append(list_pre_lims)
+        self.pre.append(self.list_component)
 
     def savePresetDia(self):
         if self.comboBox_file.currentIndex() > 0:
@@ -1647,6 +1779,37 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 except Exception as e:
                     return self.raise_error(window_title="Error: could not load VAMAS file.",
                                             error_message='Loading VAMAS file failed. The following traceback may help to solve the issue:')
+                try:
+                    wf = vpy.get_wf(cfilePath)
+                    if isinstance(wf, float):
+                        self.wf= abs(wf)
+                        self.wf_item.setText(str(abs(wf))) #we assume in the following, that the wf is defined positive
+                        self.pre[0][4]=self.wf
+                    else:
+                        self.wf=4.0
+                        self.wf_item.setText(str(4.0))
+                        self.pre[0][4]=self.wf
+                        raise Exception('Different work functions were detected for the different blocks in your Vamas file. Work function is defaulted to 4.0eV and needs to be adjusted manually.')
+                except Exception as e:
+                    return self.raise_error(window_title="Error: could not load VAMAS work function.",
+                                            error_message=e.args[0])
+                try:
+                    hv = vpy.get_hv(cfilePath)
+                    if isinstance(hv, float):
+                        self.hv = hv
+                        self.hv_item.setText(str(hv))
+                        self.pre[0][3] = self.hv
+                    else:
+                        self.hv = 1486.6
+                        self.hv_item.setText(str(1486.6))
+                        self.pre[0][3] = self.hv
+
+                        raise Exception(
+                            'Different source energies were detected for the different blocks in your Vamas file. Source energy (hv) is defaulted to 1486.6eV and needs to be adjusted manually.')
+                except Exception as e:
+                    return self.raise_error(window_title="Error: could not load VAMAS source energy.",
+                                            error_message=e.args[0])
+
                 self.list_file.extend(self.list_vamas)
 
                 # print (self.list_file)
@@ -1678,25 +1841,40 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.repaint()
             # self.ax.texts.remove()
         if self.pt.selected_elements:
-            if self.pre[0][3] != None and self.pre[0][4] != None:
-                pe = self.pre[0][3]
-                wf = self.pre[0][4]
-            else:
-                self.hv = 1486.6
-                self.hv_item.insert(str(self.hv))
-                self.wf = 4
-                self.wf.insert(str(self.wf))
+            if self.pre[0][3] == None:
+                if len(self.hv)==0:
+                    self.pre[0][3]=1486.6
+                    self.hv=1486.6
+                else:
+                    self.pre[0][3] = self.hv
+            if self.pre[0][4] == None:
+                if len(self.wf)==0:
+                    self.pre[0][4]=4
+                    self.wf=4
+                else:
+                    self.pre[0][4]=self.wf
+            if self.pre[0][5] == None:
+                if len(self.correct_energy) == 0:
+                    self.pre[0][5] = 0
+                    self.correct_energy = 0
+                else:
+                    self.pre[0][5] = self.correct_energy
+            self.hv_item.setText(str(self.hv))
+            self.wf_item.setText(str(self.wf))
+            self.correct_energy_item.setText(str(self.correct_energy))
+            hv=self.hv
+            wf=self.wf
 
             ymin, ymax = self.ax.get_ylim()
             xmin, xmax = self.ax.get_xlim()
             for obj in self.pt.selected_elements:
-                alka=ast.literal_eval(obj['alka'].values[0])
+                alka = ast.literal_eval(obj['alka'].values[0])
                 if len(alka['trans']) > 0:
                     for orb in range(len(alka['trans'])):
                         if xmin > xmax:
                             en = float(alka['be'][orb])
                         else:
-                            en = pe - wf - float(alka['be'][orb])
+                            en = hv - wf - float(alka['be'][orb])-self.correct_energy
                         if (xmin > xmax and xmin > en > xmax) or (xmin < xmax and xmin < en < xmax):
                             elem_x = np.asarray([en])
                             elem_y = np.asarray([float(alka['rsf'][orb])])
@@ -1704,11 +1882,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             # obj.symbol+elem_z, color="r", rotation="vertical")
                             self.ax.text(elem_x, ymin + (ymax - ymin) * math.log(elem_y + 1, 10) / 2,
                                          obj['symbol'].values[0] + elem_z, color="r", rotation="vertical")
-                aes=ast.literal_eval(obj['aes'].values[0])
+                aes = ast.literal_eval(obj['aes'].values[0])
                 if len(aes['trans']) > 0:
                     for orb in range(len(aes['trans'])):
                         if xmin > xmax:
-                            en = pe - wf - float(aes['ke'][orb])
+                            en = hv - wf - float(aes['ke'][orb])-self.correct_energy
                         else:
                             en = float(aes['ke'][orb])
                         if (xmin > xmax and xmin > en > xmax) or (xmin < xmax and xmin < en < xmax):
@@ -1716,9 +1894,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             elem_y = np.asarray([float(aes['rsf'][orb])])
                             elem_z = aes['trans'][orb]
                             # obj.symbol+elem_z, color="g", rotation="vertical")
-                            self.ax.text(elem_x, ymin + (ymax - ymin) * math.log(elem_y + 1, 10), obj['symbol'].values[0] + elem_z,
+                            self.ax.text(elem_x, ymin + (ymax - ymin) * math.log(elem_y + 1, 10),
+                                         obj['symbol'].values[0] + elem_z,
                                          color="g", rotation="vertical")
-
             self.canvas.draw()
             self.repaint()
 
@@ -1793,9 +1971,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
             if strpe[0] == 'PE:' and strpe[2] == 'eV':
                 pe = float(strpe[1])
-                item = QtWidgets.QTableWidgetItem(str(pe))
-                self.fitp0.setItem(0, 9, item)
-                self.fitp0.setItem(0, 8, QtWidgets.QTableWidgetItem('Pass energy (eV)'))
+                print('Current Pass energy is PE= ', pe, 'eV')
+                #item = QtWidgets.QTableWidgetItem(str(pe))
+                #self.fitp0.setItem(0, 9, item)
+                #self.fitp0.setItem(0, 8, QtWidgets.QTableWidgetItem('Pass energy (eV)'))
             # plt.cla()
             self.ar.cla()
             self.ax.cla()
@@ -1860,10 +2039,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.df = np.random.random_sample((points, 2)) + 0.01
             self.df[:, 0] = np.linspace(x1, x2, points)
             self.ana('sim')
-
     def interrupt_fit(self):
-        print("does nothing yet")
-
+        if self.fit_thread:
+            self.fit_thread.interrupt_fit()
     def one_step_back_in_params_history(self):
         """
         Is called if button undo Fit is prest.
@@ -1905,11 +2083,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
         checked_actions = [action for action in self.bgMenu.actions() if action.isChecked()]
         idx_bg = set()
         for checked_action in checked_actions:
-            if checked_action.text() == '&Static &Shirley BG':
+            if checked_action.text() == '&Static &Shirley BG' and '&Static &Tougaard BG' not in [
+                checked_act.text() for checked_act in checked_actions]:
                 idx_bg.add(0)
             elif checked_action.text() == '&Active &Shirley BG' and '&Static &Shirley BG' in [checked_act.text() for
-                                                                                              checked_act in
-                                                                                              checked_actions]:
+                                                                                                  checked_act in
+                                                                                                  checked_actions]:
                 QtWidgets.QMessageBox.warning(self, 'Warning', 'You cannot choose both Active Shirley BG and Static '
                                                                'Shirley BG at the same time! Static Shirley BG set! To use Active Shirley BG, please uncheck Static '
                                                                'Shirley BG!')
@@ -1919,7 +2098,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                                                                                   checked_act in
                                                                                                   checked_actions]:
                 idx_bg.add(100)
-            elif checked_action.text() == '&Static &Tougaard BG':
+            elif checked_action.text() == '&Static &Tougaard BG' and '&Static &Shirley BG' not in [
+                checked_act.text() for checked_act in checked_actions]:
                 idx_bg.add(1)
             elif checked_action.text() == '&Active &Tougaard BG' and '&Static &Tougaard BG' in [
                 checked_act.text() for checked_act in checked_actions]:
@@ -1943,14 +2123,25 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 idx_bg.add(4)
             elif checked_action.text() == '&VBM/Cutoff BG':
                 idx_bg.add(5)
+        if '&Static &Shirley BG' in [
+            checked_act.text() for checked_act in checked_actions] and '&Static &Tougaard BG' in [
+            checked_act.text() for checked_act in checked_actions]:
+            QtWidgets.QMessageBox.warning(self, 'Warning',
+                                      'You cannot choose both Static Shirley BG and Static Tougaard BG at '
+                                      'the same time! Background was set to Static Shirley BG.')
+            idx_bg.add(0)
+            for checked_action in checked_actions:
+                if checked_action.text() == '&Static &Tougaard BG':
+                    checked_action.setChecked(False)
         if len(checked_actions) == 0:
-            QtWidgets.QMessageBox.information(self, 'Info', 'No background was choosen, a polynomial BG was set as default.')
-            idx_bg.add(2) #if no background was selected, a polynomial will be used
+            QtWidgets.QMessageBox.information(self, 'Info',
+                                              'No background was choosen, a polynomial BG was set as default.')
+            idx_bg.add(2)  # if no background was selected, a polynomial will be used
         self.idx_bg = sorted(idx_bg)
 
         self.pre[0][0] = self.idx_bg
         self.displayChoosenBG.setText(
-                'Choosen Background: {}'.format('+ '.join([dictBG[str(idx)] for idx in self.idx_bg])))
+            'Choosen Background: {}'.format('+ '.join([dictBG[str(idx)] for idx in self.idx_bg])))
         self.activeParameters()
 
     def write_pars(self, pars):
@@ -1961,12 +2152,14 @@ class PrettyWidget(QtWidgets.QMainWindow):
             shA = self.pre[1][0][1]
             shB = self.pre[1][0][3]
             pars = None
+            mod = None
             bg_mod = xpy.shirley_calculate(x, y, shA, shB)
         if idx_bg == 100:
             if mode == "eva":
                 shA = self.pre[1][0][1]
                 shB = self.pre[1][0][3]
                 pars = None
+                mod = None
                 bg_mod = xpy.shirley_calculate(x, y, shA, shB)
             else:
                 mod = ShirleyBG(independent_vars=["y"], prefix='bg_shirley_')
@@ -1987,6 +2180,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             toD = self.pre[1][1][7]
             toT0 = self.pre[1][1][9]
             pars = None
+            mod = None
             if mode == 'fit':
                 toM = self.pre[1][0][3]
                 [bg_mod, bg_toB] = xpy.tougaard_calculate(x, y, toB, toC, toCd, toD, toM)
@@ -1997,8 +2191,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if idx_bg == 101:
             mod = TougaardBG(independent_vars=["x", "y"], prefix='bg_tougaard_')
             if self.pre[1][1][1] is None or self.pre[1][1][3] is None or self.pre[1][1][5] is None \
-                    or self.pre[1][1][7] is None or self.pre[1][1][9] is None or len(str(self.pre[1][1][1])) == 0 or len(str(self.pre[1][1][3])) == 0 \
-                    or len(str(self.pre[1][1][5])) == 0 or len(str(self.pre[1][1][7]))==0 or len(str(self.pre[1][1][9])) == 0:
+                    or self.pre[1][1][7] is None or self.pre[1][1][9] is None or len(
+                str(self.pre[1][1][1])) == 0 or len(str(self.pre[1][1][3])) == 0 \
+                    or len(str(self.pre[1][1][5])) == 0 or len(str(self.pre[1][1][7])) == 0 or len(
+                str(self.pre[1][1][9])) == 0:
                 pars = mod.guess(y, x=x, y=y)
             else:
                 pars = mod.make_params()
@@ -2011,45 +2207,45 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 pars['bg_tougaard_C_d'].vary = False
                 pars['bg_tougaard_D'].value = self.pre[1][1][7]
                 pars['bg_tougaard_D'].vary = False
-                pars['bg_tougaard_extend'].value=self.pre[1][1][9]
+                pars['bg_tougaard_extend'].value = self.pre[1][1][9]
                 pars['bg_tougaard_extend'].vary = False
             bg_mod = 0
         if idx_bg == 3:
             mod = StepModel(prefix='bg_arctan_', form='arctan')
-            if self.pre[1][idx_bg+1][1] is None or self.pre[1][idx_bg+1][3] is None or self.pre[1][idx_bg+1][
+            if self.pre[1][idx_bg + 1][1] is None or self.pre[1][idx_bg + 1][3] is None or self.pre[1][idx_bg + 1][
                 5] is None \
-                    or len(str(self.pre[1][idx_bg+1][1])) == 0 or len(str(self.pre[1][idx_bg+1][3])) == 0 \
-                    or len(str(self.pre[1][idx_bg+1][5])) == 0:
+                    or len(str(self.pre[1][idx_bg + 1][1])) == 0 or len(str(self.pre[1][idx_bg + 1][3])) == 0 \
+                    or len(str(self.pre[1][idx_bg + 1][5])) == 0:
                 pars = mod.guess(y, x=x)
             else:
                 pars = mod.make_params()
-                pars['bg_arctan_amplitude'].value = self.pre[1][idx_bg+1][1]
-                if self.pre[1][idx_bg+1][0] == 2:
+                pars['bg_arctan_amplitude'].value = self.pre[1][idx_bg + 1][1]
+                if self.pre[1][idx_bg + 1][0] == 2:
                     pars['bg_arctan_amplitude'].vary = False
-                pars['bg_arctan_center'].value = self.pre[1][idx_bg+1][3]
-                if self.pre[1][idx_bg+1][2] == 2:
+                pars['bg_arctan_center'].value = self.pre[1][idx_bg + 1][3]
+                if self.pre[1][idx_bg + 1][2] == 2:
                     pars['bg_arctan_center'].vary = False
-                pars['bg_arctan_sigma'].value = self.pre[1][idx_bg+1][5]
-                if self.pre[1][idx_bg+1][4] == 2:
+                pars['bg_arctan_sigma'].value = self.pre[1][idx_bg + 1][5]
+                if self.pre[1][idx_bg + 1][4] == 2:
                     pars['bg_arctan_sigma'].vary = False
             bg_mod = 0
         if idx_bg == 4:
             mod = StepModel(prefix='bg_step_', form='erf')
-            if self.pre[1][idx_bg+1][1] is None or self.pre[1][idx_bg+1][3] is None or self.pre[1][idx_bg+1][
+            if self.pre[1][idx_bg + 1][1] is None or self.pre[1][idx_bg + 1][3] is None or self.pre[1][idx_bg + 1][
                 5] is None \
-                    or len(str(self.pre[1][idx_bg+1][1])) == 0 or len(str(self.pre[1][idx_bg+1][3])) == 0 \
-                    or len(str(self.pre[1][idx_bg+1][5])) == 0:
+                    or len(str(self.pre[1][idx_bg + 1][1])) == 0 or len(str(self.pre[1][idx_bg + 1][3])) == 0 \
+                    or len(str(self.pre[1][idx_bg + 1][5])) == 0:
                 pars = mod.guess(y, x=x)
             else:
                 pars = mod.make_params()
-                pars['bg_step_amplitude'].value = self.pre[1][idx_bg+1][1]
-                if self.pre[1][idx_bg+1][0] == 2:
+                pars['bg_step_amplitude'].value = self.pre[1][idx_bg + 1][1]
+                if self.pre[1][idx_bg + 1][0] == 2:
                     pars['bg_step_amplitude'].vary = False
-                pars['bg_step_center'].value = self.pre[1][idx_bg+1][3]
-                if self.pre[1][idx_bg+1][2] == 2:
+                pars['bg_step_center'].value = self.pre[1][idx_bg + 1][3]
+                if self.pre[1][idx_bg + 1][2] == 2:
                     pars['bg_step_center'].vary = False
-                pars['bg_step_sigma'].value = self.pre[1][idx_bg+1][5]
-                if self.pre[1][idx_bg+1][4] == 2:
+                pars['bg_step_sigma'].value = self.pre[1][idx_bg + 1][5]
+                if self.pre[1][idx_bg + 1][4] == 2:
                     pars['bg_step_sigma'].vary = False
             bg_mod = 0
 
@@ -2067,32 +2263,32 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
             mod = Model(poly2vbm, prefix='bg_vbm_')
             pars = mod.make_params()
-            if self.pre[1][idx_bg+1][1] is None or self.pre[1][idx_bg+1][3] is None or self.pre[1][idx_bg+1][
+            if self.pre[1][idx_bg + 1][1] is None or self.pre[1][idx_bg + 1][3] is None or self.pre[1][idx_bg + 1][
                 5] is None \
-                    or self.pre[1][idx_bg+1][7] is None or self.pre[1][idx_bg+1][9] is None \
-                    or len(str(self.pre[1][idx_bg+1][1])) == 0 or len(str(self.pre[1][idx_bg+1][3])) == 0 \
-                    or len(str(self.pre[1][idx_bg+1][5])) == 0 or len(str(self.pre[1][idx_bg+1][7])) == 0 \
-                    or len(str(self.pre[1][idx_bg+1][9])) == 0:
+                    or self.pre[1][idx_bg + 1][7] is None or self.pre[1][idx_bg + 1][9] is None \
+                    or len(str(self.pre[1][idx_bg + 1][1])) == 0 or len(str(self.pre[1][idx_bg + 1][3])) == 0 \
+                    or len(str(self.pre[1][idx_bg + 1][5])) == 0 or len(str(self.pre[1][idx_bg + 1][7])) == 0 \
+                    or len(str(self.pre[1][idx_bg + 1][9])) == 0:
                 pars['bg_vbm_ctr'].value = (x[0] + x[-1]) / 2
                 pars['bg_vbm_d1'].value = 0
                 pars['bg_vbm_d2'].value = 0
                 pars['bg_vbm_d3'].value = 0
                 pars['bg_vbm_d4'].value = 0
             else:
-                pars['bg_vbm_ctr'].value = self.pre[1][idx_bg+1][1]
-                if self.pre[1][idx_bg+1][0] == 2:
+                pars['bg_vbm_ctr'].value = self.pre[1][idx_bg + 1][1]
+                if self.pre[1][idx_bg + 1][0] == 2:
                     pars['bg_vbm_ctr'].vary = False
-                pars['bg_vbm_d1'].value = self.pre[1][idx_bg+1][3]
-                if self.pre[1][idx_bg+1][2] == 2:
+                pars['bg_vbm_d1'].value = self.pre[1][idx_bg + 1][3]
+                if self.pre[1][idx_bg + 1][2] == 2:
                     pars['bg_vbm_d1'].vary = False
-                pars['bg_vbm_d2'].value = self.pre[1][idx_bg+1][5]
-                if self.pre[1][idx_bg+1][5] == 2:
+                pars['bg_vbm_d2'].value = self.pre[1][idx_bg + 1][5]
+                if self.pre[1][idx_bg + 1][5] == 2:
                     pars['bg_vbm_d2'].vary = False
-                pars['bg_vbm_d3'].value = self.pre[1][idx_bg+1][7]
-                if self.pre[1][idx_bg+1][6] == 2:
+                pars['bg_vbm_d3'].value = self.pre[1][idx_bg + 1][7]
+                if self.pre[1][idx_bg + 1][6] == 2:
                     pars['bg_vbm_d3'].vary = False
-                pars['bg_vbm_d4'].value = self.pre[1][idx_bg+1][9]
-                if self.pre[1][idx_bg+1][8] == 2:
+                pars['bg_vbm_d4'].value = self.pre[1][idx_bg + 1][9]
+                if self.pre[1][idx_bg + 1][8] == 2:
                     pars['bg_vbm_d4'].vary = False
             bg_mod = 0
         if idx_bg == 2:
@@ -2109,9 +2305,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     pars['bg_poly_c' + str(index)].value = self.pre[1][2][2 * index + 1]
                     if self.pre[1][2][2 * index] == 2:
                         pars['bg_poly_c' + str(index)].vary = False
-        if idx_bg ==6:
-            mod=SlopeBG(independent_vars=['y'],prefix='bg_slope_')
-            bg_mod=0
+        if idx_bg == 6:
+            mod = SlopeBG(independent_vars=['y'], prefix='bg_slope_')
+            bg_mod = 0
             if self.pre[1][3][1] is None or len(str(self.pre[1][3][1])) == 0:
                 pars = mod.guess(y, x=x)
             else:
@@ -2119,12 +2315,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 pars['bg_slope_k'].value = self.pre[1][3][1]
                 if self.pre[1][3][0] == 2:
                     pars['bg_slope_k'].vary = False
-        if self.fixedBG.isChecked():
+        if self.fixedBG.isChecked() and pars!=None:
             for par in pars:
                 pars[par].vary = False
         return [mod, bg_mod, pars]
-
-
 
     def PeakSelector(self, mod):
         pars_all = []
@@ -2136,7 +2330,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
             strind = self.list_shape[index]
             strind = strind.split(":", 1)[0]
             modp = model_selector(index, strind, index_pk)
-            mod += modp
+            if mod is not None:
+                mod += modp
+            else:
+                mod=modp
             if index_pk == 0:
                 pars = modp.make_params()
             else:
@@ -2148,6 +2345,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     pars[strind + str(index_pk + 1) + '_center'].vary = False
             if self.pre[2][2][2 * index_pk + 1] is not None and len(str(self.pre[2][2][2 * index_pk + 1])) > 0:
                 pars[strind + str(index_pk + 1) + '_amplitude'].value = float(self.pre[2][2][2 * index_pk + 1])
+                pars[strind + str(index_pk + 1) + '_amplitude'].min = 0.0
                 if self.pre[2][2][2 * index_pk] == 2:
                     pars[strind + str(index_pk + 1) + '_amplitude'].vary = False
             if self.pre[2][14][2 * index_pk + 1] is not None and len(str(self.pre[2][14][2 * index_pk + 1])) > 0:
@@ -2162,61 +2360,71 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if index == 0 or index == 2 or index == 4 or index == 5 or index == 6 or index == 7 or index == 8 or index == 12:
                 if self.pre[2][4][2 * index_pk + 1] is not None and len(str(self.pre[2][4][2 * index_pk + 1])) > 0:
                     pars[strind + str(index_pk + 1) + '_sigma'].value = float(self.pre[2][4][2 * index_pk + 1])
+                    pars[strind + str(index_pk + 1) + '_sigma'].min = 0
                     if self.pre[2][4][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_sigma'].vary = False
                 if self.pre[2][20][2 * index_pk + 1] is not None and len(str(self.pre[2][20][2 * index_pk + 1])) > 0:
                     pars.add(strind + str(index_pk + 1) + "_gaussian_ratio",
-                             value=float(self.pre[2][20][2 * index_pk + 1]))
+                             value=float(self.pre[2][20][2 * index_pk + 1]), min=0)
                     if self.pre[2][20][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_gaussian_ratio'].vary = False
             if index == 10 or index == 11:
                 if self.pre[2][4][2 * index_pk + 1] is not None and len(str(self.pre[2][4][2 * index_pk + 1])) > 0:
                     pars[strind + str(index_pk + 1) + '_gaussian_sigma'].value = float(self.pre[2][4][2 * index_pk + 1])
+                    pars[strind + str(index_pk + 1) + '_gaussian_sigma'].min = 0
                     if self.pre[2][4][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_gaussian_sigma'].vary = False
                 if self.pre[2][20][2 * index_pk + 1] is not None and len(str(self.pre[2][20][2 * index_pk + 1])) > 0:
                     pars.add(strind + str(index_pk + 1) + "_gaussian_ratio",
-                             value=float(self.pre[2][20][2 * index_pk + 1]))
+                             value=float(self.pre[2][20][2 * index_pk + 1]), min=0)
                     if self.pre[2][20][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_gaussian_ratio'].vary = False
             if index == 1 or index == 3 or index == 9 or index == 10 or index == 11:
                 if self.pre[2][3][2 * index_pk + 1] is not None and len(str(self.pre[2][3][2 * index_pk + 1])) > 0:
                     pars[strind + str(index_pk + 1) + '_sigma'].value = float(self.pre[2][3][2 * index_pk + 1])
+                    pars[strind + str(index_pk + 1) + '_sigma'].min = 0
                     if self.pre[2][3][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_sigma'].vary = False
                 if self.pre[2][18][2 * index_pk + 1] is not None and len(str(self.pre[2][18][2 * index_pk + 1])) > 0:
                     pars.add(strind + str(index_pk + 1) + "_lorentzian_ratio",
-                             value=float(self.pre[2][18][2 * index_pk + 1]))
+                             value=float(self.pre[2][18][2 * index_pk + 1]), min=0)
                     if self.pre[2][18][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_lorentzian_ratio'].vary = False
             if index == 2 or index == 6:
                 if self.pre[2][3][2 * index_pk + 1] is not None and len(str(self.pre[2][3][2 * index_pk + 1])) > 0:
                     pars[strind + str(index_pk + 1) + '_gamma'].value = float(self.pre[2][3][2 * index_pk + 1])
+                    pars[strind + str(index_pk + 1) + '_gamma'].min = 0
                     if self.pre[2][3][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_gamma'].vary = False
                 if self.pre[2][18][2 * index_pk + 1] is not None and len(str(self.pre[2][18][2 * index_pk + 1])) > 0:
                     pars.add(strind + str(index_pk + 1) + "_lorentzian_ratio",
-                             value=float(self.pre[2][18][2 * index_pk + 1]))
+                             value=float(self.pre[2][18][2 * index_pk + 1]), min=0)
                     if self.pre[2][18][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_lorentzian_ratio'].vary = False
             if index == 4 or index == 5 or index == 9 or index == 10 or index == 11:
                 if self.pre[2][5][2 * index_pk + 1] is not None and len(str(self.pre[2][5][2 * index_pk + 1])) > 0:
                     pars[strind + str(index_pk + 1) + '_gamma'].value = float(self.pre[2][5][2 * index_pk + 1])
+                    #pars[strind + str(index_pk + 1) + '_gamma'].min = 0
+                    pars[strind + str(index_pk + 1) + '_gamma'].max=1
                     if self.pre[2][5][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_gamma'].vary = False
                 if self.pre[2][22][2 * index_pk + 1] is not None and len(str(self.pre[2][22][2 * index_pk + 1])) > 0:
                     pars.add(strind + str(index_pk + 1) + "_gamma_ratio",
-                             value=float(self.pre[2][22][2 * index_pk + 1]))
+                             value=float(self.pre[2][22][2 * index_pk + 1]), min=0)
                     if self.pre[2][22][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_gamma_ratio'].vary = False
             if index == 3:
                 if self.pre[2][6][2 * index_pk + 1] is not None and len(str(self.pre[2][6][2 * index_pk + 1])) > 0:
                     pars[strind + str(index_pk + 1) + '_fraction'].value = float(self.pre[2][6][2 * index_pk + 1])
+                    pars[strind + str(index_pk + 1) + '_fraction'].min = 0
+                    pars[strind + str(index_pk + 1) + '_fraction'].max = 1
                     if self.pre[2][6][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_fraction'].vary = False
             if index == 6:
                 if self.pre[2][7][2 * index_pk + 1] is not None and len(str(self.pre[2][7][2 * index_pk + 1])) > 0:
                     pars[strind + str(index_pk + 1) + '_skew'].value = float(self.pre[2][7][2 * index_pk + 1])
+                    pars[strind + str(index_pk + 1) + '_skew'].min = -1
+                    pars[strind + str(index_pk + 1) + '_skew'].max = 1
                     if self.pre[2][7][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_skew'].vary = False
             if index == 7:
@@ -2227,6 +2435,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if index == 12:
                 if self.pre[2][9][2 * index_pk + 1] is not None and len(str(self.pre[2][9][2 * index_pk + 1])) > 0:
                     pars[strind + str(index_pk + 1) + '_kt'].value = float(self.pre[2][9][2 * index_pk + 1])
+                    pars[strind + str(index_pk + 1) + '_kt'].min = 0
+                    pars[strind + str(index_pk + 1) + '_kt'].max = 1
                     if self.pre[2][9][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_kt'].vary = False
 
@@ -2236,21 +2446,22 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     if self.pre[2][10][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_soc'].vary = False
                 if self.pre[2][24][2 * index_pk + 1] is not None and len(str(self.pre[2][24][2 * index_pk + 1])) > 0:
-                    pars.add(strind + str(index_pk + 1) + "_soc_ratio", value=float(self.pre[2][24][2 * index_pk + 1]))
+                    pars.add(strind + str(index_pk + 1) + "_soc_ratio", value=float(self.pre[2][24][2 * index_pk + 1]), min=0)
                     if self.pre[2][24][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_soc_ratio'].vary = False
                 if self.pre[2][11][2 * index_pk + 1] is not None and len(str(self.pre[2][11][2 * index_pk + 1])) > 0:
                     pars[strind + str(index_pk + 1) + '_height_ratio'].value = float(self.pre[2][11][2 * index_pk + 1])
+                    pars[strind + str(index_pk + 1) + '_height_ratio'].min = 0
                     if self.pre[2][11][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_height_ratio'].vary = False
                 if self.pre[2][26][2 * index_pk + 1] is not None and len(str(self.pre[2][26][2 * index_pk + 1])) > 0:
                     pars.add(strind + str(index_pk + 1) + "_rel_height_ratio",
-                             value=float(self.pre[2][26][2 * index_pk + 1]))
+                             value=float(self.pre[2][26][2 * index_pk + 1]), min=0)
                     if self.pre[2][26][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_rel_height_ratio'].vary = False
                 if self.pre[2][12][2 * index_pk + 1] is not None and len(str(self.pre[2][12][2 * index_pk + 1])) > 0:
-                    pars[strind + str(index_pk + 1) + '_fct_coster_kronig'].value = float(
-                        self.pre[2][12][2 * index_pk + 1])
+                    pars[strind + str(index_pk + 1) + '_fct_coster_kronig'].value = float(self.pre[2][12][2 * index_pk + 1])
+                    pars[strind + str(index_pk + 1) + '_fct_coster_kronig'].min = 0
                     if self.pre[2][12][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_fct_coster_kronig'].vary = False
             pars = self.ratio_setup(pars, index_pk, strind, index)
@@ -2568,21 +2779,21 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.pre[1][1][7] = out_params['bg_tougaard_D'].value
                 self.pre[1][1][9] = out_params['bg_tougaard_extend'].value
             if idx_bg == 3:
-                self.pre[1][idx_bg+1][1] = out_params['bg_arctan_amplitude'].value
-                self.pre[1][idx_bg+1][3] = out_params['bg_arctan_center'].value
-                self.pre[1][idx_bg+1][5] = out_params['bg_arctan_sigma'].value
+                self.pre[1][idx_bg + 1][1] = out_params['bg_arctan_amplitude'].value
+                self.pre[1][idx_bg + 1][3] = out_params['bg_arctan_center'].value
+                self.pre[1][idx_bg + 1][5] = out_params['bg_arctan_sigma'].value
 
             if idx_bg == 4:
-                self.pre[1][idx_bg+1][1] = out_params['bg_step_amplitude'].value
-                self.pre[1][idx_bg+1][3] = out_params['bg_step_center'].value
-                self.pre[1][idx_bg+1][5] = out_params['bg_step_sigma'].value
+                self.pre[1][idx_bg + 1][1] = out_params['bg_step_amplitude'].value
+                self.pre[1][idx_bg + 1][3] = out_params['bg_step_center'].value
+                self.pre[1][idx_bg + 1][5] = out_params['bg_step_sigma'].value
             if idx_bg == 5:
-                self.pre[1][idx_bg+1][1] = out_params['bg_vbm_ctr'].value
-                self.pre[1][idx_bg+1][3] = out_params['bg_vbm_d1'].value
-                self.pre[1][idx_bg+1][5] = out_params['bg_vbm_d2'].value
-                self.pre[1][idx_bg+1][7] = out_params['bg_vbm_d3'].value
-                self.pre[1][idx_bg+1][9] = out_params['bg_vbm_d4'].value
-            if idx_bg==2:
+                self.pre[1][idx_bg + 1][1] = out_params['bg_vbm_ctr'].value
+                self.pre[1][idx_bg + 1][3] = out_params['bg_vbm_d1'].value
+                self.pre[1][idx_bg + 1][5] = out_params['bg_vbm_d2'].value
+                self.pre[1][idx_bg + 1][7] = out_params['bg_vbm_d3'].value
+                self.pre[1][idx_bg + 1][9] = out_params['bg_vbm_d4'].value
+            if idx_bg == 2:
                 for index in range(5):
                     self.pre[1][2][2 * index + 1] = out_params['bg_poly_c' + str(index)].value
 
@@ -2643,7 +2854,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
             strind = self.list_shape[index]
             strind = strind.split(":", 1)[0]
             y_components += out.eval_components()[strind + str(index_pk + 1) + '_']
-        area_components = integrate.simps([y for y, x in zip(y_components, x)])
+        if self.binding_ener:
+            area_components = integrate.simps([y for y, x in zip(y_components, x[::-1])],x[::-1])
+        else:
+            area_components = integrate.simps([y for y, x in zip(y_components, x)], x)
         for index_pk in range(int(len(self.pre[2][0]) / 2)):
             index = self.pre[2][0][2 * index_pk + 1]
             strind = self.list_shape[index]
@@ -2668,7 +2882,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     str(format(out.params[strind + str(index_pk + 1) + '_height'].value, self.floating)))
                 self.res_tab.setItem(5, index_pk, item)
                 y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
-                area = integrate.simps([y for y, x in zip(y_area, x)])
+                if self.binding_ener:
+                    area = abs(integrate.simps([y for y, x in zip(y_area, x[::-1])], x[::-1]))
+                else:
+                    area= abs(integrate.simps([y for y, x in zip(y_area, x)], x))
                 item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                 self.res_tab.setItem(7, index_pk, item)
                 item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
@@ -2689,7 +2906,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         self.res_tab.setItem(row, index_pk, item)
                     # included area
                     y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
-                    area = integrate.simps([y for y, x in zip(y_area, x)])
+                    if self.binding_ener:
+                        area = abs(integrate.simps([y for y, x in zip(y_area, x[::-1])], x[::-1]))
+                    else:
+                        area = abs(integrate.simps([y for y, x in zip(y_area, x)], x))
                     item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                     self.res_tab.setItem(7, index_pk, item)
                     item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
@@ -2716,7 +2936,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if np.max(y_area) != 0:
                     y_temp = y_area / np.max(y_area)
                     x_ = [i for i, j in zip(x, y_temp) if j >= 0.5]
-                    fwhm_temp = x_[-1] - x_[0]
+                    fwhm_temp = abs(x_[-1] - x_[0])
                     item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp, self.floating)))
                     self.res_tab.setItem(3, index_pk, item)
                 else:
@@ -2725,7 +2945,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     item = QtWidgets.QTableWidgetItem("Error in calculation")
                     self.res_tab.setItem(3, index_pk, item)
                 # included area
-                area = integrate.simps([y for y, x in zip(y_area, x)])
+                if self.binding_ener:
+                    area= abs(integrate.simps([y for y, x in zip(y_area, x[::-1])], x[::-1]))
+                else:
+                    area = abs(integrate.simps([y for y, x in zip(y_area, x)], x))
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f'))))
                 self.res_tab.setItem(7, index_pk, item)
@@ -2762,12 +2985,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if np.max(y_area_p1) != 0 and np.max(y_area_p2) != 0:
                     y_temp_p1 = y_area_p1 / np.max(y_area_p1)
                     x_p1 = [i for i, j in zip(x, y_temp_p1) if j >= 0.5]
-                    fwhm_temp_p1 = x_p1[-1] - x_p1[0]
+                    fwhm_temp_p1 = abs(x_p1[-1] - x_p1[0])
                     item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp_p1, self.floating)))
                     self.res_tab.setItem(3, index_pk, item)
                     y_temp_p2 = y_area_p2 / np.max(y_area_p2)
                     x_p2 = [i for i, j in zip(x, y_temp_p2) if j >= 0.5]
-                    fwhm_temp_p2 = x_p2[-1] - x_p2[0]
+                    fwhm_temp_p2 = abs(x_p2[-1] - x_p2[0])
                     item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp_p2, self.floating)))
                     self.res_tab.setItem(4, index_pk, item)
                 else:
@@ -2779,8 +3002,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.res_tab.setItem(4, index_pk, item)
 
                     # included area
-                area_p1 = integrate.simps([y for y, x in zip(y_area_p1, x)])
-                area_p2 = integrate.simps([y for y, x in zip(y_area_p2, x)])
+                if self.binding_ener:
+                    area_p1 = abs(integrate.simps([y for y, x in zip(y_area_p1, x[::-1])], x[::-1]))
+                    area_p2 = abs(integrate.simps([y for y, x in zip(y_area_p2, x[::-1])], x[::-1]))
+                else:
+                    area_p1 = integrate.simps([y for y, x in zip(y_area_p1, x)])
+                    area_p2 = integrate.simps([y for y, x in zip(y_area_p2, x)])
                 area_ges = area_p1 + area_p2
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area_p1, '.1f') + r' ({}%)'.format(format(area_p1 / area_ges * 100, '.2f'))))
@@ -2789,7 +3016,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     str(format(area_p2, '.1f') + r' ({}%)'.format(format(area_p2 / area_ges * 100, '.2f'))))
                 self.res_tab.setItem(8, index_pk, item)
                 y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
-                area = integrate.simps([y for y, x in zip(y_area, x)])
+                area = abs(integrate.simps([y for y, x in zip(y_area, x)], x))
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f'))))
                 self.res_tab.setItem(9, index_pk, item)
@@ -2803,26 +3030,40 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.res_tab.resizeRowsToContents()
             self.fitp1.resizeColumnsToContents()
             self.fitp1.resizeRowsToContents()
-    def BGModCreator(self, x,y,mode):
-        temp_res = self.bgSelector(x, y, mode=mode, idx_bg= self.idx_bg[0])
-        mod=temp_res[0]
-        bg_mod=temp_res[1]
-        pars=temp_res[2]
 
-        for idx_bg in  self.idx_bg[1:]:
-            temp_res=self.bgSelector(x,y,mode,idx_bg)
-            mod += temp_res[0]
+    def BGModCreator(self, x, y, mode):
+        temp_res = self.bgSelector(x, y, mode=mode, idx_bg=self.idx_bg[0])
+        mod = temp_res[0]
+        bg_mod = temp_res[1]
+        pars = temp_res[2]
+
+        for idx_bg in self.idx_bg[1:]:
+            temp_res = self.bgSelector(x, y, mode, idx_bg)
+            if mod is None and temp_res[0] is None:
+                mod = None
+            elif mod is None and temp_res[0] is not None:
+                mod = temp_res[0]
+            elif mod is not None and temp_res[0] is None:
+                mod = mod
+            elif mod is not None and temp_res[0] is not None:
+                mod += temp_res[0]
             bg_mod += temp_res[1]
-            pars.update(temp_res[2])
-
-        return mod, bg_mod,pars
-
+            if pars is not None:
+                pars.update(temp_res[2])
+            else:
+                pars=temp_res[2]
+        return mod, bg_mod, pars
 
     def ana(self, mode):
         self.savePreset()
         plottitle = self.plottitle.text()
         # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
         x0 = self.df[:, 0]
+        if x0[-1] < x0[0]:
+            self.binding_ener=True
+        x0_corrected=np.copy(x0)
+        if self.correct_energy is not None:
+            x0_corrected -= self.correct_energy
         y0 = self.df[:, 1]
         # print(x0[0], x0[len(x0)-1])
 
@@ -2833,20 +3074,20 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.ar.cla()
         # ax = self.figure.add_subplot(211)
         if mode == 'fit':
-            self.ax.plot(x0, y0, 'o', color='b', label='raw')
+            self.ax.plot(x0_corrected, y0, 'o', color='b', label='raw')
         else:
             # simulation mode
             if mode == 'sim':
-                self.ax.plot(x0, y0, ',', color='b', label='raw')
+                self.ax.plot(x0_corrected, y0, ',', color='b', label='raw')
             # evaluation mode
             else:
-                self.ax.plot(x0, y0, 'o', mfc='none', color='b', label='raw')
+                self.ax.plot(x0_corrected, y0, 'o', mfc='none', color='b', label='raw')
 
-        if x0[0] > x0[-1]:
+        if x0_corrected[0] > x0_corrected[-1]:
             self.ax.set_xlabel('Binding energy (eV)', fontsize=11)
         else:
             self.ax.set_xlabel('Energy (eV)', fontsize=11)
-        plt.xlim(x0[0], x0[-1])
+        plt.xlim(x0_corrected[0], x0_corrected[-1])
         self.ax.grid(True)
         self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
         if len(plottitle) == 0:
@@ -2863,36 +3104,41 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         # if no range is specified, fill it from data
         if self.pre[0][1] is None or len(str(self.pre[0][1])) == 0:
-            self.pre[0][1] = x0[0]
+            self.pre[0][1] = x0_corrected[0]
         if self.pre[0][2] is None or len(str(self.pre[0][2])) == 0:
-            self.pre[0][2] = x0[-1]
+            self.pre[0][2] = x0_corrected[-1]
         # check if limits are out of of data range, If incorrect, back to default
         x1 = self.pre[0][1]
-        if ((x1 > x0[0] or x1 < x0[-1]) and x0[0] > x0[-1]) or (
-                (x1 < x0[0] or x1 > x0[-1]) and x0[0] < x0[-1]):
-            x1 = x0[0]
+        if ((x1 > x0_corrected[0] or x1 < x0_corrected[-1]) and x0_corrected[0] > x0[-1]) or (
+                (x1 < x0_corrected[0] or x1 > x0_corrected[-1]) and x0_corrected[0] < x0_corrected[-1]):
+            x1 = x0_corrected[0]
             self.pre[0][1] = x1
         x2 = self.pre[0][2]
-        if ((x2 < x0[-1] or x2 > x1) and x0[0] > x0[-1]) or (
-                (x2 > x0[-1] or x2 < x1) and x0[0] < x0[-1]):
-            x2 = x0[-1]
+        if ((x2 < x0_corrected[-1] or x2 > x1) and x0_corrected[0] > x0_corrected[-1]) or (
+                (x2 > x0_corrected[-1] or x2 < x1) and x0_corrected[0] < x0[-1]):
+            x2 = x0_corrected[-1]
             self.pre[0][2] = x2
 
-        [x, y] = xpy.fit_range(x0, y0, x1, x2)
+        [x, y] = xpy.fit_range(x0_corrected, y0, x1, x2)
         raw_y = y.copy()
+        raw_x = x.copy()
+        if self.correct_energy is not None:
+            raw_x += self.correct_energy
         # BG model selection and call shirley and tougaard
         # colPosition = self.fitp1.columnCount()
 
-
         temp_res = self.BGModCreator(x, y, mode=mode)
         mod = temp_res[0]
-        bg_mod = temp_res[1]
+        self.static_bg =temp_res[1]
         pars = temp_res[2]
         self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
         # component model selection and construction
-        y -= bg_mod
+        y= raw_y- self.static_bg
         temp_res = self.PeakSelector(mod)
-        pars.update(temp_res[1])
+        if pars != None:
+            pars.update(temp_res[1])
+        else:
+            pars=temp_res[1]
 
         mod = temp_res[0]
 
@@ -2912,28 +3158,70 @@ class PrettyWidget(QtWidgets.QMainWindow):
             strmode = 'Fitting'
         self.statusBar().showMessage(strmode + ' running.', )
         init = mod.eval(pars, x=x, y=y)
-        if mode == 'eva':
-            out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=y)
-        elif mode == 'sim':
-            out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=y)
-        else:
-            try_me_out = self.history_manager(pars)
-            if try_me_out is not None:
-                pars, pre = try_me_out
-                self.pre = pre
-                self.setPreset(pre[0], pre[1], pre[2], pre[3])
-            out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=raw_y)
+        zeros_in_data=False
+        if np.any(raw_y == 0):
+            zeros_in_data=True
+            print('There were 0\'s in your data. The residuals are therefore not weighted by sqrt(data)!')
+        try:
+            if mode == 'eva' or mode== 'sim':
+                if zeros_in_data:
+                    out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)), y=y)
+                else:
+                    out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=y)
+                self.fitting_finished(out, strmode=strmode, mode=mode, x=x,y=y, zeros_in_data=zeros_in_data, raw_x=raw_x, raw_y=raw_y, pars=pars)
+            else:
+                try_me_out = self.history_manager(pars)
+                if try_me_out is not None:
+                    pars, pre = try_me_out
+                    self.pre = pre
+                    self.setPreset(pre[0], pre[1], pre[2], pre[3])
+                if zeros_in_data:
+                    self.fit_thread=FitThread(model=mod,data=y, params=pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)),y=raw_y)
+                    self.fit_thread.fitting_finished.connect(
+                        lambda out: self.fitting_finished(out, x=x,y=y, strmode=strmode, mode=mode,
+                                                          zeros_in_data=zeros_in_data, raw_x=raw_x, raw_y=raw_y,
+                                                          pars=pars))
+
+                    self.fit_thread.start()
+                    #out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)), y=raw_y)
+
+                else:
+                    self.fit_thread = FitThread(model=mod, data=y, params=pars, x=x,
+                                           weights=1 /(np.sqrt(raw_y) * np.sqrt(self.rows_lightened)),
+                                           y=raw_y)
+                    self.fit_thread.fitting_finished.connect(lambda out: self.fitting_finished(out, x=x,y=y, strmode=strmode, mode=mode, zeros_in_data=zeros_in_data, raw_x=raw_x, raw_y=raw_y, pars=pars))
+
+                    self.fit_thread.start()
+                    #out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=raw_y)
+
+        except Exception as e:
+            return self.raise_error(window_title="Error: NaN in Model/data!.",
+                                error_message=e.args[0])
+
+    def get_attr(self,obj, attr):
+        """Format an attribute of an object for printing."""
+        val = getattr(obj, attr, None)
+        if val is None:
+            return 'unknown'
+        if isinstance(val, int):
+            return f'{val}'
+        if isinstance(val, float):
+            return str(format(val, self.floating))
+        return repr(val)
+
+    def fitting_finished(self, out, x, y, strmode, mode, zeros_in_data, pars, raw_x,raw_y):
         comps = out.eval_components(x=x)
         # fit results to be checked
         for key in out.params:
             print(key, "=", out.params[key].value)
 
         # fit results print
-
-        results = strmode + ' done: ' + out.method + ', # data: ' + str(out.ndata) + ', # func evals: ' + str(
-            out.nfev) + ', # varys: ' + str(out.nvarys) + ', r chi-sqr: ' + str(
-            format(out.redchi, self.floating)) + ', Akaike info crit: ' + str(
-            format(out.aic, self.floating)) + ', Last run finished: ' + QTime.currentTime().toString()
+        if self.get_attr(out,'aic') == 'unknown' or self.get_attr(out,'bic') == 'unknown' or self.get_attr(out,'redchi') == 'unknown' or self.get_attr(out,'chisqr') == 'unknown':
+            results = 'Fitting interrupted: ' + out.method + ', # data: ' + str(out.ndata) + ', # func evals: ' + str(
+            out.nfev) + ', # varys: ' + str(out.nvarys) + ', r chi-sqr: ' + self.get_attr(out, 'redchi')  + ', Akaike info crit: ' + self.get_attr(out,'aic')  + ', Last run finished: ' + QTime.currentTime().toString()
+        else:
+            results = strmode + ' done: ' + out.method + ', # data: ' + str(out.ndata) + ', # func evals: ' + str(
+            out.nfev) + ', # varys: ' + str(out.nvarys) + ', r chi-sqr: ' + self.get_attr(out, 'redchi')  + ', Akaike info crit: ' + self.get_attr(out,'aic')  + ', Last run finished: ' + QTime.currentTime().toString()
         self.statusBar().showMessage(results)
 
         # component results into table
@@ -2976,68 +3264,75 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.stats_tab.setItem(4, 0, item)
             item = QtWidgets.QTableWidgetItem(str(out.nfree))
             self.stats_tab.setItem(5, 0, item)
-            item = QtWidgets.QTableWidgetItem(str(format(out.chisqr, self.floating)))
+            item = QtWidgets.QTableWidgetItem(self.get_attr(out,'chisqr'))
             self.stats_tab.setItem(6, 0, item)
-            item = QtWidgets.QTableWidgetItem(str(format(out.redchi, self.floating)))
+            if zeros_in_data:
+                item = QtWidgets.QTableWidgetItem(
+                    str(format(out.redchi, self.floating)) + ' not weigthed by sqrt(data)')
+            else:
+                item = QtWidgets.QTableWidgetItem(self.get_attr(out,'redchi'))
             self.stats_tab.setItem(7, 0, item)
-            item = QtWidgets.QTableWidgetItem(str(format(out.aic, self.floating)))
+            item = QtWidgets.QTableWidgetItem(self.get_attr(out,'aic'))
             self.stats_tab.setItem(8, 0, item)
-            item = QtWidgets.QTableWidgetItem(str(format(out.bic, self.floating)))
+            item = QtWidgets.QTableWidgetItem(self.get_attr(out,'bic'))
             self.stats_tab.setItem(9, 0, item)
         self.stats_tab.resizeColumnsToContents()
         self.stats_tab.resizeRowsToContents()
-        sum_background=np.array([0.]*len(x))
-        self.bg_comps=dict()
+        sum_background = np.array([0.] * len(x))
+        self.bg_comps = dict()
         for key in comps:
             if 'bg_' in key:
-                self.bg_comps[key]=comps[key]
-                sum_background+=comps[key]
+                self.bg_comps[key] = comps[key]
+                sum_background += comps[key]
         if mode == "sim":
             self.ar.set_title(r"Simulation mode", fontsize=11)
         if mode == 'eva':
-            plottitle = self.comboBox_file.currentText().split('/')[-1]
-            # ax.plot(x, init+bg_mod, 'b--', lw =2, label='initial')
+            plottitle = self.plottitle.text()
+            if len(plottitle) == 0:
+                plottitle = self.comboBox_file.currentText().split('/')[-1]
             if plottitle != '':
                 self.ar.set_title(r"{}".format(plottitle), fontsize=11)
-            # self.ax.plot(x, out.best_fit + bg_mod, 'k-', lw=2, label='initial')
             len_idx_pk = int(self.fitp1.columnCount() / 2)
             for index_pk in range(len_idx_pk):
                 # print(index_pk, color)
                 strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
                 strind = strind.split(":", 1)[0]
-
-                self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + sum_background+bg_mod,
-                                         sum_background+bg_mod, label='C_' + str(index_pk + 1))
-                self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + sum_background+bg_mod)
+                self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + sum_background + self.static_bg,
+                                     sum_background + self.static_bg,
+                                     label=self.fitp1.horizontalHeaderItem(2 * index_pk + 1).text())
+                self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + sum_background + self.static_bg)
                 if index_pk == len_idx_pk - 1:
-                    self.ax.plot(x, + sum_background+bg_mod, label='BG')
+                    self.ax.plot(x, + sum_background + self.static_bg, label='BG')
             self.ax.set_xlim(left=self.xmin)
             self.ar.set_xlim(left=self.xmin)
             self.ax.set_xlim(right=self.xmax)
             self.ar.set_xlim(right=self.xmax)
-            self.ax.plot(x, out.best_fit + bg_mod, 'r-', lw=2, label='sum')
+            self.ax.plot(x, out.best_fit + self.static_bg, 'r-', lw=2, label='sum')
             self.ar.plot(x, out.residual, 'g.', label='residual')
             autoscale_y(self.ax)
 
         else:
             # ax.plot(x, init+bg_mod, 'k:', label='initial')
-            plottitle = self.comboBox_file.currentText().split('/')[-1]
+            plottitle = self.plottitle.text()
+            if len(plottitle) == 0:
+                plottitle = self.comboBox_file.currentText().split('/')[-1]
             if plottitle != '':
                 self.ar.set_title(r"{}".format(plottitle), fontsize=11)
             len_idx_pk = int(self.fitp1.columnCount() / 2)
             for index_pk in range(len_idx_pk):
                 strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
                 strind = strind.split(":", 1)[0]
-                self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod+sum_background,
-                                          bg_mod+sum_background, label='C_' + str(index_pk + 1))
-                self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod+sum_background)
+                self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + self.static_bg + sum_background,
+                                     self.static_bg + sum_background,
+                                     label=self.fitp1.horizontalHeaderItem(2 * index_pk + 1).text())
+                self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + self.static_bg + sum_background)
                 if index_pk == len_idx_pk - 1:
-                    self.ax.plot(x, + bg_mod+sum_background, label="BG")
+                    self.ax.plot(x, + self.static_bg + sum_background, label="BG")
             self.ax.set_xlim(left=self.xmin)
             self.ar.set_xlim(left=self.xmin)
             self.ax.set_xlim(right=self.xmax)
             self.ar.set_xlim(right=self.xmax)
-            self.ax.plot(x, out.best_fit + bg_mod, 'r-', lw=2, label='fit')
+            self.ax.plot(x, out.best_fit + self.static_bg, 'r-', lw=2, label='fit')
             self.ar.plot(x, out.residual, 'g.', label='residual')  # modify residual and red chi-squared [feature]
             lines = self.ax.get_lines()
             autoscale_y(self.ax)
@@ -3051,19 +3346,25 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # for key in out.params:
         # print(key, "=", out.params[key].value)
         # make dataFrame and concat to export
-        df_x = pd.DataFrame(x, columns=['x'])
+        df_raw_x = pd.DataFrame(raw_x, columns=['raw_x'])
         df_raw_y = pd.DataFrame(raw_y, columns=['raw_y'])
-        df_y = pd.DataFrame(raw_y - sum_background-bg_mod, columns=['data-bg'])
-        df_pks = pd.DataFrame(out.best_fit - sum_background-bg_mod, columns=['sum_components'])
+        df_corrected_x = pd.DataFrame(x, columns=['corrected x'])
+        df_y = pd.DataFrame(raw_y - sum_background - self.static_bg, columns=['data-bg'])
+        df_pks = pd.DataFrame(out.best_fit - sum_background, columns=['sum_components'])
         df_sum = pd.DataFrame(out.best_fit, columns=['sum_fit'])
-        df_b = pd.DataFrame(sum_background+bg_mod, columns=['bg'])
-        self.result = pd.concat([df_x, df_raw_y, df_y, df_pks, df_b, df_sum], axis=1)
-        df_bg_comps=pd.DataFrame.from_dict(self.bg_comps, orient='columns')
-        self.result=pd.concat([self.result, df_bg_comps], axis=1)
+        df_b = pd.DataFrame(sum_background + self.static_bg, columns=['bg'])
+        if isinstance(self.static_bg, int):
+            df_b_static = pd.DataFrame([0] * len(sum_background), columns=['bg_static (not used)'])
+        else:
+            df_b_static = pd.DataFrame(self.static_bg, columns=['bg_static'])
+        self.result = pd.concat([df_raw_x, df_raw_y, df_corrected_x, df_y, df_pks, df_b, df_b_static, df_sum], axis=1)
+        df_bg_comps = pd.DataFrame.from_dict(self.bg_comps, orient='columns')
+        self.result = pd.concat([self.result, df_bg_comps], axis=1)
         for index_pk in range(int(self.fitp1.columnCount() / 2)):
             strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
             strind = strind.split(":", 1)[0]
-            df_c = pd.DataFrame(comps[strind + str(index_pk + 1) + '_'], columns=[strind + str(index_pk + 1)])
+            df_c = pd.DataFrame(comps[strind + str(index_pk + 1) + '_'],
+                                columns=[self.fitp1.horizontalHeaderItem(2 * index_pk + 1).text()])
             self.result = pd.concat([self.result, df_c], axis=1)
         print(out.fit_report())
         lim_reached = False
@@ -3091,6 +3392,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.move(qr.topLeft())
 
     def closeEvent(self, event):
+        self.interrupt_fit()
         event.accept()
         sys.exit(0)
 

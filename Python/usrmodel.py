@@ -5,17 +5,6 @@ from lmfit import Model
 from lmfit.models import guess_from_peak
 from scipy.signal import convolve as sc_convolve
 
-# Taken from lmfit/models.py (https://github.com/lmfit/lmfit-py/blob/b930ddef320d93f984181db19fec8e9c9a41be8f/lmfit
-# /models.py)
-tiny = 1.0e-15
-
-
-def fwhm_expr(model):
-    """Return constraint expression for fwhm."""
-    fmt = "{factor:.7f}*{prefix:s}sigma"
-    return fmt.format(factor=model.fwhm_factor, prefix=model.prefix)
-
-
 def dublett(x, amplitude, sigma, gamma, gaussian_sigma, center, soc, height_ratio, fct_coster_kronig):
     """
     Calculates the convolution of a Doniach-Sunjic Dublett with a Gaussian. Thereby, the Gaussian acts as the
@@ -23,7 +12,7 @@ def dublett(x, amplitude, sigma, gamma, gaussian_sigma, center, soc, height_rati
     
     Parameters
     ----------
-    x: array:
+    x: array-like
         Array containing the energy of the spectrum to fit
     amplitude: float
         factor used to scale the calculated convolution to the measured spectrum. This factor is used as the amplitude
@@ -64,7 +53,7 @@ def singlett(x, amplitude, sigma, gamma, gaussian_sigma, center):
     
     Parameters
     ----------
-    x: array:
+    x: array-like
         Array containing the energy of the spectrum to fit
     amplitude: float
         factor used to scale the calculated convolution to the measured spectrum. This factor is used as
@@ -99,7 +88,7 @@ def fermi_edge(x, amplitude, center, kt, sigma):
     
     Parameters
     ----------
-    x: array:
+    x: array-like
         Array containing the energy of the spectrum to fit
     amplitude: float
         factor used to scale the calculated convolution to the measured spectrum. This factor is used
@@ -133,9 +122,9 @@ def convolve(data, kernel):
     
     Parameters
     ----------
-    data: array:
+    data: array-like
         1D-array containing the data to convolve
-    kernel: array
+    kernel: array-like
         1D-array which defines the kernel used for convolution
     
     Returns
@@ -147,6 +136,7 @@ def convolve(data, kernel):
     ---------
     numpy.convolve()
     """
+
     min_num_pts = min(len(data), len(kernel))
     padding = np.ones(min_num_pts)
     padded_data = np.concatenate((padding * data[0], data, padding * data[-1]))
@@ -166,9 +156,9 @@ def fft_convolve(data, kernel):
     
     Parameters
     ----------
-    data: array:
+    data: array-like
         1D-array containing the data to convolve
-    kernel: array
+    kernel: array-like
         1D-array which defines the kernel used for convolution
     
     Returns
@@ -178,9 +168,7 @@ def fft_convolve(data, kernel):
     
     See Also
     ---------
-    numpy.fft.fft()
-    numpy.fft.ifft()
-    scipy.fft
+    scipy.signal.convolve()
     """
     min_num_pts = min(len(data), len(kernel))
     padding = np.ones(min_num_pts)
@@ -201,7 +189,7 @@ class ConvGaussianDoniachSinglett(lmfit.model.Model):
     def _set_paramhints_prefix(self):
         self.set_param_hint('amplitude', value=100, min=0)
         self.set_param_hint('sigma', value=0.2, min=0)
-        self.set_param_hint('gamma', value=0.02, min=0)
+        self.set_param_hint('gamma', value=0.02)
         self.set_param_hint('gaussian_sigma', value=0.2, min=0)
         self.set_param_hint('center', value=100, min=0)
         g_fwhm_expr = '2*{pre:s}gaussian_sigma*1.1774'
@@ -226,7 +214,7 @@ class ConvGaussianDoniachSinglett(lmfit.model.Model):
             0]) / 2  # gaussian lies between sigma and the experimental res. why not?
         doniach_ampl = doniach_pars["amplitude"].value * np.sqrt(
             np.sum(gaussian(x=x, amplitude=1, center=np.mean(x), sigma=gaussian_sigma))) / (
-                                   2 * np.sqrt(np.sum(x)))  # gives good initial guesses
+                               2 * np.sqrt(np.sum(x)))  # gives good initial guesses
         params = self.make_params(amplitude=doniach_ampl, sigma=doniach_pars["sigma"].value,
                                   gamma=doniach_pars["gamma"].value, gaussian_sigma=gaussian_sigma,
                                   center=doniach_pars["center"].value)
@@ -244,7 +232,7 @@ class ConvGaussianDoniachDublett(lmfit.model.Model):
     def _set_paramhints_prefix(self):
         self.set_param_hint('amplitude', value=100, min=0)
         self.set_param_hint('sigma', value=0.2, min=0)
-        self.set_param_hint('gamma', value=0.02, min=0)
+        self.set_param_hint('gamma', value=0.02)
         self.set_param_hint('gaussian_sigma', value=0.2, min=0)
         self.set_param_hint('center', value=285)
         self.set_param_hint('soc', value=2.0)
@@ -279,9 +267,9 @@ class ConvGaussianDoniachDublett(lmfit.model.Model):
             0]) / 2  # gaussian lies between sigma and the experimental res. why not?
         doniach_ampl = doniach_pars["amplitude"].value * np.sqrt(
             np.sum(gaussian(x=x, amplitude=1, center=np.mean(x), sigma=gaussian_sigma))) / (
-                                   5 * np.sqrt(np.sum(x)))  # gives good initial guesses
+                               5 * np.sqrt(np.sum(x)))  # gives good initial guesses
         soc_guess = 0.3 * (
-                    x[-1] - x[0])  # assuming a highres spectrum, maybe one could implement a solution with peak-find?
+                x[-1] - x[0])  # assuming a highres spectrum, maybe one could implement a solution with peak-find?
         params = self.make_params(amplitude=doniach_ampl, sigma=doniach_pars["sigma"].value / 5,
                                   gamma=doniach_pars["gamma"].value, gaussian_sigma=gaussian_sigma / 5,
                                   center=doniach_pars["center"].value, soc=soc_guess, height_ratio=1)
@@ -318,17 +306,23 @@ class FermiEdgeModel(lmfit.model.Model):
 bgrnd = [[], [], []]
 
 
-def tougaard(x, y, B, C, C_d, D,extend=30, only_vary_B=True):
+def tougaard(x, y, B, C, C_d, D, extend=30, only_vary_B=True):
     """
     Calculates the Tougaard background of an X-ray photoelectron spectroscopy (XPS) spectrum.
 
-    The following implementation is based on the four-parameter loss function as suggested by R.Hesse (https://doi.org/10.1002/sia.3746).
-    In contrast to R.Hesse, the Tougaard background is not leveled
-    with the data using a constant, but the background on the high-energy side is extended. This approach was
-    found to lead to great convergence empirically, however, the length of the data extension remains arbitrary.
+    The following implementation is based on the four-parameter loss function (4-PIESCS) as suggested by R.Hesse (
+    https://doi.org/10.1002/sia.3746). In contrast to R.Hesse, the Tougaard background is not leveled with the data
+    using a constant, but the background on the high-energy side is extended. This approach was found to lead to
+    great convergence empirically, however, the length of the data extension remains arbitrary.
 
-    To reduce computing time, as long as only B should be variated (which makes sense in most cases), if the loss function was already calculated,
-    only b is further optimized.
+    To reduce computing time, as long as only B should be variate (which makes sense in most cases), if the loss
+    function was already calculated, only B is further optimized.
+
+    The 2-PIESCS loss function is created by using C_d=1 and D=0. Using C_d=-1 and D!=0 leads to the 3-PIESCS loss
+    function.
+
+    For further details on the 2-PIESCS loss function, see https://doi.org/10.1016/0038-1098(87)90166-9, and for the
+    3-PIESCS loss function, see https://doi.org/10.1002/(SICI)1096-9918(199703)25:3<137::AID-SIA230>3.0.CO;2-L
 
     Parameters
     ----------
@@ -337,35 +331,40 @@ def tougaard(x, y, B, C, C_d, D,extend=30, only_vary_B=True):
     y : array-like
         1D-array containing the y-values (intensities) of the spectrum.
     B : float
-        Scaling factor of the Tougaard background model.
+        B parameter of the 4-PIESCS loss function as introduced by R.Hesse (https://doi.org/10.1002/sia.3746).
+        Acts as scaling factor of the Tougaard background model.
     C : float
+        C parameter of the 4-PIESCS loss function as introduced by R.Hesse (https://doi.org/10.1002/sia.3746).
     C_d : float
+        C' parameter of the 4-PIESCS loss function as introduced by R.Hesse (https://doi.org/10.1002/sia.3746).
+        Set to 1 for the 2-PIESCS loss function. (and D to 0). Set to -1 for the 3-PIESCS loss function (D!=0).
     D : float
+        D parameter of the 4-PIESCS loss function as introduced by R.Hesse (https://doi.org/10.1002/sia.3746).
+        Set to 0 for the 2-PIESCS loss function (and C_d to 1). Set to !=0 for the 3-PIESCS loss function (C_d=-1).
     extend : float, optional
         Length of the data extension on the high-kinetic-energy side. Defaults to 30.
     only_vary_B : bool, optional
         Whether to only vary the scaling factor `B` when calculating the background. Defaults to True.
         Varying all parameters of Tougaard background leads to instabilities and weird shaped backgrounds.
 
-
     Returns
     -------
     array-like
         The Tougaard background of the XPS spectrum.
 
-    See Also
-    -------
-    The following implementation is based on the four-parameter loss function as suggested by R.Hesse [https://doi.org/10.1002/sia.3746].
+    See Also ------- The following implementation is based on the four-parameter loss function as suggested by
+    R.Hesse [https://doi.org/10.1002/sia.3746].
     """
     global bgrnd
-    if np.array_equal(bgrnd[0], y) and only_vary_B and bgrnd[2][0]==extend:  # only variating B and loss function was already calculated
+    if np.array_equal(bgrnd[0], y) and only_vary_B and bgrnd[2][0] == extend:
+        # check if loss function was already calculated
         return [B * elem for elem in bgrnd[1]]
     else:
         bgrnd[0] = y
         bgrnd[2] = [extend]
         bg = []
         delta_x = abs((x[-1] - x[0]) / len(x))
-        len_padded = int(extend / delta_x)  # sets expansion lenght, values between 15 to 50 work great
+        len_padded = int(extend / delta_x)  # sets expansion length, values between 15 and 50 work great
         padded_x = np.concatenate((x, np.linspace(x[-1] + delta_x, x[-1] + delta_x * len_padded, len_padded)))
         padded_y = np.concatenate((y, np.mean(y[-10:]) * np.ones(len_padded)))
         for k in range(len(x)):
@@ -377,18 +376,54 @@ def tougaard(x, y, B, C, C_d, D,extend=30, only_vary_B=True):
                                                   + D * (padded_x_kj - x_k) ** 2) * padded_y[k + j] * delta_x
             bg.append(bg_temp)
         bgrnd[1] = bg
-        return [B * elem for elem in bgrnd[1]]
+        return np.asarray([B * elem for elem in bgrnd[1]])
 
 
 class TougaardBG(lmfit.model.Model):
-    __doc__ = "Model of the 4 parameter loss function Tougaard. " \
-              "The implementation is based on the four-parameter loss function as suggested by R.Hesse [https://doi.org/10.1002/sia.3746]. In addition, the extend parameter is introduced, which improves the agreement between data and Tougaard BG by extending the Data on the high-kinetic energy side (low binding energy side) by the mean intensity value at the rightmost kinetic energy scale. extend represents the length of the data extension on the high-kinetic-energy side in eV. Defaults to 30." + lmfit.models.COMMON_INIT_DOC
+    __doc__ = """
+    Model of the 4 parameter loss function Tougaard.
+
+    The implementation is based on the four-parameter loss function (4-PIESCS) as suggested by R.Hesse [
+    https://doi.org/10.1002/sia.3746]. In addition, the extend parameter is introduced, which improves the agreement
+    between data and Tougaard BG by extending the data on the high-kinetic energy side (low binding energy side) by
+    the mean intensity value at the rightmost kinetic energy scale. extend represents the length of the data
+    extension on the high-kinetic-energy side in eV. Defaults to 30.
+
+    Attributes:
+        All attributes are inherited from the lmfit.model.Model class.
+
+    Methods:
+        __init__(*args, **kwargs):
+            Initializes the TougaardBG model instance. Calls the super().__init__() method of the parent class
+            (lmfit.model.Model) and sets parameter hints using _set_paramhints_prefix() method.
+
+        _set_paramhints_prefix():
+            Sets parameter hints for the model. Sets initial values and constraints for the parameters 'B', 'C',
+            'C_d', 'D', and 'extend'.
+
+        guess(data, x=None, **kwargs):
+            Generates initial parameter values for the model based on the provided data and optional arguments.
+
+    Note:
+        The TougaardBG class inherits from lmfit.model.Model and extends it with specific behavior and functionality
+        related to the Tougaard 4 parameter loss function.
+    """ + lmfit.models.COMMON_INIT_DOC
 
     def __init__(self, *args, **kwargs):
+        """
+        Initializes the TougaardBG model instance.
+
+        """
         super().__init__(tougaard, *args, **kwargs)
         self._set_paramhints_prefix()
 
     def _set_paramhints_prefix(self):
+        """
+        Sets parameter hints for the model.
+
+        The method sets initial values and constraints for the parameters 'B', 'C', 'C_d', 'D', and 'extend'.
+
+        """
         self.set_param_hint('B', value=2886, min=0)
         self.set_param_hint('C', value=1643, min=0)
         self.set_param_hint('C_d', value=1, min=0)
@@ -396,6 +431,20 @@ class TougaardBG(lmfit.model.Model):
         self.set_param_hint('extend', value=30, vary=False)
 
     def guess(self, data, x=None, **kwargs):
+        """
+        Generates initial parameter values for the model based on the provided data and optional arguments.
+
+        Parameters:
+            data (array-like): Array containing the data (=intensities) to fit.
+            x (array-like): Array containing the independent variable values.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Parameters: Initial parameter values for the model.
+
+        Note:
+            The method requires the 'x' parameter to be provided.
+        """
         if x is None:
             return
         params = self.make_params(B=2886, C=1643, C_d=1, D=1)
@@ -423,7 +472,7 @@ def shirley(y, k, const):
     """
     n = len(y)
     y_right = const
-    y_temp = y - y_right  # step characteristic is better approximated, if only the step without background is integrated
+    y_temp = y - y_right  # step characteristic is better approximated if only the step without background is integrated
     bg = []
     for i in range(n):
         bg.append(np.sum(y_temp[i:]))
@@ -431,26 +480,73 @@ def shirley(y, k, const):
 
 
 class ShirleyBG(lmfit.model.Model):
-    __doc__ = "Model of the Shirley background for X-ray photoelectron spectroscopy (XPS) spectra." + lmfit.models.COMMON_INIT_DOC
+    __doc__ = """
+    Model of the Shirley background for X-ray photoelectron spectroscopy (XPS) spectra. 
+
+    Attributes:
+        All attributes are inherited from the lmfit.model.Model class.
+
+    Methods:
+        __init__(*args, **kwargs):
+            Initializes the ShirleyBG model instance. Calls the super().__init__() method of the parent class
+            (lmfit.model.Model) and sets parameter hints using _set_paramhints_prefix() method.
+
+        _set_paramhints_prefix():
+            Sets parameter hints for the model. Sets initial values and constraints for the parameters 'k' and 'const'.
+
+        guess(data, x=None, **kwargs):
+            Generates initial parameter values for the model based on the provided data and optional arguments.
+
+    Note:
+        The ShirleyBG class inherits from lmfit.model.Model and extends it with specific behavior and functionality
+        related to the Shirley background for XPS spectra.
+    """ + lmfit.models.COMMON_INIT_DOC
+
     def __init__(self, *args, **kwargs):
+        """
+        Initializes the ShirleyBG model instance.
+
+        """
         super().__init__(shirley, *args, **kwargs)
         self._set_paramhints_prefix()
 
     def _set_paramhints_prefix(self):
+        """
+        Sets parameter hints for the model.
+
+        The method sets initial values and constraints for the parameters 'k' and 'const'.
+
+        """
         self.set_param_hint('k', value=0.03, min=0)
         self.set_param_hint('const', value=1000, min=0)
+
     def guess(self, data, x=None, **kwargs):
+        """
+        Generates initial parameter values for the model based on the provided data and optional arguments.
+
+        Parameters:
+            data (array-like): Array containing the data to fit.
+            x (array-like): Array containing the independent variable values.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Parameters: Initial parameter values for the model.
+
+        Note:
+            The method requires the 'x' parameter to be provided.
+        """
         if x is None:
             return
-        params = self.make_params(k=0.03,const=1000)
+        params = self.make_params(k=0.03, const=1000)
         return lmfit.models.update_param_vals(params, self.prefix, **kwargs)
 
 
 def slope(y, k):
     """
     Calculates the slope background of an X-ray photoelectron spectroscopy (XPS) spectrum.
-    The slope background has some similarities to the Shirley background, e.g. the slope background is calculated integrating the Shirley background from each data point to the
-    end. Afterwards, a slope parameter k is used for scaling the slope accordingly to the measured data.
+    The slope background has some similarities to the Shirley background, e.g. the slope background is calculated
+    by integrating the Shirley background from each data point to the end.
+    Afterwards, a slope parameter k is used to scale the slope accordingly to the measured data.
 
     Parameters
     ----------
@@ -481,16 +577,60 @@ def slope(y, k):
 
 
 class SlopeBG(lmfit.model.Model):
-    __doc__ = "Model of the Slopey background for X-ray photoelectron spectroscopy (XPS) spectra. Slope Background implemented as suggested by A. Herrera-Gomez et al in [DOI: 10.1016/j.elspec.2013.07.006]." + lmfit.models.COMMON_INIT_DOC
+    __doc__ = """
+    Model of the Slope background for X-ray photoelectron spectroscopy (XPS) spectra.
+    Slope Background implemented as suggested by A. Herrera-Gomez et al in [DOI: 10.1016/j.elspec.2013.07.006].
+
+    Attributes:
+        All attributes are inherited from the lmfit.model.Model class.
+
+    Methods:
+        __init__(*args, **kwargs):
+            Initializes the SlopeBG model instance. Calls the super().__init__() method of the parent class
+            (lmfit.model.Model) and sets parameter hints using _set_paramhints_prefix() method.
+
+        _set_paramhints_prefix():
+            Sets parameter hints for the model. Sets an initial value for the parameter 'k'.
+
+        guess(data, x=None, **kwargs):
+            Generates initial parameter values for the model based on the provided data and optional arguments.
+
+    Note:
+        The SlopeBG class inherits from lmfit.model.Model and extends it with specific behavior and functionality
+        related to the Slope background for XPS spectra.
+    """ + lmfit.models.COMMON_INIT_DOC
 
     def __init__(self, *args, **kwargs):
+        """
+        Initializes the SlopeBG model instance.
+        """
         super().__init__(slope, *args, **kwargs)
         self._set_paramhints_prefix()
 
     def _set_paramhints_prefix(self):
+        """
+        Sets parameter hints for the model.
+
+        The method sets an initial value for the parameter 'k'.
+
+        """
         self.set_param_hint('k', value=0.01)
 
     def guess(self, data, x=None, **kwargs):
+        """
+        Generates initial parameter values for the model based on the provided data and optional arguments.
+
+        Parameters:
+            data (array-like): Array containing the data to fit.
+            x (array-like): Array containing the independent variable values.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Parameters: Initial parameter values for the model.
+
+        Note:
+            The method requires the 'x' parameter to be provided.
+        """
         if x is None:
             return
         params = self.make_params(k=0.01)

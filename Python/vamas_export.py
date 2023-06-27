@@ -4,6 +4,7 @@ import vamas
 
 def list_vms(filePath):
 	vamas1 = vamas.VAMAS(filePath) # create instance
+	get_wf(filePath)
 	
 	print(str(vamas1.header.format))
 	print('Number of blocks: ' + str(vamas1.header.num_blocks))
@@ -39,9 +40,9 @@ def list_vms(filePath):
 			Para = block.technique + ' source:' + str(block.source_energy) + ', spec:' + str(ElemD) + ', ' + strMode + ':' + str(block.abscissa_start) + ', dE:' + str(block.abscissa_increment) + ', pnts:' + str(numData)
 			print(Para)
 			if block.technique in ['XPS', 'UPS']:
-				Text = 'BE/eV' + '\t' + 'PE: ' + str(block.source_energy) + ' eV'  + '\n'                                # header of exported txt
+				Text = 'BE/eV' + '\t' + 'PE: ' + str(block.analyser_pass_energy) + ' eV'  + '\n'                                # header of exported txt
 			else:
-				Text = strMode + '\t' + 'EE: ' + str(block.source_energy) + ' eV'  + '\n' 
+				Text = strMode + '\t' + 'EE: ' + str(block.analyser_pass_energy) + ' eV'  + '\n'
 			print(Text)
 			for j in range(numData):
 				if block.technique in ['XPS', 'UPS']:
@@ -58,3 +59,21 @@ def list_vms(filePath):
 		
 	return list_file
 
+def get_wf(filePath):
+	vamas1 = vamas.VAMAS(filePath) # create instance
+	temp_wf=[]
+	for block in vamas1.blocks:
+		temp_wf.append(block.analyser_work_function)
+	if temp_wf.count(temp_wf[0]) == len(temp_wf):
+		return temp_wf[0]
+	else:
+		return list(set(temp_wf))
+def get_hv(filePath):
+	vamas1 = vamas.VAMAS(filePath) # create instance
+	temp_hv=[]
+	for block in vamas1.blocks:
+		temp_hv.append(block.source_energy)
+	if temp_hv.count(temp_hv[0]) == len(temp_hv):
+		return temp_hv[0]
+	else:
+		return list(set(temp_hv))
