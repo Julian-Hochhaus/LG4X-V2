@@ -100,7 +100,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.df = []
         self.result = pd.DataFrame()
         outer_layout = QtWidgets.QVBoxLayout()
-
+        self.static_bg=int(0)
         self.idx_imp = 0
 
         self.idx_bg = [2]
@@ -605,7 +605,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
             return new_label
     def nextFreeComponentName(self):
         max_num=0
-        print(self.list_component)
         for comp_name in self.list_component:
             if 'C_' in comp_name:
                 num=int(comp_name.split('_')[1])
@@ -1478,27 +1477,21 @@ class PrettyWidget(QtWidgets.QMainWindow):
             with open(cfilePath, 'r') as file:
                 temp_pre = file.read()
             file.close()
-            # print(self.pre, type(self.pre))
             temp_settings = self.pre[0]
             temp_bg = self.pre[1]
             temp_pre=ast.literal_eval(temp_pre)
             temp_pks=temp_pre[2]
-            print(len(temp_pks))
-            print(len(temp_pks[0]))
-            print(temp_pks)
             current_len=int(len(self.pre[2][0])/2)
             for col in range(int(len(temp_pks[0])/2)):
                 for row in range(len(temp_pks)):
                     if row == 13 or row == 15 or row == 17 or row == 19 or row == 21 or row == 23 or row == 25:
                         if not temp_pks[row][2*col+1] == 0:
                             temp_pks[row][2*col+1] = temp_pks[row][2*col+1] + current_len
-            print(temp_pks)
             temp_peaks=np.concatenate((self.pre[2], temp_pks), axis=1)
             temp_lims = np.concatenate((self.pre[3], temp_pre[3]), axis=1)
             if len(temp_pre) == 5:
                 self.list_component=np.concatenate((self.list_component, temp_pre[4][1:]), axis=0)
             else:
-                print('test')
                 list_component = []
                 for i in range(int(len(temp_pre[2][0]) / 2)):
                     list_component.append('C_{}'.format(str(int(i + 1))))
@@ -3117,11 +3110,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         temp_res = self.BGModCreator(x, y, mode=mode)
         mod = temp_res[0]
-        bg_mod = temp_res[1]
+        self.static_bg =temp_res[1]
         pars = temp_res[2]
         self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
         # component model selection and construction
-        y -= bg_mod
+        y= raw_y- self.static_bg
         temp_res = self.PeakSelector(mod)
         if pars != None:
             pars.update(temp_res[1])
@@ -3249,25 +3242,23 @@ class PrettyWidget(QtWidgets.QMainWindow):
             plottitle=self.plottitle.text()
             if len(plottitle) == 0:
                 plottitle = self.comboBox_file.currentText().split('/')[-1]
-            # ax.plot(x, init+bg_mod, 'b--', lw =2, label='initial')
             if plottitle != '':
                 self.ar.set_title(r"{}".format(plottitle), fontsize=11)
-            # self.ax.plot(x, out.best_fit + bg_mod, 'k-', lw=2, label='initial')
             len_idx_pk = int(self.fitp1.columnCount() / 2)
             for index_pk in range(len_idx_pk):
                 # print(index_pk, color)
                 strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
                 strind = strind.split(":", 1)[0]
-                self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + sum_background + bg_mod,
-                                     sum_background + bg_mod, label=self.fitp1.horizontalHeaderItem(2*index_pk+1).text())
-                self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + sum_background + bg_mod)
+                self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + sum_background + self.static_bg,
+                                     sum_background + self.static_bg, label=self.fitp1.horizontalHeaderItem(2*index_pk+1).text())
+                self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + sum_background + self.static_bg)
                 if index_pk == len_idx_pk - 1:
-                    self.ax.plot(x, + sum_background + bg_mod, label='BG')
+                    self.ax.plot(x, + sum_background + self.static_bg, label='BG')
             self.ax.set_xlim(left=self.xmin)
             self.ar.set_xlim(left=self.xmin)
             self.ax.set_xlim(right=self.xmax)
             self.ar.set_xlim(right=self.xmax)
-            self.ax.plot(x, out.best_fit + bg_mod, 'r-', lw=2, label='sum')
+            self.ax.plot(x, out.best_fit + self.static_bg, 'r-', lw=2, label='sum')
             self.ar.plot(x, out.residual, 'g.', label='residual')
             autoscale_y(self.ax)
 
@@ -3282,16 +3273,16 @@ class PrettyWidget(QtWidgets.QMainWindow):
             for index_pk in range(len_idx_pk):
                 strind = self.fitp1.cellWidget(0, 2 * index_pk + 1).currentText()
                 strind = strind.split(":", 1)[0]
-                self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + sum_background,
-                                     bg_mod + sum_background, label=self.fitp1.horizontalHeaderItem(2*index_pk+1).text())
-                self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + bg_mod + sum_background)
+                self.ax.fill_between(x, comps[strind + str(index_pk + 1) + '_'] + self.static_bg  + sum_background,
+                                     self.static_bg + sum_background, label=self.fitp1.horizontalHeaderItem(2*index_pk+1).text())
+                self.ax.plot(x, comps[strind + str(index_pk + 1) + '_'] + self.static_bg + sum_background)
                 if index_pk == len_idx_pk - 1:
-                    self.ax.plot(x, + bg_mod + sum_background, label="BG")
+                    self.ax.plot(x, + self.static_bg + sum_background, label="BG")
             self.ax.set_xlim(left=self.xmin)
             self.ar.set_xlim(left=self.xmin)
             self.ax.set_xlim(right=self.xmax)
             self.ar.set_xlim(right=self.xmax)
-            self.ax.plot(x, out.best_fit + bg_mod, 'r-', lw=2, label='fit')
+            self.ax.plot(x, out.best_fit + self.static_bg, 'r-', lw=2, label='fit')
             self.ar.plot(x, out.residual, 'g.', label='residual')  # modify residual and red chi-squared [feature]
             lines = self.ax.get_lines()
             autoscale_y(self.ax)
@@ -3308,11 +3299,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
         df_raw_x = pd.DataFrame(raw_x, columns=['raw_x'])
         df_raw_y = pd.DataFrame(raw_y, columns=['raw_y'])
         df_corrected_x = pd.DataFrame(x, columns=['corrected x'])
-        df_y = pd.DataFrame(raw_y - sum_background - bg_mod, columns=['data-bg'])
-        df_pks = pd.DataFrame(out.best_fit - sum_background - bg_mod, columns=['sum_components'])
+        df_y = pd.DataFrame(raw_y - sum_background - self.static_bg, columns=['data-bg'])
+        df_pks = pd.DataFrame(out.best_fit - sum_background, columns=['sum_components'])
         df_sum = pd.DataFrame(out.best_fit, columns=['sum_fit'])
-        df_b = pd.DataFrame(sum_background + bg_mod, columns=['bg'])
-        self.result = pd.concat([df_raw_x, df_raw_y,df_corrected_x, df_y, df_pks, df_b, df_sum], axis=1)
+        df_b = pd.DataFrame(sum_background + self.static_bg, columns=['bg'])
+        if isinstance(self.static_bg, int):
+            df_b_static = pd.DataFrame([0]*len(sum_background), columns=['bg_static (not used)'])
+        else:
+            df_b_static = pd.DataFrame(self.static_bg, columns=['bg_static'])
+        self.result = pd.concat([df_raw_x, df_raw_y,df_corrected_x, df_y, df_pks, df_b, df_b_static, df_sum], axis=1)
         df_bg_comps = pd.DataFrame.from_dict(self.bg_comps, orient='columns')
         self.result = pd.concat([self.result, df_bg_comps], axis=1)
         for index_pk in range(int(self.fitp1.columnCount() / 2)):
