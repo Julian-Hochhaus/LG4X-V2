@@ -215,6 +215,31 @@ class RemoveHeaderDialog(QtWidgets.QDialog):
         remove_idx, remove_text = self.getRemoveOption()
         self.removeOptionChanged.emit(remove_idx,remove_text)
         super().accept()
+class FitThread(QtCore.QThread):
+    fitting_finished = QtCore.pyqtSignal(object)
+
+    def __init__(self, model=None, data=None, params=None, x=None,weights=None, y=None):
+        super().__init__()
+        self.fit_interrupted = False
+        self.model = model
+        self.data = data
+        self.params = params
+        self.x = x
+        self.weights = weights
+        self.y= y
+        self.result=None
+
+    def run(self):
+        self.fit_interrupted = False
+        self.result = self.model.fit(self.data, params=self.params, x=self.x,weights=self.weights, iter_cb=self.per_iteration, y=self.y)
+        self.fitting_finished.emit(self.result)
+
+    def per_iteration(self, pars, iteration, resid, *args, **kws):
+        if self.fit_interrupted:
+            return True
+        #print(" ITER ", iteration, [f"{p.name} = {p.value:.5f}" for p in pars.values()])
+    def interrupt_fit(self):
+        self.fit_interrupted = True
 
 class RemoveAndEditTableWidget(QtWidgets.QTableWidget):
     headerTextChanged = QtCore.pyqtSignal(int, str)
