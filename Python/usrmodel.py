@@ -189,7 +189,7 @@ class ConvGaussianDoniachSinglett(lmfit.model.Model):
     def _set_paramhints_prefix(self):
         self.set_param_hint('amplitude', value=100, min=0)
         self.set_param_hint('sigma', value=0.2, min=0)
-        self.set_param_hint('gamma', value=0.02, min=0)
+        self.set_param_hint('gamma', value=0.02)
         self.set_param_hint('gaussian_sigma', value=0.2, min=0)
         self.set_param_hint('center', value=100, min=0)
         g_fwhm_expr = '2*{pre:s}gaussian_sigma*1.1774'
@@ -232,7 +232,7 @@ class ConvGaussianDoniachDublett(lmfit.model.Model):
     def _set_paramhints_prefix(self):
         self.set_param_hint('amplitude', value=100, min=0)
         self.set_param_hint('sigma', value=0.2, min=0)
-        self.set_param_hint('gamma', value=0.02, min=0)
+        self.set_param_hint('gamma', value=0.02)
         self.set_param_hint('gaussian_sigma', value=0.2, min=0)
         self.set_param_hint('center', value=285)
         self.set_param_hint('soc', value=2.0)

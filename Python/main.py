@@ -83,6 +83,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.error_dialog = QtWidgets.QErrorMessage()
         self.displayChoosenBG = QtWidgets.QLabel()
         self.delegate = TableItemDelegate()
+        self.binding_ener=False
         self.initUI()
 
     def initUI(self):
@@ -2403,7 +2404,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if index == 4 or index == 5 or index == 9 or index == 10 or index == 11:
                 if self.pre[2][5][2 * index_pk + 1] is not None and len(str(self.pre[2][5][2 * index_pk + 1])) > 0:
                     pars[strind + str(index_pk + 1) + '_gamma'].value = float(self.pre[2][5][2 * index_pk + 1])
-                    pars[strind + str(index_pk + 1) + '_gamma'].min = 0
+                    #pars[strind + str(index_pk + 1) + '_gamma'].min = 0
                     pars[strind + str(index_pk + 1) + '_gamma'].max=1
                     if self.pre[2][5][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_gamma'].vary = False
@@ -2853,7 +2854,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
             strind = self.list_shape[index]
             strind = strind.split(":", 1)[0]
             y_components += out.eval_components()[strind + str(index_pk + 1) + '_']
-        area_components = integrate.simps([y for y, x in zip(y_components, x)])
+        if self.binding_ener:
+            area_components = integrate.simps([y for y, x in zip(y_components, x[::-1])],x[::-1])
+        else:
+            area_components = integrate.simps([y for y, x in zip(y_components, x)], x)
         for index_pk in range(int(len(self.pre[2][0]) / 2)):
             index = self.pre[2][0][2 * index_pk + 1]
             strind = self.list_shape[index]
@@ -2878,7 +2882,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     str(format(out.params[strind + str(index_pk + 1) + '_height'].value, self.floating)))
                 self.res_tab.setItem(5, index_pk, item)
                 y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
-                area = abs(integrate.simps([y for y, x in zip(y_area, x)], x))
+                if self.binding_ener:
+                    area = abs(integrate.simps([y for y, x in zip(y_area, x[::-1])], x[::-1]))
+                else:
+                    area= abs(integrate.simps([y for y, x in zip(y_area, x)], x))
                 item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                 self.res_tab.setItem(7, index_pk, item)
                 item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
@@ -2899,7 +2906,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         self.res_tab.setItem(row, index_pk, item)
                     # included area
                     y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
-                    area = abs(integrate.simps([y for y, x in zip(y_area, x)], x))
+                    if self.binding_ener:
+                        area = abs(integrate.simps([y for y, x in zip(y_area, x[::-1])], x[::-1]))
+                    else:
+                        area = abs(integrate.simps([y for y, x in zip(y_area, x)], x))
                     item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                     self.res_tab.setItem(7, index_pk, item)
                     item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
@@ -2926,7 +2936,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if np.max(y_area) != 0:
                     y_temp = y_area / np.max(y_area)
                     x_ = [i for i, j in zip(x, y_temp) if j >= 0.5]
-                    fwhm_temp = x_[-1] - x_[0]
+                    fwhm_temp = abs(x_[-1] - x_[0])
                     item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp, self.floating)))
                     self.res_tab.setItem(3, index_pk, item)
                 else:
@@ -2935,7 +2945,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     item = QtWidgets.QTableWidgetItem("Error in calculation")
                     self.res_tab.setItem(3, index_pk, item)
                 # included area
-                area = abs(integrate.simps([y for y, x in zip(y_area, x)], x))
+                if self.binding_ener:
+                    area= abs(integrate.simps([y for y, x in zip(y_area, x[::-1])], x[::-1]))
+                else:
+                    area = abs(integrate.simps([y for y, x in zip(y_area, x)], x))
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f'))))
                 self.res_tab.setItem(7, index_pk, item)
@@ -2972,12 +2985,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if np.max(y_area_p1) != 0 and np.max(y_area_p2) != 0:
                     y_temp_p1 = y_area_p1 / np.max(y_area_p1)
                     x_p1 = [i for i, j in zip(x, y_temp_p1) if j >= 0.5]
-                    fwhm_temp_p1 = x_p1[-1] - x_p1[0]
+                    fwhm_temp_p1 = abs(x_p1[-1] - x_p1[0])
                     item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp_p1, self.floating)))
                     self.res_tab.setItem(3, index_pk, item)
                     y_temp_p2 = y_area_p2 / np.max(y_area_p2)
                     x_p2 = [i for i, j in zip(x, y_temp_p2) if j >= 0.5]
-                    fwhm_temp_p2 = x_p2[-1] - x_p2[0]
+                    fwhm_temp_p2 = abs(x_p2[-1] - x_p2[0])
                     item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp_p2, self.floating)))
                     self.res_tab.setItem(4, index_pk, item)
                 else:
@@ -2989,8 +3002,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.res_tab.setItem(4, index_pk, item)
 
                     # included area
-                area_p1 = integrate.simps([y for y, x in zip(y_area_p1, x)])
-                area_p2 = integrate.simps([y for y, x in zip(y_area_p2, x)])
+                if self.binding_ener:
+                    area_p1 = abs(integrate.simps([y for y, x in zip(y_area_p1, x[::-1])], x[::-1]))
+                    area_p2 = abs(integrate.simps([y for y, x in zip(y_area_p2, x[::-1])], x[::-1]))
+                else:
+                    area_p1 = integrate.simps([y for y, x in zip(y_area_p1, x)])
+                    area_p2 = integrate.simps([y for y, x in zip(y_area_p2, x)])
                 area_ges = area_p1 + area_p2
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area_p1, '.1f') + r' ({}%)'.format(format(area_p1 / area_ges * 100, '.2f'))))
@@ -3042,6 +3059,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         plottitle = self.plottitle.text()
         # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
         x0 = self.df[:, 0]
+        if x0[-1] < x0[0]:
+            self.binding_ener=True
         x0_corrected=np.copy(x0)
         if self.correct_energy is not None:
             x0_corrected -= self.correct_energy
