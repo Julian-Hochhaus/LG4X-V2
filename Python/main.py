@@ -2156,11 +2156,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
             bg_mod = xpy.shirley_calculate(x, y, shA, shB)
         if idx_bg == 100:
             if mode == "eva":
-                shA = self.pre[1][0][1]
-                shB = self.pre[1][0][3]
+                k = self.pre[1][0][5]
+                c = self.pre[1][0][7]
                 pars = None
                 mod = None
-                bg_mod = xpy.shirley_calculate(x, y, shA, shB)
+                bg_mod = xpy.shirley(y, k, c)
             else:
                 mod = ShirleyBG(independent_vars=["y"], prefix='bg_shirley_')
                 k = self.pre[1][0][5]
@@ -2318,6 +2318,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if self.fixedBG.isChecked() and pars!=None:
             for par in pars:
                 pars[par].vary = False
+        print(bg_mod)
         return [mod, bg_mod, pars]
 
     def PeakSelector(self, mod):
@@ -3053,6 +3054,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 pars.update(temp_res[2])
             else:
                 pars=temp_res[2]
+        print(bg_mod)
         return mod, bg_mod, pars
 
     def ana(self, mode):
