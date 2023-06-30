@@ -87,13 +87,9 @@ def shirley_calculate(x, y, tol=1e-5, maxit=10):
     else:
         is_reversed = False
 
-    # Locate the biggest peak.
 
     yl = y[0]
     yr = y[-1]
-
-    # Max integration index
-    imax = n - 1
 
     # Initial value of the background shape B. The total background S = yr + B,
     # and B is equal to (yl - yr) below lmidx and initially zero above.
