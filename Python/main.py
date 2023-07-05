@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 # LG4X: lmfit gui for xps curve fitting, Copyright (C) 2021, Hideki NAKAJIMA, Synchrotron Light Research Institute,
 # Thailand modified by Julian Hochhaus, TU Dortmund University.
 
@@ -2155,24 +2156,17 @@ class PrettyWidget(QtWidgets.QMainWindow):
             mod = None
             bg_mod = xpy.shirley_calculate(x, y, shA, shB)
         if idx_bg == 100:
-            if mode == "eva":
-                shA = self.pre[1][0][1]
-                shB = self.pre[1][0][3]
-                pars = None
-                mod = None
-                bg_mod = xpy.shirley_calculate(x, y, shA, shB)
-            else:
-                mod = ShirleyBG(independent_vars=["y"], prefix='bg_shirley_')
-                k = self.pre[1][0][5]
-                const = self.pre[1][0][7]
-                pars = mod.make_params()
-                pars['bg_shirley_k'].value = float(k)
-                pars['bg_shirley_const'].value = float(const)
-                if self.pre[1][0][4] == 2:
-                    pars['bg_shirley_k'].vary = False
-                if self.pre[1][0][6] == 2:
-                    pars['bg_shirley_const'].vary = False
-                bg_mod = 0
+            mod = ShirleyBG(independent_vars=["y"], prefix='bg_shirley_')
+            k = self.pre[1][0][5]
+            const = self.pre[1][0][7]
+            pars = mod.make_params()
+            pars['bg_shirley_k'].value = float(k)
+            pars['bg_shirley_const'].value = float(const)
+            if self.pre[1][0][4] == 2:
+                pars['bg_shirley_k'].vary = False
+            if self.pre[1][0][6] == 2:
+                pars['bg_shirley_const'].vary = False
+            bg_mod = 0
         if idx_bg == 1:
             toB = self.pre[1][1][1]
             toC = self.pre[1][1][3]
@@ -2318,6 +2312,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if self.fixedBG.isChecked() and pars!=None:
             for par in pars:
                 pars[par].vary = False
+        print(bg_mod)
         return [mod, bg_mod, pars]
 
     def PeakSelector(self, mod):
@@ -3053,6 +3048,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 pars.update(temp_res[2])
             else:
                 pars=temp_res[2]
+        print(bg_mod)
         return mod, bg_mod, pars
 
     def ana(self, mode):

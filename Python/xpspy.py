@@ -87,13 +87,9 @@ def shirley_calculate(x, y, tol=1e-5, maxit=10):
     else:
         is_reversed = False
 
-    # Locate the biggest peak.
 
     yl = y[0]
     yr = y[-1]
-
-    # Max integration index
-    imax = n - 1
 
     # Initial value of the background shape B. The total background S = yr + B,
     # and B is equal to (yl - yr) below lmidx and initially zero above.
@@ -134,7 +130,32 @@ def shirley_calculate(x, y, tol=1e-5, maxit=10):
         # print("Shirley BG: tol (ini = ", tol, ") , iteration (max = ", maxit, "): ", it)
         return yr + B
 
+def shirley(y, k, const):
+    """
+    Calculates the Shirley background of an X-ray photoelectron spectroscopy (XPS) spectrum.
+    This implementation calculates the Shirley background by integrating the step characteristic of the spectrum.
 
+    Parameters
+    ----------
+    y : array-like
+        1D-array containing the y-values (intensities) of the spectrum.
+    k : float
+        Slope of the step characteristic.
+    const : float
+        Constant offset of the step characteristic.
+
+    Returns
+    -------
+    array-like
+        The Shirley background of the XPS spectrum.
+    """
+    n = len(y)
+    y_right = const
+    y_temp = y - y_right  # step characteristic is better approximated if only the step without background is integrated
+    bg = []
+    for i in range(n):
+        bg.append(np.sum(y_temp[i:]))
+    return np.asarray([k * elem + y_right for elem in bg])
 def tougaard_calculate(x, y, tb=2866, tc=1643, tcd=1, td=1, maxit=100):
     # https://warwick.ac.uk/fac/sci/physics/research/condensedmatt/surface/people/james_mudd/igor/
 
