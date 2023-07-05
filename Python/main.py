@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 # LG4X: lmfit gui for xps curve fitting, Copyright (C) 2021, Hideki NAKAJIMA, Synchrotron Light Research Institute,
 # Thailand modified by Julian Hochhaus, TU Dortmund University.
 
