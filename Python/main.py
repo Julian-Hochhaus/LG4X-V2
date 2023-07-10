@@ -670,7 +670,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if index > 0 and col < int(colPosition_fitp1 / 2):
                     comboBox.setCurrentIndex(index)
                 self.fitp1.setCellWidget(13 + 2 * i, 2 * col + 1, comboBox)
-
+        self.list_component=header_texts
+        print(self.list_component)
     def show_citation_dialog(self):
         citation_text = 'J. A. Hochhaus and H. Nakajima, LG4X-V2 (Zenodo, 2023), DOI:10.5281/zenodo.7871174'
         msg_box = QtWidgets.QMessageBox(self)
@@ -1067,22 +1068,24 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.fitp1.setHorizontalHeaderLabels(fitp1)
             self.fitp1_lims.setHorizontalHeaderLabels(fitp1_lims)
             self.res_tab.setHorizontalHeaderLabels(loaded[1:])
+            self.list_component=loaded
 
         else:
             comp_name=self.nextFreeComponentName()
-            item = QtWidgets.QTableWidgetItem()
+            item = QtWidgets.QTableWidgetItem('')
             self.fitp1.setHorizontalHeaderItem(colPosition_fitp1, item)
-            item = QtWidgets.QTableWidgetItem(comp_name)
+            item = QtWidgets.QTableWidgetItem(str(comp_name))
             self.fitp1.setHorizontalHeaderItem(colPosition_fitp1 + 1, item)
 
-            item = QtWidgets.QTableWidgetItem(comp_name)
+            item = QtWidgets.QTableWidgetItem(str(comp_name))
             self.res_tab.setHorizontalHeaderItem(colPosition_res, item)
-            item = QtWidgets.QTableWidgetItem(comp_name)
+            item = QtWidgets.QTableWidgetItem(str(comp_name))
             self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims, item)
             item = QtWidgets.QTableWidgetItem('min')
             self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims + 1, item)
             item = QtWidgets.QTableWidgetItem('max')
             self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims + 2, item)
+            self.list_component.append(comp_name)
         self.res_tab.resizeColumnsToContents()
         self.res_tab.resizeRowsToContents()
         self.fitp1_lims.resizeColumnsToContents()
@@ -1449,7 +1452,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.idx_bg = [self.pre[0][0]]
             else:
                 self.idx_bg = self.pre[0][0]
-            if len(self.pre)==5:
+            if len(self.pre)==5 and len(self.pre[4])-1==int(len(self.pre[2][0])/2):
                 self.list_component= self.pre[4]
             else:
                 list_component = ['']
@@ -2312,7 +2315,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if self.fixedBG.isChecked() and pars!=None:
             for par in pars:
                 pars[par].vary = False
-        print(bg_mod)
         return [mod, bg_mod, pars]
 
     def PeakSelector(self, mod):
@@ -3048,7 +3050,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 pars.update(temp_res[2])
             else:
                 pars=temp_res[2]
-        print(bg_mod)
         return mod, bg_mod, pars
 
     def ana(self, mode):
