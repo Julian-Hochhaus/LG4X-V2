@@ -90,7 +90,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def initUI(self):
         self.fit_thread=FitThread(self)
         self.version = 'LG4X: LMFit GUI for XPS curve fitting v2.0.4'
-        self.floating = '.4f'
+        self.floating = '.3f'
         self.setGeometry(700, 500, 1600, 900)
         self.center()
         self.setWindowTitle(self.version)
@@ -391,8 +391,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                   [2, 0.0, '', '', '', '', '', '', '', '', '']]
         # self.setPreset([0], pre_bg, [])
 
-        self.fitp0.resizeColumnsToContents()
-        self.fitp0.resizeRowsToContents()
         bg_fixedLayout = QtWidgets.QHBoxLayout()
         self.fixedBG = QtWidgets.QCheckBox('Keep background fixed')
         self.displayChoosenBG.setText(
@@ -547,8 +545,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                   [0, 0], [2, 1], [0, 0], [2, 1], [0, 0], [2, 1]]
         self.pre = [[self.idx_bg, self.xmin, self.xmax, self.hv, self.wf, self.correct_energy], pre_bg, pre_pk, [[0, '', '']] * 19]
         self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
-        self.fitp1.resizeColumnsToContents()
-        self.fitp1.resizeRowsToContents()
         self.fitp1.setHeaderTooltips()
         layout_bottom_mid.addWidget(self.fitp1)
 
@@ -560,8 +556,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         outer_layout.addLayout(bottomrow_layout, 6)
         layout_top_right = QtWidgets.QVBoxLayout()
         layout_bottom_right = QtWidgets.QVBoxLayout()
-        self.fitp1_lims.resizeColumnsToContents()
-        self.fitp1_lims.resizeRowsToContents()
         self.fitp1_lims.setHeaderTooltips()
         list_res_row = ['gaussian_fwhm', 'lorentzian_fwhm_p1', 'lorentzian_fwhm_p2', 'fwhm_p1', 'fwhm_p2', 'height_p1',
                         'height_p2', 'approx. area_p1', 'approx. area_p2', 'area_total']
@@ -572,8 +566,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.res_tab.setHorizontalHeaderLabels(list_col)
         self.res_tab.setVerticalHeaderLabels(list_res_row)
         self.res_tab.headerTextChanged.connect(self.updateHeader_res)
-        self.res_tab.resizeColumnsToContents()
-        self.res_tab.resizeRowsToContents()
         layout_bottom_right.addWidget(self.res_tab)
         toprow_layout.addLayout(layout_top_right, 1)
         bottomrow_layout.addLayout(layout_bottom_right, 2)
@@ -582,8 +574,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.stats_tab = QtWidgets.QTableWidget(len(list_stats_row), 1)
         self.stats_tab.setHorizontalHeaderLabels(list_stats_col)
         self.stats_tab.setVerticalHeaderLabels(list_stats_row)
-        self.stats_tab.resizeColumnsToContents()
-        self.stats_tab.resizeRowsToContents()
         layout_bottom_right.addWidget(self.stats_tab)
         self.stats_label = QtWidgets.QLabel()
         self.stats_label.setText("Fit statistics:")
@@ -598,6 +588,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.res_label.setStyleSheet("font-weight: bold; font-size:12pt")
         # grid..addWidget(self.res_label, 7, 7, 1, 1)
         self.activeParameters()
+        self.resizeAllColumns()
         self.show()
     def duplicateComponentNames(self, new_label):
         if new_label in self.list_component:
@@ -618,7 +609,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def renameDuplicates(self, headers):
         header_dict = {}
         result_header = []
-
+        print(headers)
         for header in headers:
             if header not in header_dict:
                 header_dict[header] = 1
@@ -627,7 +618,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 idx = header_dict[header]
                 header_dict[header] += 1
                 result_header.append(header +"_x"+ str(idx))
-
+            print(header, result_header)
         return result_header
 
 
@@ -658,8 +649,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
         header_texts = ['']
         for column in range(int(self.fitp1.columnCount() / 2)):
             header_item = self.fitp1.horizontalHeaderItem(int(column * 2 + 1))
+            print(column, header_item)
             if header_item is not None:
                 header_texts.append(header_item.text())
+        print('update dropdown',self.list_component,header_texts)
         for i in range(7):
             for col in range(int(colPosition_fitp1 / 2 + 1)):
                 if col < int(colPosition_fitp1 / 2):
@@ -670,8 +663,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if index > 0 and col < int(colPosition_fitp1 / 2):
                     comboBox.setCurrentIndex(index)
                 self.fitp1.setCellWidget(13 + 2 * i, 2 * col + 1, comboBox)
-        self.list_component=header_texts
-        print(self.list_component)
+        if int(len(header_texts))== int(len(self.list_component)):
+            self.list_component=header_texts
+
     def show_citation_dialog(self):
         citation_text = 'J. A. Hochhaus and H. Nakajima, LG4X-V2 (Zenodo, 2023), DOI:10.5281/zenodo.7871174'
         msg_box = QtWidgets.QMessageBox(self)
@@ -756,7 +750,27 @@ class PrettyWidget(QtWidgets.QMainWindow):
         else:
             self.status_label.setStyleSheet("background-color: blue; border-radius: 9px")
             self.status_text.setText("Error, Unknown state!")
-
+    def resizeAllColumns(self):
+        self.res_tab.resizeColumnsToContents()
+        self.res_tab.resizeRowsToContents()
+        self.stats_tab.resizeColumnsToContents()
+        self.stats_tab.resizeRowsToContents()
+        self.fitp1_lims.resizeColumnsToContents()
+        self.fitp1_lims.resizeRowsToContents()
+        self.fitp1.resizeColumnsToContents()
+        self.fitp1.resizeRowsToContents()
+        self.fitp0.resizeColumnsToContents()
+        self.fitp0.resizeRowsToContents()
+        for column in range(self.fitp1.columnCount()):
+            if column % 2 == 1:
+                self.fitp1.setColumnWidth(column, 60)
+        for column in range(self.fitp1_lims.columnCount()):
+            if column % 3 != 0:
+                self.fitp1_lims.setColumnWidth(column, 60)
+        for column in range(self.res_tab.columnCount()):
+            self.fitp1_lims.setColumnWidth(column, 60)
+        for column in range(self.stats_tab.columnCount()):
+            self.fitp1_lims.setColumnWidth(column, 60)
     def clicked_cross_section(self):
         window_cross_section = Window_CrossSection()
 
@@ -1086,16 +1100,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             item = QtWidgets.QTableWidgetItem('max')
             self.fitp1_lims.setHorizontalHeaderItem(colPosition_fitp1_lims + 2, item)
             self.list_component.append(comp_name)
-        self.res_tab.resizeColumnsToContents()
-        self.res_tab.resizeRowsToContents()
-        self.fitp1_lims.resizeColumnsToContents()
-        self.fitp1_lims.resizeRowsToContents()
-        self.fitp1.setHeaderTooltips()
-        self.fitp1_lims.setHeaderTooltips()
-        self.fitp1.resizeColumnsToContents()
-        for column in range(self.fitp1.columnCount()):
-            if column % 2 == 1:
-                self.fitp1.setColumnWidth(column, 55)
+        self.resizeAllColumns()
 
         # add DropDown component selection for amp_ref and ctr_ref and keep values as it is
         self.updateDropdown(colposition=colPosition_fitp1)
@@ -1342,8 +1347,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.pt.show()
 
         self.idx_pres = 0
-        self.fitp1.resizeColumnsToContents()
-        self.fitp1.resizeRowsToContents()
+        self.resizeAllColumns()
+
 
     def setPreset(self, list_pre_com, list_pre_bg, list_pre_pk, list_pre_pk_lims=[[0, '', '']] * 19):
         if len(list_pre_com) == 1:
@@ -1429,6 +1434,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             item.setCheckState(QtCore.Qt.Unchecked)
         self.activeParameters()
         self.lims_changed()
+        print('Preset loaded', self.list_component)
         self.list_component=self.renameDuplicates(self.list_component)
         fitp1_comps = [item for string in self.list_component[1:] for item in ["", string]]
         fitp1_lims = [item for string in self.list_component[1:] for item in [string, 'min', 'max']]
@@ -1495,14 +1501,16 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             temp_pks[row][2*col+1] = temp_pks[row][2*col+1] + current_len
             temp_peaks=np.concatenate((self.pre[2], temp_pks), axis=1)
             temp_lims = np.concatenate((self.pre[3], temp_pre[3]), axis=1)
-            if len(temp_pre) == 5:
+            print(len(temp_pre), len(temp_pre[4]), int(len(temp_pre[2][0]) / 2))
+            if len(temp_pre) == 5 and len(temp_pre[4]) - 1 == int(len(temp_pre[2][0]) / 2):
                 self.list_component=np.concatenate((self.list_component, temp_pre[4][1:]), axis=0)
             else:
-                list_component = []
+                temp_list_component = []
                 for i in range(int(len(temp_pre[2][0]) / 2)):
-                    list_component.append('C_{}'.format(str(int(i + 1))))
-                self.list_component = np.concatenate((self.list_component, list_component), axis=0)
+                    temp_list_component.append('C_{}'.format(str(int(i + 1))))
+                self.list_component = np.concatenate((self.list_component, temp_list_component), axis=0)
             self.list_component=self.renameDuplicates(self.list_component)
+            print('main',self.list_component)
             self.pre=[temp_settings,temp_bg,temp_peaks,temp_lims, self.list_component]
             fitp1_comps = [item for string in self.list_component[1:] for item in ["", string]]
             fitp1_lims = [item for string in self.list_component[1:] for item in [string, 'min', 'max']]
@@ -3029,10 +3037,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_height_p2'].value, self.floating)))
                 self.res_tab.setItem(6, index_pk, item)
-            self.res_tab.resizeColumnsToContents()
-            self.res_tab.resizeRowsToContents()
-            self.fitp1.resizeColumnsToContents()
-            self.fitp1.resizeRowsToContents()
+            self.resizeAllColumns()
 
     def BGModCreator(self, x, y, mode):
         temp_res = self.bgSelector(x, y, mode=mode, idx_bg=self.idx_bg[0])
@@ -3279,8 +3284,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.stats_tab.setItem(8, 0, item)
             item = QtWidgets.QTableWidgetItem(self.get_attr(out,'bic'))
             self.stats_tab.setItem(9, 0, item)
-        self.stats_tab.resizeColumnsToContents()
-        self.stats_tab.resizeRowsToContents()
+        self.resizeAllColumns()
+
         sum_background = np.array([0.] * len(x))
         self.bg_comps = dict()
         for key in comps:
@@ -3342,6 +3347,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.ax.legend(loc=0)
         self.ar.legend(loc=0)
         self.canvas.draw()
+        self.resizeAllColumns()
 
         # make fit results to be global to export
         self.export_pars = pars
