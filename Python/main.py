@@ -1918,7 +1918,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if os.path.splitext(fileName)[1] == '.csv':
                 try:  # change import, so that export file is detected
                     data = np.genfromtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter=',', max_rows=2)
-                    if all(elem in data for elem in ['x', 'raw_y', 'sum_fit']):
+                    if all(elem in data for elem in ['raw_x', 'raw_y', 'sum_fit']):
                         self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=2,
                                              usecols=(0, 1))
                     else:
@@ -2401,7 +2401,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if index == 4 or index == 5 or index == 9 or index == 10 or index == 11:
                 if self.pre[2][5][2 * index_pk + 1] is not None and len(str(self.pre[2][5][2 * index_pk + 1])) > 0:
                     pars[strind + str(index_pk + 1) + '_gamma'].value = float(self.pre[2][5][2 * index_pk + 1])
-                    #pars[strind + str(index_pk + 1) + '_gamma'].min = 0
+                    if self.binding_ener:
+                        pars[strind + str(index_pk + 1) + '_gamma'].max = 0
+                        pars[strind + str(index_pk + 1) + '_gamma'].min = -1
+                    else:
+                        pars[strind + str(index_pk + 1) + '_gamma'].min = 0
+                        pars[strind + str(index_pk + 1) + '_gamma'].max = 1
                     pars[strind + str(index_pk + 1) + '_gamma'].max=1
                     if self.pre[2][5][2 * index_pk] == 2:
                         pars[strind + str(index_pk + 1) + '_gamma'].vary = False
