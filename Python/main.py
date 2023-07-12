@@ -609,7 +609,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def renameDuplicates(self, headers):
         header_dict = {}
         result_header = []
-        print(headers)
         for header in headers:
             if header not in header_dict:
                 header_dict[header] = 1
@@ -618,7 +617,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 idx = header_dict[header]
                 header_dict[header] += 1
                 result_header.append(header +"_x"+ str(idx))
-            print(header, result_header)
         return result_header
 
 
@@ -649,10 +647,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         header_texts = ['']
         for column in range(int(self.fitp1.columnCount() / 2)):
             header_item = self.fitp1.horizontalHeaderItem(int(column * 2 + 1))
-            print(column, header_item)
             if header_item is not None:
                 header_texts.append(header_item.text())
-        print('update dropdown',self.list_component,header_texts)
         for i in range(7):
             for col in range(int(colPosition_fitp1 / 2 + 1)):
                 if col < int(colPosition_fitp1 / 2):
@@ -768,9 +764,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if column % 3 != 0:
                 self.fitp1_lims.setColumnWidth(column, 60)
         for column in range(self.res_tab.columnCount()):
-            self.fitp1_lims.setColumnWidth(column, 60)
-        for column in range(self.stats_tab.columnCount()):
-            self.fitp1_lims.setColumnWidth(column, 60)
+            self.res_tab.setColumnWidth(column, 60)
     def clicked_cross_section(self):
         window_cross_section = Window_CrossSection()
 
@@ -1434,7 +1428,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             item.setCheckState(QtCore.Qt.Unchecked)
         self.activeParameters()
         self.lims_changed()
-        print('Preset loaded', self.list_component)
         self.list_component=self.renameDuplicates(self.list_component)
         fitp1_comps = [item for string in self.list_component[1:] for item in ["", string]]
         fitp1_lims = [item for string in self.list_component[1:] for item in [string, 'min', 'max']]
@@ -1501,7 +1494,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             temp_pks[row][2*col+1] = temp_pks[row][2*col+1] + current_len
             temp_peaks=np.concatenate((self.pre[2], temp_pks), axis=1)
             temp_lims = np.concatenate((self.pre[3], temp_pre[3]), axis=1)
-            print(len(temp_pre), len(temp_pre[4]), int(len(temp_pre[2][0]) / 2))
             if len(temp_pre) == 5 and len(temp_pre[4]) - 1 == int(len(temp_pre[2][0]) / 2):
                 self.list_component=np.concatenate((self.list_component, temp_pre[4][1:]), axis=0)
             else:
@@ -1510,7 +1502,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     temp_list_component.append('C_{}'.format(str(int(i + 1))))
                 self.list_component = np.concatenate((self.list_component, temp_list_component), axis=0)
             self.list_component=self.renameDuplicates(self.list_component)
-            print('main',self.list_component)
             self.pre=[temp_settings,temp_bg,temp_peaks,temp_lims, self.list_component]
             fitp1_comps = [item for string in self.list_component[1:] for item in ["", string]]
             fitp1_lims = [item for string in self.list_component[1:] for item in [string, 'min', 'max']]
