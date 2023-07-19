@@ -3,7 +3,7 @@ import pandas as pd
 import os
 
 
-data = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'elements.csv'))
+data = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../Databases/elements.csv'))
 
 class PeriodicTable(QWidget):
     def __init__(self):

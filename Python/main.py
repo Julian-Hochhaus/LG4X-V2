@@ -1,6 +1,6 @@
 #!/usr/bin/python3
-# LG4X: lmfit gui for xps curve fitting, Copyright (C) 2021, Hideki NAKAJIMA, Synchrotron Light Research Institute,
-# Thailand modified by Julian Hochhaus, TU Dortmund University.
+# LG4X-V2: lmfit gui for xps curve fitting Copyright (C) 2023, Julian Hochhaus, TU Dortmund University.
+# based on LG4X: Copyright (C) 2021, Hideki NAKAJIMA, Synchrotron Light Research Institute, Thailand.
 
 import ast
 import math
@@ -8,21 +8,16 @@ import sys
 import pickle
 import webbrowser
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 from PyQt5.QtCore import QTime
-from PyQt5.QtGui import QValidator
-from PyQt5.QtWidgets import QItemDelegate, QLineEdit
-from PyQt5.QtGui import QDoubleValidator
-from usrmodel import TougaardBG, ShirleyBG, SlopeBG
+from lmfitxps.models import TougaardBG, ShirleyBG, SlopeBG, singlett
+import lmfitxps.functions as xpy
 from lmfit import Model
 from matplotlib import style
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-from matplotlib.widgets import RectangleSelector
 
 import vamas_export as vpy
-import xpspy as xpy
 from periodictable import PeriodicTable
 from scipy import integrate
 from helpers import *
@@ -850,7 +845,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                                                                        2 * col + 1).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
                     if row == 16:
                         self.fitp1.cellWidget(row + 1, 2 * col + 1).setEnabled(True)
-                if idx == 0 or idx == 2 or idx == 5 or idx == 6 or idx == 7 or idx == 8 or idx == 10 or idx == 11 or idx == 12:
+                if idx == 0 or idx == 2 or idx == 4 or idx == 5 or idx == 6 or idx == 7 or idx == 8 or idx == 10 or idx == 11 or idx == 12:
                     if row == 3 or row == 19:
                         self.fitp1.item(row + 1, 2 * col).setFlags(self.fitp1.item(row + 1,
                                                                                    2 * col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
@@ -932,7 +927,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         self.fitp1_lims.item(row, 3 * col + 2).setFlags(self.fitp1_lims.item(row,
                                                                                              3 * col + 2).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
 
-                if idx == 0 or idx == 2 or idx == 6 or idx == 7 or idx == 8 or idx == 10 or idx == 11 or idx == 12:
+                if idx == 0 or idx == 2 or idx == 4 or idx == 5 or idx == 6 or idx == 7 or idx == 8 or idx == 10 or idx == 11 or idx == 12:
                     if row == 3 or row == 15:
                         self.fitp1_lims.item(row, 3 * col).setFlags(self.fitp1_lims.item(row,
                                                                                          3 * col).flags() | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable)
@@ -2845,7 +2840,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def result2Par(self, out_params, mode):
         self.bgResult2Pre(out_params, mode, self.idx_bg)
         self.peakResult2Pre(out_params, mode)
-
+    def approx_fwhm(self,x, peak):
+        peak_norm = peak / np.max(peak)
+        x_peak = [i for i, j in zip(x, peak_norm) if j >= 0.5]
+        return abs(x_peak[-1] - x_peak[0])
     def fillTabResults(self, x, y, out):
         y_components = [0 for idx in range(len(y))]
         nrows = len(self.pre[2])
@@ -2863,7 +2861,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             index = self.pre[2][0][2 * index_pk + 1]
             strind = self.list_shape[index]
             strind = strind.split(":", 1)[0]
-            if index == 0:
+            if index == 0 :
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_fwhm'].value, self.floating)))
                 self.res_tab.setItem(0, index_pk, item)
@@ -2875,13 +2873,14 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_fwhm'].value, self.floating)))
                 self.res_tab.setItem(1, index_pk, item)
-            if index == 0 or index == 1 or index == 2 or index == 3 or index == 11:
-                item = QtWidgets.QTableWidgetItem(
-                    str(format(out.params[strind + str(index_pk + 1) + '_fwhm'].value, self.floating)))
+            if index == 0 or index == 1 or index == 2 or index == 3:
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk + 1) + '_fwhm'].value, self.floating)))
                 self.res_tab.setItem(3, index_pk, item)
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_height'].value, self.floating)))
                 self.res_tab.setItem(5, index_pk, item)
+            if index == 0 or index == 1 or index == 2 or index == 3 or index==4:
+
                 y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
                 if self.binding_ener:
                     area = abs(integrate.simps([y for y, x in zip(y_area, x[::-1])], x[::-1]))
@@ -2890,7 +2889,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                 self.res_tab.setItem(7, index_pk, item)
                 item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
-                self.res_tab.setItem(8, index_pk, item)
+                self.res_tab.setItem(9, index_pk, item)
                 item = QtWidgets.QTableWidgetItem('')
                 self.res_tab.setItem(2, index_pk, item)
                 item = QtWidgets.QTableWidgetItem('')
@@ -2935,9 +2934,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.res_tab.setItem(1, index_pk, item)
                 y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
                 if np.max(y_area) != 0:
-                    y_temp = y_area / np.max(y_area)
-                    x_ = [i for i, j in zip(x, y_temp) if j >= 0.5]
-                    fwhm_temp = abs(x_[-1] - x_[0])
+                    fwhm_temp = self.approx_fwhm(x, y_area)
                     item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp, self.floating)))
                     self.res_tab.setItem(3, index_pk, item)
                 else:
@@ -2957,8 +2954,16 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f'))))
                 self.res_tab.setItem(9, index_pk, item)
                 item = QtWidgets.QTableWidgetItem(
-                    str(format(out.params[strind + str(index_pk + 1) + '_height'].value, self.floating)))
+                    str(format(out.params[strind + str(index_pk + 1) + '_amplitude'].value, self.floating)))
                 self.res_tab.setItem(5, index_pk, item)
+                item = QtWidgets.QTableWidgetItem('')
+                self.res_tab.setItem(2, index_pk, item)
+                item = QtWidgets.QTableWidgetItem('')
+                self.res_tab.setItem(4, index_pk, item)
+                item = QtWidgets.QTableWidgetItem('')
+                self.res_tab.setItem(6, index_pk, item)
+                item = QtWidgets.QTableWidgetItem('')
+                self.res_tab.setItem(8, index_pk, item)
             if index == 10:
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm_p1'].value, self.floating)))
@@ -2984,9 +2989,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                      center=out.params[strind + str(index_pk + 1) + '_center'].value
                                             - out.params[strind + str(index_pk + 1) + '_soc'].value)
                 if np.max(y_area_p1) != 0 and np.max(y_area_p2) != 0:
-                    y_temp_p1 = y_area_p1 / np.max(y_area_p1)
-                    x_p1 = [i for i, j in zip(x, y_temp_p1) if j >= 0.5]
-                    fwhm_temp_p1 = abs(x_p1[-1] - x_p1[0])
+                    fwhm_temp_p1 = self.approx_fwhm(x, y_area_p1)
                     item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp_p1, self.floating)))
                     self.res_tab.setItem(3, index_pk, item)
                     y_temp_p2 = y_area_p2 / np.max(y_area_p2)
@@ -3022,13 +3025,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f'))))
                 self.res_tab.setItem(9, index_pk, item)
+                h_p1_expr = "{pre:s}amplitude"
+                h_p2_expr = "{pre:s}amplitude*{pre:s}height_ratio"
                 item = QtWidgets.QTableWidgetItem(
-                    str(format(out.params[strind + str(index_pk + 1) + '_height_p1'].value, self.floating)))
+                    str(format(out.params[strind + str(index_pk + 1) + '_amplitude'].value, self.floating)))
                 self.res_tab.setItem(5, index_pk, item)
                 item = QtWidgets.QTableWidgetItem(
-                    str(format(out.params[strind + str(index_pk + 1) + '_height_p2'].value, self.floating)))
+                    str(format(out.params[strind + str(index_pk + 1) + '_amplitude'].value*out.params[strind + str(index_pk + 1) + '_height_ratio'].value, self.floating)))
                 self.res_tab.setItem(6, index_pk, item)
-            self.resizeAllColumns()
+
 
     def BGModCreator(self, x, y, mode):
         temp_res = self.bgSelector(x, y, mode=mode, idx_bg=self.idx_bg[0])
@@ -3118,7 +3123,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             x2 = x0_corrected[-1]
             self.pre[0][2] = x2
 
-        [x, y] = xpy.fit_range(x0_corrected, y0, x1, x2)
+        [x, y] = fit_range(x0_corrected, y0, x1, x2)
         raw_y = y.copy()
         raw_x = x.copy()
         if self.correct_energy is not None:
@@ -3229,12 +3234,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fillTabResults(x, y, out)
         # Fit stats to GUI:
         if mode == 'eva' or mode == "sim":
-            for index_pk in range(int(len(self.pre[2][0]))):
-                item = QtWidgets.QTableWidgetItem('Evaluation mode')
-                self.res_tab.setItem(0, index_pk, item)
-                for i in range(self.res_tab.columnCount() - 1):
-                    item = QtWidgets.QTableWidgetItem('-')
-                    self.res_tab.setItem(i, index_pk, item)
+            print('pre', self.pre[2][0])
+            #for index_pk in range(int(len(self.pre[2][0]))):
+            #    item = QtWidgets.QTableWidgetItem('Evaluation mode')
+            #    self.res_tab.setItem(0, index_pk, item)
+            #    for i in range(self.res_tab.rowCount() - 1):
+            #        item = QtWidgets.QTableWidgetItem('-')
+            #        self.res_tab.setItem(i, index_pk, item)
             item = QtWidgets.QTableWidgetItem('-')
             self.stats_tab.setItem(0, 0, item)
             item = QtWidgets.QTableWidgetItem('Evaluation mode.')
