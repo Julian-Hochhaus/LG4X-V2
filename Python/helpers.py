@@ -4,7 +4,7 @@ from lmfit.models import ExponentialGaussianModel, SkewedGaussianModel, SkewedVo
     BreitWignerModel, LognormalModel
 from lmfit.models import GaussianModel, LorentzianModel, VoigtModel, PseudoVoigtModel, ThermalDistributionModel, \
     PolynomialModel, StepModel
-from usrmodel import ConvGaussianDoniachDublett, ConvGaussianDoniachSinglett, FermiEdgeModel, singlett, fft_convolve
+from lmfitxps.models import ConvGaussianDoniachDublett, ConvGaussianDoniachSinglett, FermiEdgeModel, singlett, fft_convolve
 from PyQt5 import QtWidgets, QtCore
 import numpy as np
 import os
@@ -458,3 +458,68 @@ class Element:
 def cross_section():
     window_cross_section = Window_CrossSection()
     window_cross_section.show()
+# from numpy import amax, amin
+# make x and y lists (arrays) in the range between xmin and xmax
+import numpy as np
+
+
+def fit_range(x, y, xmin, xmax):
+    # print(xmin, xmax)
+    if xmin > xmax:
+        xmin0 = xmin
+        xmin = xmax
+        xmax = xmin0
+
+    if x[0] < x[-1]:
+        # XAS in photon energy scale or XPS in kinetic energy scale
+        if x[0] < xmin or xmax < x[len(x) - 1]:
+            if xmax < x[len(x) - 1]:
+                for i in range(len(x) - 1, -1, -1):
+                    if x[i] <= xmax:
+                        rmidx = i
+                        break
+            else:
+                rmidx = len(x) - 1
+
+            if x[0] < xmin:
+                for i in range(0, len(x) - 1):
+                    if x[i] >= xmin:
+                        lmidx = i
+                        break
+            else:
+                lmidx = 0
+
+            xn = x[lmidx:rmidx + 1].copy()
+            yn = y[lmidx:rmidx + 1].copy()
+        # print(len(x), len(xn), xn[0], xn[len(xn)-1])
+        else:
+            xn = x
+            yn = y
+    else:
+        # XPS in binding energy scale
+        if x[len(x) - 1] < xmin or xmax < x[0]:
+            if xmax < x[0]:
+                for i in range(0, len(x) - 1):
+                    if x[i] <= xmax:
+                        lmidx = i
+                        break
+            else:
+                lmidx = 0
+
+            if x[len(x) - 1] < xmin:
+                for i in range(len(x) - 1, -1, -1):
+                    if x[i] >= xmin:
+                        rmidx = i
+                        break
+            else:
+                rmidx = len(x) - 1
+
+            xn = x[lmidx:rmidx + 1].copy()
+            yn = y[lmidx:rmidx + 1].copy()
+        # print(len(x), len(xn), xn[0], xn[len(xn)-1])
+        else:
+            xn = x
+            yn = y
+
+    # return [array(xn), array(yn)]
+    return [xn, yn]
