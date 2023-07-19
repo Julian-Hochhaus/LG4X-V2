@@ -84,7 +84,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
     def initUI(self):
         self.fit_thread=FitThread(self)
-        self.version = 'LG4X: LMFit GUI for XPS curve fitting v2.0.4'
+        self.version = 'LG4X: LMFit GUI for XPS curve fitting v2.0.5'
         self.floating = '.3f'
         self.setGeometry(700, 500, 1600, 900)
         self.center()
