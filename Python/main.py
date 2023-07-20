@@ -1867,30 +1867,30 @@ class PrettyWidget(QtWidgets.QMainWindow):
             xmin, xmax = self.ax.get_xlim()
             for obj in self.pt.selected_elements:
                 alka = ast.literal_eval(obj['alka'].values[0])
-                if len(alka['trans']) > 0:
-                    for orb in range(len(alka['trans'])):
+                if len(ast.literal_eval(alka['trans'])) > 0:
+                    for orb in range(len(ast.literal_eval(alka['trans']))):
                         if xmin > xmax:
-                            en = float(alka['be'][orb])
+                            en = float(ast.literal_eval(alka['be'])[orb])
                         else:
-                            en = hv - wf - float(alka['be'][orb])-self.correct_energy
+                            en = hv - wf - float(ast.literal_eval(alka['be'])[orb])-self.correct_energy
                         if (xmin > xmax and xmin > en > xmax) or (xmin < xmax and xmin < en < xmax):
                             elem_x = np.asarray([en])
-                            elem_y = np.asarray([float(alka['rsf'][orb])])
-                            elem_z = alka['trans'][orb]
+                            elem_y = np.asarray([float(ast.literal_eval(alka['rsf'])[orb])])
+                            elem_z =ast.literal_eval(alka['trans'])[orb]
                             # obj.symbol+elem_z, color="r", rotation="vertical")
                             self.ax.text(elem_x, ymin + (ymax - ymin) * math.log(elem_y + 1, 10) / 2,
                                          obj['symbol'].values[0] + elem_z, color="r", rotation="vertical")
                 aes = ast.literal_eval(obj['aes'].values[0])
-                if len(aes['trans']) > 0:
-                    for orb in range(len(aes['trans'])):
+                if len(ast.literal_eval(aes['trans'])) > 0:
+                    for orb in range(len(ast.literal_eval(aes['trans']))):
                         if xmin > xmax:
-                            en = hv - wf - float(aes['ke'][orb])-self.correct_energy
+                            en = hv - wf - float(ast.literal_eval(aes['ke'])[orb])-self.correct_energy
                         else:
-                            en = float(aes['ke'][orb])
+                            en = float(ast.literal_eval(aes['ke'])[orb])
                         if (xmin > xmax and xmin > en > xmax) or (xmin < xmax and xmin < en < xmax):
                             elem_x = np.asarray([en])
-                            elem_y = np.asarray([float(aes['rsf'][orb])])
-                            elem_z = aes['trans'][orb]
+                            elem_y = np.asarray([float(ast.literal_eval(aes['rsf'])[orb])])
+                            elem_z = ast.literal_eval(aes['trans'])[orb]
                             # obj.symbol+elem_z, color="g", rotation="vertical")
                             self.ax.text(elem_x, ymin + (ymax - ymin) * math.log(elem_y + 1, 10),
                                          obj['symbol'].values[0] + elem_z,
@@ -3234,7 +3234,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fillTabResults(x, y, out)
         # Fit stats to GUI:
         if mode == 'eva' or mode == "sim":
-            print('pre', self.pre[2][0])
             #for index_pk in range(int(len(self.pre[2][0]))):
             #    item = QtWidgets.QTableWidgetItem('Evaluation mode')
             #    self.res_tab.setItem(0, index_pk, item)

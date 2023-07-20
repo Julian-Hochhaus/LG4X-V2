@@ -78,7 +78,6 @@ class PeriodicTable(QWidget):
         if element['symbol'].values[0] in self.selected_elements_names:
             self.selected_elements_names.remove(element['symbol'].values[0])
             self.selected_elements.remove(element)
-            print(self.selected_elements_names)
         else:
             self.selected_elements.append(element)
             self.selected_elements_names.append(element['symbol'].values[0])
