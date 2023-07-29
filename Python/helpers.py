@@ -4,7 +4,8 @@ from lmfit.models import ExponentialGaussianModel, SkewedGaussianModel, SkewedVo
     BreitWignerModel, LognormalModel
 from lmfit.models import GaussianModel, LorentzianModel, VoigtModel, PseudoVoigtModel, ThermalDistributionModel, \
     PolynomialModel, StepModel
-from lmfitxps.models import ConvGaussianDoniachDublett, ConvGaussianDoniachSinglett, FermiEdgeModel, singlett, fft_convolve
+from lmfitxps.models import (ConvGaussianDoniachDublett, ConvGaussianDoniachSinglett, FermiEdgeModel)
+from lmfitxps.lineshapes import singlett, fft_convolve
 from PyQt5 import QtWidgets, QtCore
 import numpy as np
 import os

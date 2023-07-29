@@ -10,8 +10,9 @@ import webbrowser
 import matplotlib.pyplot as plt
 import pandas as pd
 from PyQt5.QtCore import QTime
-from lmfitxps.models import TougaardBG, ShirleyBG, SlopeBG, singlett
-import lmfitxps.functions as xpy
+from lmfitxps.models import TougaardBG, ShirleyBG, SlopeBG
+from lmfitxps.lineshapes import singlett
+import lmfitxps.backgrounds as xpy
 from lmfit import Model
 from matplotlib import style
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -25,7 +26,7 @@ import threading
 
 import traceback  # error handling
 import logging  # error handling
-
+__version__ = "1.3.1"
 # style.use('ggplot')
 style.use('seaborn-v0_8-colorblind')
 dictBG = {
@@ -84,7 +85,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
     def initUI(self):
         self.fit_thread=FitThread(self)
-        self.version = 'LG4X: LMFit GUI for XPS curve fitting v2.0.5'
+        self.version = 'LG4X: LMFit GUI for XPS curve fitting v{}'.format(__version__)
         self.floating = '.3f'
         self.setGeometry(700, 500, 1600, 900)
         self.center()
