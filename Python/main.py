@@ -26,7 +26,7 @@ import threading
 
 import traceback  # error handling
 import logging  # error handling
-__version__ = "1.3.2"
+__version__ = "2.1.1"
 # style.use('ggplot')
 style.use('seaborn-v0_8-colorblind')
 dictBG = {
