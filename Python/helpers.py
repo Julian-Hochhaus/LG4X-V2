@@ -102,6 +102,10 @@ class DoubleValidator(QDoubleValidator):
     # Define a custom signal that will be emitted when the input is not valid.
     validationChanged = QtCore.pyqtSignal(list)
 
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setNotation(QDoubleValidator.StandardNotation)
+        self.setLocale(QtCore.QLocale(QtCore.QLocale.C))
     def validate(self, input_str, pos):
         state, input_str, pos = super().validate(input_str, pos)
         if input_str == "" and state == QValidator.Acceptable:
@@ -139,7 +143,7 @@ class TableItemDelegate(QItemDelegate):
             editor (QLineEdit): The line edit widget used as the editor.
 
         """
-        self.editor = QLineEdit(parent)
+        self.editor = DoubleLineEdit(parent)
         self.editor.setToolTip('Only double values are valid inputs!')
         validator = DoubleValidator()
         self.editor.setValidator(validator)
