@@ -323,13 +323,13 @@ class VAMASBlock:
 			self.binding_axis = []
 			for i in range(num_ords):
 				self.kinetic_axis.append(self.abscissa_start + i * self.abscissa_increment)
-				self.binding_axis.append(-1 * (self.analyser_work_function) -1 * (self.abscissa_start + i * self.abscissa_increment) + self.source_energy)
+				self.binding_axis.append( -1 * (self.abscissa_start + i * self.abscissa_increment) + self.source_energy)
 		elif 'binding' in self.abscissa_label.lower():
 			self.kinetic_axis = []
 			self.binding_axis = []
 			for i in range(num_ords):
 				self.binding_axis.append(self.abscissa_start + i * self.abscissa_increment)
-				self.kinetic_axis.append(-1 * (self.analyser_work_function) -1 * (self.abscissa_start + i * self.abscissa_increment) + self.source_energy)		
+				self.kinetic_axis.append( -1 * (self.abscissa_start + i * self.abscissa_increment) + self.source_energy)
 				
 		# As a last item, calculate the dwell time per set of corresponding variables.
 		self.dwell_time = float(num_ords) / self.signal_collection_time

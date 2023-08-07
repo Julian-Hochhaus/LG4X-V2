@@ -1,8 +1,11 @@
+from PyQt5.QtGui import QDoubleValidator, QValidator
+from PyQt5.QtWidgets import QItemDelegate, QLineEdit
 from lmfit.models import ExponentialGaussianModel, SkewedGaussianModel, SkewedVoigtModel, DoniachModel, \
     BreitWignerModel, LognormalModel
 from lmfit.models import GaussianModel, LorentzianModel, VoigtModel, PseudoVoigtModel, ThermalDistributionModel, \
     PolynomialModel, StepModel
-from usrmodel import ConvGaussianDoniachDublett, ConvGaussianDoniachSinglett, FermiEdgeModel, singlett, fft_convolve
+from lmfitxps.models import (ConvGaussianDoniachDublett, ConvGaussianDoniachSinglett, FermiEdgeModel)
+from lmfitxps.lineshapes import singlett, fft_convolve
 from PyQt5 import QtWidgets, QtCore
 import numpy as np
 import os
@@ -93,6 +96,233 @@ def model_selector(index: int, strind: str, index_pk: int):
     else:
         raise ValueError(f"No model found for index {index}.")
 
+class DoubleValidator(QDoubleValidator):
+    """Subclass of QDoubleValidator that emits a signal if the input is not valid."""
+
+    # Define a custom signal that will be emitted when the input is not valid.
+    validationChanged = QtCore.pyqtSignal(list)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setNotation(QDoubleValidator.StandardNotation)
+        self.setLocale(QtCore.QLocale(QtCore.QLocale.C))
+    def validate(self, input_str, pos):
+        state, input_str, pos = super().validate(input_str, pos)
+        if input_str == "" and state == QValidator.Acceptable:
+            state = QValidator.Intermediate
+        validate_state = [state, input_str, pos]
+        self.validationChanged.emit(validate_state)
+        return state, input_str, pos
+
+
+class TableItemDelegate(QItemDelegate):
+    """Delegate class for QTableWidget cells that validates user input.
+
+    This class creates a line edit widget as the editor for each cell in a
+    QTableWidget. It adds a DoubleValidator to the line edit widget to ensure
+    that the user input is a valid double (floating-point) value.
+
+    Attributes:
+        None
+
+    Methods:
+        createEditor(parent, option, index): Creates a line edit widget as the
+            editor for the cell at the specified index. Returns the editor.
+
+    """
+
+    def createEditor(self, parent, option, index):
+        """Create a line edit widget as the editor for the cell at the specified index.
+
+        Args:
+            parent (QWidget): The parent widget of the editor.
+            option (QStyleOptionViewItem): The style options for the editor.
+            index (QModelIndex): The model index of the cell being edited.
+
+        Returns:
+            editor (QLineEdit): The line edit widget used as the editor.
+
+        """
+        self.editor = DoubleLineEdit(parent)
+        self.editor.setToolTip('Only double values are valid inputs!')
+        validator = DoubleValidator()
+        self.editor.setValidator(validator)
+        validator.validationChanged.connect(self.onValidationChanged)
+        return self.editor
+
+    def onValidationChanged(self, validate_return):
+        """Display a message box when the user enters an invalid input."""
+        state = validate_return[0]
+        if state == QValidator.Invalid:
+            print('Value ' + validate_return[1] + " was entered. However, only double values are valid!")
+
+
+class DoubleLineEdit(QLineEdit):
+    """Custom QLineEdit widget that uses DoubleValidator to validate user input."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.validator = DoubleValidator()
+        self.setValidator(self.validator)
+        self.validator.validationChanged.connect(self.onValidationChanged)
+
+    def onValidationChanged(self, validate_return):
+        """Display a message box when the user enters an invalid input."""
+        state = validate_return[0]
+        if state == QValidator.Invalid:
+            print('Value ' + validate_return[1] + " was entered. However, only double values are valid!")
+
+
+class SubWindow(QtWidgets.QWidget):
+    def __init__(self, params_tab):
+        super(SubWindow, self).__init__()
+        self.layout = QtWidgets.QGridLayout(self)
+        self.resize(800, 500)
+        self.setWindowTitle("Limits")
+        self.layout.addWidget(params_tab, 0, 0, 5, 4)
+
+
+class LayoutHline(QtWidgets.QFrame):
+    def __init__(self):
+        super(LayoutHline, self).__init__()
+        self.setFrameShape(self.HLine)
+        self.setFrameShadow(self.Sunken)
+class RemoveHeaderDialog(QtWidgets.QDialog):
+    removeOptionChanged = QtCore.pyqtSignal(int, str)
+    def __init__(self, header_label, header_texts, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Edit Header")
+        self.setLayout(QtWidgets.QVBoxLayout())
+
+        self.lineEdit = QLineEdit()
+        self.lineEdit.setText(header_label)
+        self.layout().addWidget(self.lineEdit)
+
+        self.remove_combo = QtWidgets.QComboBox()
+        self.remove_combo.addItem('--')
+        self.remove_combo.addItem("Remove Last Column")
+        for header in header_texts:
+            self.remove_combo.addItem(header)
+        self.layout().addWidget(self.remove_combo)
+
+        button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+        self.layout().addWidget(button_box)
+
+    def getHeaderText(self):
+        return self.lineEdit.text()
+
+    def getRemoveOption(self):
+        return self.remove_combo.currentIndex(), self.remove_combo.currentText()
+
+    def accept(self):
+        remove_idx, remove_text = self.getRemoveOption()
+        self.removeOptionChanged.emit(remove_idx,remove_text)
+        super().accept()
+class FitThread(QtCore.QThread):
+    fitting_finished = QtCore.pyqtSignal(object)
+
+    def __init__(self, model=None, data=None, params=None, x=None,weights=None, y=None):
+        super().__init__()
+        self.fit_interrupted = False
+        self.model = model
+        self.data = data
+        self.params = params
+        self.x = x
+        self.weights = weights
+        self.y= y
+        self.result=None
+
+    def run(self):
+        self.fit_interrupted = False
+        self.result = self.model.fit(self.data, params=self.params, x=self.x,weights=self.weights, iter_cb=self.per_iteration, y=self.y)
+        self.fitting_finished.emit(self.result)
+
+    def per_iteration(self, pars, iteration, resid, *args, **kws):
+        if self.fit_interrupted:
+            return True
+        #print(" ITER ", iteration, [f"{p.name} = {p.value:.5f}" for p in pars.values()])
+    def interrupt_fit(self):
+        self.fit_interrupted = True
+
+class RemoveAndEditTableWidget(QtWidgets.QTableWidget):
+    headerTextChanged = QtCore.pyqtSignal(int, str)
+    removeOptionChanged = QtCore.pyqtSignal(int, str)
+
+    def __init__(self, rows, columns,editable_condition, parent=None):
+        super().__init__(rows, columns, parent)
+        # Enable editing of column headers
+        self.horizontalHeader().sectionDoubleClicked.connect(self.editHeader)
+        # Store the editable condition
+        self.editable_condition = editable_condition
+    def setHeaderTooltips(self):
+        for logicalIndex in range(self.columnCount()):
+            if self.editable_condition(logicalIndex):
+                header_item = self.horizontalHeaderItem(logicalIndex)
+                if header_item is not None:
+                    header_item.setToolTip("Double-click to edit \n header text or remove column.")
+
+    def editHeader(self, logicalIndex):
+        if self.editable_condition(logicalIndex):
+            header_label = self.horizontalHeaderItem(logicalIndex).text()
+            header_texts = []
+            for column in range(int(self.columnCount()+1/2)):
+                header_item = self.horizontalHeaderItem(int(column*2+1))
+                if header_item is not None:
+                    header_texts.append(header_item.text())
+            dialog = RemoveHeaderDialog(header_label,header_texts, self)
+            if dialog.exec_() == QtWidgets.QDialog.Accepted:
+                new_label = dialog.getHeaderText()
+                remove_idx, remove_text = dialog.getRemoveOption()
+                if new_label != header_label:
+                    self.horizontalHeaderItem(logicalIndex).setText(new_label)
+                    self.headerTextChanged.emit(logicalIndex, new_label)
+
+                if remove_idx > 0:  # Only emit the signal if a valid removal option is selected
+                    self.removeOptionChanged.emit(remove_idx, remove_text)
+class EditHeaderDialog(QtWidgets.QDialog):
+    def __init__(self, header_label, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Edit Header")
+        self.setLayout(QtWidgets.QVBoxLayout())
+
+        self.lineEdit = QLineEdit()
+        self.lineEdit.setText(header_label)
+        self.layout().addWidget(self.lineEdit)
+
+        button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+        self.layout().addWidget(button_box)
+
+    def getHeaderText(self):
+        return self.lineEdit.text()
+class EditableHeaderTableWidget(QtWidgets.QTableWidget):
+    headerTextChanged = QtCore.pyqtSignal(int, str)
+
+    def __init__(self, rows, columns,editable_condition, parent=None):
+        super().__init__(rows, columns, parent)
+        # Enable editing of column headers
+        self.horizontalHeader().sectionDoubleClicked.connect(self.editHeader)
+        # Store the editable condition
+        self.editable_condition = editable_condition
+    def setHeaderTooltips(self):
+        for logicalIndex in range(self.columnCount()):
+            if self.editable_condition(logicalIndex):
+                header_item = self.horizontalHeaderItem(logicalIndex)
+                if header_item is not None:
+                    header_item.setToolTip("Double-click to edit")
+
+    def editHeader(self, logicalIndex):
+        if self.editable_condition(logicalIndex):
+            header_label = self.horizontalHeaderItem(logicalIndex).text()
+            dialog = EditHeaderDialog(header_label, self)
+            if dialog.exec_() == QtWidgets.QDialog.Accepted:
+                new_label = dialog.getHeaderText()
+                self.horizontalHeaderItem(logicalIndex).setText(new_label)
+                self.headerTextChanged.emit(logicalIndex, new_label)
+
 
 class Window_CrossSection(QtWidgets.QWidget):
     """
@@ -159,7 +389,7 @@ class Window_CrossSection(QtWidgets.QWidget):
         """
         dirPath = os.path.dirname(os.path.abspath(__file__))
         temp_elements=[]
-        with open (dirPath+'/../CrossSections/cross_sections.csv') as f:
+        with open (dirPath+'/../Databases/CrossSections/cross_sections.csv') as f:
             next(f)
             lines=f.read().splitlines()
             for line in lines:
@@ -233,3 +463,68 @@ class Element:
 def cross_section():
     window_cross_section = Window_CrossSection()
     window_cross_section.show()
+# from numpy import amax, amin
+# make x and y lists (arrays) in the range between xmin and xmax
+import numpy as np
+
+
+def fit_range(x, y, xmin, xmax):
+    # print(xmin, xmax)
+    if xmin > xmax:
+        xmin0 = xmin
+        xmin = xmax
+        xmax = xmin0
+
+    if x[0] < x[-1]:
+        # XAS in photon energy scale or XPS in kinetic energy scale
+        if x[0] < xmin or xmax < x[len(x) - 1]:
+            if xmax < x[len(x) - 1]:
+                for i in range(len(x) - 1, -1, -1):
+                    if x[i] <= xmax:
+                        rmidx = i
+                        break
+            else:
+                rmidx = len(x) - 1
+
+            if x[0] < xmin:
+                for i in range(0, len(x) - 1):
+                    if x[i] >= xmin:
+                        lmidx = i
+                        break
+            else:
+                lmidx = 0
+
+            xn = x[lmidx:rmidx + 1].copy()
+            yn = y[lmidx:rmidx + 1].copy()
+        # print(len(x), len(xn), xn[0], xn[len(xn)-1])
+        else:
+            xn = x
+            yn = y
+    else:
+        # XPS in binding energy scale
+        if x[len(x) - 1] < xmin or xmax < x[0]:
+            if xmax < x[0]:
+                for i in range(0, len(x) - 1):
+                    if x[i] <= xmax:
+                        lmidx = i
+                        break
+            else:
+                lmidx = 0
+
+            if x[len(x) - 1] < xmin:
+                for i in range(len(x) - 1, -1, -1):
+                    if x[i] >= xmin:
+                        rmidx = i
+                        break
+            else:
+                rmidx = len(x) - 1
+
+            xn = x[lmidx:rmidx + 1].copy()
+            yn = y[lmidx:rmidx + 1].copy()
+        # print(len(x), len(xn), xn[0], xn[len(xn)-1])
+        else:
+            xn = x
+            yn = y
+
+    # return [array(xn), array(yn)]
+    return [xn, yn]
