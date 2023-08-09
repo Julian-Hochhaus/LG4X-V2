@@ -26,6 +26,18 @@ import threading
 
 import traceback  # error handling
 import logging  # error handling
+from logging.handlers import RotatingFileHandler
+script_directory = os.path.dirname(os.path.abspath(__file__))
+log_file_path = os.path.join(script_directory, '../Logs/app.log')
+max_log_size = 128*1024 # 128KB
+backup_count = 5  # Number of backup files to keep
+handler = RotatingFileHandler(log_file_path, maxBytes=max_log_size, backupCount=backup_count)
+handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+
+# Create a logger and add the RotatingFileHandler
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+logger.addHandler(handler)
 __version__ = "2.1.1"
 # style.use('ggplot')
 style.use('seaborn-v0_8-colorblind')
@@ -82,6 +94,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.delegate = TableItemDelegate()
         self.binding_ener=False
         self.initUI()
+
 
     def initUI(self):
         self.fit_thread=FitThread(self)
@@ -274,25 +287,25 @@ class PrettyWidget(QtWidgets.QMainWindow):
         layout_top_left = QtWidgets.QVBoxLayout()
         fitbuttons_layout = QtWidgets.QHBoxLayout()
         # Fit Button
-        btn_fit = QtWidgets.QPushButton('Fit', self)
-        btn_fit.resize(btn_fit.sizeHint())
-        btn_fit.clicked.connect(self.fit)
-        fitbuttons_layout.addWidget(btn_fit)
+        self.btn_fit = QtWidgets.QPushButton('Fit', self)
+        self.btn_fit.resize(self.btn_fit.sizeHint())
+        self.btn_fit.clicked.connect(self.fit)
+        fitbuttons_layout.addWidget(self.btn_fit)
         # Evaluate Button
-        btn_eva = QtWidgets.QPushButton('Evaluate', self)
-        btn_eva.resize(btn_eva.sizeHint())
-        btn_eva.clicked.connect(self.eva)
-        fitbuttons_layout.addWidget(btn_eva)
+        self.btn_eva = QtWidgets.QPushButton('Evaluate', self)
+        self.btn_eva.resize(self.btn_eva.sizeHint())
+        self.btn_eva.clicked.connect(self.eva)
+        fitbuttons_layout.addWidget(self.btn_eva)
         # Undo Fit Button
-        btn_undoFit = QtWidgets.QPushButton('undo Fit', self)
-        btn_undoFit.resize(btn_undoFit.sizeHint())
-        btn_undoFit.clicked.connect(self.one_step_back_in_params_history)
-        fitbuttons_layout.addWidget(btn_undoFit)
+        self.btn_undoFit = QtWidgets.QPushButton('undo Fit', self)
+        self.btn_undoFit.resize(self.btn_undoFit.sizeHint())
+        self.btn_undoFit.clicked.connect(self.one_step_back_in_params_history)
+        fitbuttons_layout.addWidget(self.btn_undoFit)
         # Interrupt fit Button
-        btn_interrupt = QtWidgets.QPushButton('Interrupt fitting', self)
-        btn_interrupt.resize(btn_interrupt.sizeHint())
-        btn_interrupt.clicked.connect(self.interrupt_fit)
-        fitbuttons_layout.addWidget(btn_interrupt)
+        self.btn_interrupt = QtWidgets.QPushButton('Interrupt fitting', self)
+        self.btn_interrupt.resize(self.btn_interrupt.sizeHint())
+        self.btn_interrupt.clicked.connect(self.interrupt_fit)
+        fitbuttons_layout.addWidget(self.btn_interrupt)
         layout_top_left.addLayout(fitbuttons_layout)
 
         # lists of dropdown menus
@@ -3167,41 +3180,59 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if np.any(raw_y == 0):
             zeros_in_data=True
             print('There were 0\'s in your data. The residuals are therefore not weighted by sqrt(data)!')
-        try:
-            if mode == 'eva' or mode== 'sim':
-                if zeros_in_data:
-                    out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)), y=y)
-                else:
-                    out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=y)
-                self.fitting_finished(out, strmode=strmode, mode=mode, x=x,y=y, zeros_in_data=zeros_in_data, raw_x=raw_x, raw_y=raw_y, pars=pars)
+        if mode == 'eva' or mode== 'sim':
+            if zeros_in_data:
+                out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)), y=y)
             else:
-                try_me_out = self.history_manager(pars)
-                if try_me_out is not None:
-                    pars, pre = try_me_out
-                    self.pre = pre
-                    self.setPreset(pre[0], pre[1], pre[2], pre[3])
-                if zeros_in_data:
-                    self.fit_thread=FitThread(model=mod,data=y, params=pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)),y=raw_y)
-                    self.fit_thread.fitting_finished.connect(
-                        lambda out: self.fitting_finished(out, x=x,y=y, strmode=strmode, mode=mode,
-                                                          zeros_in_data=zeros_in_data, raw_x=raw_x, raw_y=raw_y,
-                                                          pars=pars))
+                out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=y)
+            self.fitting_finished(out, strmode=strmode, mode=mode, x=x,y=y, zeros_in_data=zeros_in_data, raw_x=raw_x, raw_y=raw_y, pars=pars)
+        else:
+            try_me_out = self.history_manager(pars)
+            if try_me_out is not None:
+                pars, pre = try_me_out
+                self.pre = pre
+                self.setPreset(pre[0], pre[1], pre[2], pre[3])
+            if zeros_in_data:
+                self.fit_thread=FitThread(model=mod,data=y, params=pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)),y=raw_y)
+                self.fit_thread.fitting_finished.connect(
+                    lambda out: self.fitting_finished(out, x=x,y=y, strmode=strmode, mode=mode,
+                                                      zeros_in_data=zeros_in_data, raw_x=raw_x, raw_y=raw_y,
+                                                      pars=pars))
+                self.fit_thread.start()
+                #out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)), y=raw_y)
+            else:
+                self.fit_thread = FitThread(model=mod, data=y, params=pars, x=x,
+                                       weights=1 /(np.sqrt(raw_y) * np.sqrt(self.rows_lightened)),
+                                       y=raw_y)
+                self.fit_thread.fitting_finished.connect(lambda out: self.fitting_finished(out, x=x,y=y, strmode=strmode, mode=mode, zeros_in_data=zeros_in_data, raw_x=raw_x, raw_y=raw_y, pars=pars))
+                self.fit_thread.start()
+                #out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=raw_y)
+            self.fit_thread.thread_started.connect(self.fit_thread_started)
+            self.fit_thread.error_occurred.connect(self.handle_thread_exception)
 
-                    self.fit_thread.start()
-                    #out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)), y=raw_y)
 
-                else:
-                    self.fit_thread = FitThread(model=mod, data=y, params=pars, x=x,
-                                           weights=1 /(np.sqrt(raw_y) * np.sqrt(self.rows_lightened)),
-                                           y=raw_y)
-                    self.fit_thread.fitting_finished.connect(lambda out: self.fitting_finished(out, x=x,y=y, strmode=strmode, mode=mode, zeros_in_data=zeros_in_data, raw_x=raw_x, raw_y=raw_y, pars=pars))
-
-                    self.fit_thread.start()
-                    #out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=raw_y)
-
-        except Exception as e:
-            return self.raise_error(window_title="Error: NaN in Model/data!.",
-                                error_message=e.args[0])
+    def handle_thread_exception(self, error_message):
+        self.raise_error("Error in FitThread", error_message)
+        self.statusBar().showMessage("Fitting failed! NaN in data/fit-model occured!")
+        self.enable_buttons_after_fit_thread()
+    def fit_thread_started(self):
+        self.btn_fit.setEnabled(False)
+        self.btn_fit.setStyleSheet("QPushButton:disabled { background-color: rgba(200, 200, 200, 128); }");
+        self.btn_eva.setEnabled(False)
+        self.btn_eva.setStyleSheet("QPushButton:disabled { background-color: rgba(200, 200, 200, 128); }");
+        self.btn_interrupt.setEnabled(True)
+        self.btn_interrupt.setStyleSheet('')
+        self.btn_undoFit.setEnabled(False)
+        self.btn_undoFit.setStyleSheet("QPushButton:disabled { background-color: rgba(200, 200, 200, 128); }");
+    def enable_buttons_after_fit_thread(self):
+        self.btn_fit.setEnabled(True)
+        self.btn_fit.setStyleSheet('')
+        self.btn_eva.setEnabled(True)
+        self.btn_eva.setStyleSheet('')
+        self.btn_interrupt.setEnabled(True)
+        self.btn_interrupt.setStyleSheet('')
+        self.btn_undoFit.setEnabled(True)
+        self.btn_undoFit.setStyleSheet('')
 
     def get_attr(self,obj, attr):
         """Format an attribute of an object for printing."""
@@ -3215,6 +3246,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         return repr(val)
 
     def fitting_finished(self, out, x, y, strmode, mode, zeros_in_data, pars, raw_x,raw_y):
+        self.enable_buttons_after_fit_thread()
         comps = out.eval_components(x=x)
         # fit results to be checked
         for key in out.params:
@@ -3373,6 +3405,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                 columns=[self.fitp1.horizontalHeaderItem(2 * index_pk + 1).text()])
             self.result = pd.concat([self.result, df_c], axis=1)
         print(out.fit_report())
+        logging.info(out.fit_report())
         lim_reached = False
         at_zero = False
         for key in out.params:

@@ -9,7 +9,8 @@ from lmfitxps.lineshapes import singlett, fft_convolve
 from PyQt5 import QtWidgets, QtCore
 import numpy as np
 import os
-import numpy as np
+import traceback
+import logging
 
 def autoscale_y(ax, margin=0.1):
     """Rescales the y-axis based on the visible data given the current xlim of the axis.
@@ -221,8 +222,9 @@ class RemoveHeaderDialog(QtWidgets.QDialog):
         self.removeOptionChanged.emit(remove_idx,remove_text)
         super().accept()
 class FitThread(QtCore.QThread):
+    thread_started = QtCore.pyqtSignal()
     fitting_finished = QtCore.pyqtSignal(object)
-
+    error_occurred = QtCore.pyqtSignal(str)
     def __init__(self, model=None, data=None, params=None, x=None,weights=None, y=None):
         super().__init__()
         self.fit_interrupted = False
@@ -235,14 +237,26 @@ class FitThread(QtCore.QThread):
         self.result=None
 
     def run(self):
-        self.fit_interrupted = False
-        self.result = self.model.fit(self.data, params=self.params, x=self.x,weights=self.weights, iter_cb=self.per_iteration, y=self.y)
-        self.fitting_finished.emit(self.result)
+        try:
+            self.fit_interrupted = False
+            self.thread_started.emit()
+            self.result = self.model.fit(
+                self.data,
+                params=self.params,
+                x=self.x,
+                weights=self.weights,
+                iter_cb=self.per_iteration,
+                y=self.y
+            )
+            self.fitting_finished.emit(self.result)
+        except Exception as e:
+            error_message = f"Exception occurred in FitThread: {e}\n{traceback.format_exc()}"
+            logging.error(error_message)
+            self.error_occurred.emit(error_message)
 
     def per_iteration(self, pars, iteration, resid, *args, **kws):
         if self.fit_interrupted:
             return True
-        #print(" ITER ", iteration, [f"{p.name} = {p.value:.5f}" for p in pars.values()])
     def interrupt_fit(self):
         self.fit_interrupted = True
 
