@@ -28,6 +28,8 @@ import traceback  # error handling
 import logging  # error handling
 from logging.handlers import RotatingFileHandler
 script_directory = os.path.dirname(os.path.abspath(__file__))
+log_folder = os.path.join(script_directory, 'Logs')
+os.makedirs(log_folder, exist_ok=True)
 log_file_path = os.path.join(script_directory, '../Logs/app.log')
 max_log_size = 128*1024 # 128KB
 backup_count = 5  # Number of backup files to keep
