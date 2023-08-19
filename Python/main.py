@@ -31,7 +31,7 @@ script_directory = os.path.dirname(os.path.abspath(__file__))
 log_folder = os.path.join(script_directory, '../Logs')
 os.makedirs(log_folder, exist_ok=True)
 log_file_path = os.path.join(script_directory, '../Logs/app.log')
-max_log_size = 128*1024 # 128KB
+max_log_size = 4*1024*1024 # 4MB
 backup_count = 5  # Number of backup files to keep
 handler = RotatingFileHandler(log_file_path, maxBytes=max_log_size, backupCount=backup_count)
 handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
