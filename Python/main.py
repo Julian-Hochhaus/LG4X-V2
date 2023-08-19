@@ -40,7 +40,7 @@ handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 logger.addHandler(handler)
-__version__ = "2.1.4"
+__version__ = "2.1.5"
 # style.use('ggplot')
 style.use('seaborn-v0_8-colorblind')
 dictBG = {
