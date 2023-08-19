@@ -2152,8 +2152,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                               'No background was choosen, a polynomial BG was set as default.')
             idx_bg.add(2)  # if no background was selected, a polynomial will be used
         self.idx_bg = sorted(idx_bg)
+        try:
+            self.pre[0][0] = self.idx_bg
+        except Exception as e:
+            logging.error('Loading of background failed, self.pre[0][0]={}, self.idx_bg={}'.format(self.pre[0][0], self.idx_bg))
+            return self.raise_error(window_title="Error while setting background!",
+                                    error_message='Error while loading/changing background!')
 
-        self.pre[0][0] = self.idx_bg
         self.displayChoosenBG.setText(
             'Choosen Background: {}'.format('+ '.join([dictBG[str(idx)] for idx in self.idx_bg])))
         self.activeParameters()
