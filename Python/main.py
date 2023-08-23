@@ -1670,7 +1670,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 protocol=pickle.HIGHEST_PROTOCOL)
 
     def exportResults(self):
-        if not self.result.empty:
+        print(self.result)
+        if self.result.empty:
+            self.raise_error(window_title="Error: No Results exported!",
+                             error_message='There is nothing to export here, results are empty.')
+        else:
             if self.comboBox_file.currentIndex() > 0:
                 # print(self.export_pars)
                 # print(self.export_out.fit_report(min_correl=0.5))
@@ -2949,6 +2953,17 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_sigma'].value, self.floating)))
                 self.res_tab.setItem(1, index_pk, item)
+            if index == 9:
+                item = QtWidgets.QTableWidgetItem(
+                    str(format(2*out.params[strind + str(index_pk + 1) + '_sigma'].value, self.floating)))
+                self.res_tab.setItem(1, index_pk, item)
+                item = QtWidgets.QTableWidgetItem(
+                    str(format(out.params[strind + str(index_pk + 1) + '_amplitude'].value, self.floating)))
+                self.res_tab.setItem(5, index_pk, item)
+                y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
+                fwhm_temp = self.approx_fwhm(x, y_area)
+                item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp, self.floating)))
+                self.res_tab.setItem(3, index_pk, item)
             if index == 11:
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm'].value, self.floating)))
@@ -2993,14 +3008,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     str(format(out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm_p2'].value, self.floating)))
                 self.res_tab.setItem(2, index_pk, item)
                 # included fwhm
-                y_area_p1 = singlett(x,
+                x_interpol=np.linspace(x[0], x[-1], 5*len(x))
+                y_area_p1 = singlett(x_interpol,
                                      amplitude=out.params[strind + str(index_pk + 1) + '_amplitude'].value,
                                      sigma=out.params[strind + str(index_pk + 1) + '_sigma'].value,
                                      gamma=out.params[strind + str(index_pk + 1) + '_gamma'].value,
                                      gaussian_sigma=out.params[
                                          strind + str(index_pk + 1) + '_gaussian_sigma'].value,
                                      center=out.params[strind + str(index_pk + 1) + '_center'].value)
-                y_area_p2 = singlett(x, amplitude=out.params[strind + str(index_pk + 1) + '_amplitude'].value
+                y_area_p2 = singlett(x_interpol, amplitude=out.params[strind + str(index_pk + 1) + '_amplitude'].value
                                                   * out.params[strind + str(index_pk + 1) + '_height_ratio'].value,
                                      sigma=out.params[strind + str(index_pk + 1) + '_sigma'].value
                                            * out.params[strind + str(index_pk + 1) + '_fct_coster_kronig'].value,
@@ -3010,12 +3026,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                      center=out.params[strind + str(index_pk + 1) + '_center'].value
                                             - out.params[strind + str(index_pk + 1) + '_soc'].value)
                 if np.max(y_area_p1) != 0 and np.max(y_area_p2) != 0:
-                    fwhm_temp_p1 = self.approx_fwhm(x, y_area_p1)
+                    fwhm_temp_p1 = self.approx_fwhm(x_interpol, y_area_p1)
                     item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp_p1, self.floating)))
                     self.res_tab.setItem(3, index_pk, item)
-                    y_temp_p2 = y_area_p2 / np.max(y_area_p2)
-                    x_p2 = [i for i, j in zip(x, y_temp_p2) if j >= 0.5]
-                    fwhm_temp_p2 = abs(x_p2[-1] - x_p2[0])
+                    fwhm_temp_p2 = self.approx_fwhm(x_interpol, y_area_p2)
                     item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp_p2, self.floating)))
                     self.res_tab.setItem(4, index_pk, item)
                 else:
@@ -3029,11 +3043,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     # included area
 
                 if self.binding_ener:
-                    area_p1 = abs(integrate.simps([y for y, x in zip(y_area_p1, x[::-1])], x[::-1]))
-                    area_p2 = abs(integrate.simps([y for y, x in zip(y_area_p2, x[::-1])], x[::-1]))
+                    area_p1 = abs(integrate.simps([y for y, x in zip(y_area_p1, x_interpol[::-1])], x_interpol[::-1]))
+                    area_p2 = abs(integrate.simps([y for y, x in zip(y_area_p2, x_interpol[::-1])], x_interpol[::-1]))
                 else:
-                    area_p1 = integrate.simps([y for y, x in zip(y_area_p1, x)])
-                    area_p2 = integrate.simps([y for y, x in zip(y_area_p2, x)])
+                    area_p1 = integrate.simps([y for y, x in zip(y_area_p1, x_interpol)], x_interpol)
+                    area_p2 = integrate.simps([y for y, x in zip(y_area_p2, x_interpol)], x_interpol)
                 area_ges = area_p1 + area_p2
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area_p1, '.1f') + r' ({}%)'.format(format(area_p1 / area_ges * 100, '.2f'))))
