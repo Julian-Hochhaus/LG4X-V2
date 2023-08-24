@@ -27,6 +27,8 @@ import threading
 import traceback  # error handling
 import logging  # error handling
 from logging.handlers import RotatingFileHandler
+import configparser
+
 script_directory = os.path.dirname(os.path.abspath(__file__))
 log_folder = os.path.join(script_directory, '../Logs')
 os.makedirs(log_folder, exist_ok=True)
@@ -36,10 +38,13 @@ backup_count = 5  # Number of backup files to keep
 handler = RotatingFileHandler(log_file_path, maxBytes=max_log_size, backupCount=backup_count)
 handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 
-# Create a logger and add the RotatingFileHandler
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 logger.addHandler(handler)
+
+config = configparser.ConfigParser()
+config.read('config/config.ini')
+
 __version__ = "2.1.5"
 # style.use('ggplot')
 style.use('seaborn-v0_8-colorblind')
@@ -95,6 +100,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.displayChoosenBG = QtWidgets.QLabel()
         self.delegate = TableItemDelegate()
         self.binding_ener=False
+        self.column_width = config.getint('GUI', 'column_width')
         self.initUI()
 
 
@@ -770,12 +776,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp0.resizeRowsToContents()
         for column in range(self.fitp1.columnCount()):
             if column % 2 == 1:
-                self.fitp1.setColumnWidth(column, 60)
+                self.fitp1.setColumnWidth(column, self.column_width)
         for column in range(self.fitp1_lims.columnCount()):
             if column % 3 != 0:
-                self.fitp1_lims.setColumnWidth(column, 60)
+                self.fitp1_lims.setColumnWidth(column, self.column_width)
         for column in range(self.res_tab.columnCount()):
-            self.res_tab.setColumnWidth(column, 60)
+            self.res_tab.setColumnWidth(column, self.column_width)
     def clicked_cross_section(self):
         window_cross_section = Window_CrossSection()
 
