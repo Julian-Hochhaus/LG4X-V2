@@ -17,6 +17,7 @@ from lmfit import Model
 from matplotlib import style
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from PyQt5.QtWidgets import QApplication, QDesktopWidget
 
 import vamas_export as vpy
 from periodictable import PeriodicTable
@@ -65,6 +66,7 @@ dictBG = {
 class PrettyWidget(QtWidgets.QMainWindow):
     def __init__(self):
         self.two_window_mode = config.getboolean('GUI', 'two_window_mode')
+        self.resolution= [config.getint('GUI', 'resolution_width'), config.getint('GUI', 'resolution_height')]
         super(PrettyWidget, self).__init__()
         # super(PrettyWidget, self).__init__()
         self.rows_lightened = 1
@@ -113,7 +115,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.initSingleWindowUI()
 
     def initTwoWindowUI(self):
-        self.setGeometry(700, 500, 1600, 900)
+        self.setGeometry(0, 0, self.resolution[0], self.resolution[1])
+        self.showFullScreen()
         self.center()
         self.setWindowTitle(self.version)
         self.statusBar().showMessage(
@@ -299,6 +302,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # layout top row
         toprow_layout = QtWidgets.QHBoxLayout()
         bottomrow_layout = QtWidgets.QHBoxLayout()
+        bottomrow_second_screen_layout = QtWidgets.QHBoxLayout()
         # button layout
 
         layout_top_left = QtWidgets.QVBoxLayout()
@@ -579,21 +583,23 @@ class PrettyWidget(QtWidgets.QMainWindow):
         layout_bottom_mid.addWidget(self.fitp1)
 
         toprow_layout.addLayout(layout_top_mid, 4)
-        bottomrow_layout.addLayout(layout_bottom_mid, 3)
+        bottomrow_second_screen_layout.addLayout(layout_bottom_mid, 3)
         outer_layout.addLayout(toprow_layout, 1)
 
         outer_layout.addWidget(LayoutHline())
-
+        outer_layout.addLayout(bottomrow_layout, 6)
         # grid..addWidget(self.res_label, 7, 7, 1, 1)
 
 
         self.second_window = QtWidgets.QMainWindow()
         second_window_layout = QtWidgets.QVBoxLayout()
-        self.second_window.setGeometry(700, 500, 1000, 800)  # Adjust the geometry as needed
+        self.second_window.setGeometry(0, 0, self.resolution[0], self.resolution[1])
+        self.second_window.showFullScreen()
+        self.second_window.setWindowTitle(self.version+'-second screen-')
         second_window_central_widget = QtWidgets.QWidget(self.second_window)
         second_window_central_widget.setLayout(second_window_layout)
         self.second_window.setCentralWidget(second_window_central_widget)
-        second_window_layout.addLayout(bottomrow_layout, 6)
+        second_window_layout.addLayout(bottomrow_second_screen_layout, 6)
         layout_top_right = QtWidgets.QVBoxLayout()
         layout_bottom_right = QtWidgets.QVBoxLayout()
         self.fitp1_lims.setHeaderTooltips()
@@ -609,7 +615,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.res_tab.headerTextChanged.connect(self.updateHeader_res)
         layout_bottom_right.addWidget(self.res_tab)
         toprow_layout.addLayout(layout_top_right, 1)
-        bottomrow_layout.addLayout(layout_bottom_right, 2)
+        bottomrow_second_screen_layout.addLayout(layout_bottom_right, 2)
         list_stats_row = ['success?', 'message', 'nfev', 'nvary', 'ndata', 'nfree', 'chisqr', 'redchi', 'aic', 'bic']
         list_stats_col = ['Fit stats']
         self.stats_tab = QtWidgets.QTableWidget(len(list_stats_row), 1)
@@ -631,7 +637,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.resizeAllColumns()
 
     def initSingleWindowUI(self):
-        self.setGeometry(700, 500, 1600, 900)
+        self.setGeometry(0, 0, self.resolution[0], self.resolution[1])
+        self.showFullScreen()
         self.center()
         self.setWindowTitle(self.version)
         self.statusBar().showMessage(
