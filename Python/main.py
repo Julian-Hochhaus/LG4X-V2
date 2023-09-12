@@ -29,8 +29,8 @@ import logging  # error handling
 from logging.handlers import RotatingFileHandler
 import configparser
 
-flatpak_env = os.environ.get('flatpak')
-if flatpak_env is not None and flatpak_env != '':
+flatpak_env = os.environ.get('container')
+if flatpak_env is 'flatpak':
     print(True)
 else:
     print(False)
