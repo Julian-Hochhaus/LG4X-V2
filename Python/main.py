@@ -29,7 +29,11 @@ import logging  # error handling
 from logging.handlers import RotatingFileHandler
 import configparser
 
-print(os.environ)
+flatpak_env = os.environ.get('flatpak')
+if flatpak_env is not None and flatpak_env != '':
+    print(True)
+else:
+    print(False)
 
 script_directory = os.path.dirname(os.path.abspath(__file__))
 log_folder = os.path.join(script_directory, '../Logs')
