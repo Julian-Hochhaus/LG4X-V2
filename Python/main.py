@@ -29,16 +29,19 @@ import logging  # error handling
 from logging.handlers import RotatingFileHandler
 import configparser
 
-flatpak_env = os.environ.get('container')
-if flatpak_env is 'flatpak':
+if os.environ.get('container') == 'flatpak':
     print(True)
+    user_home_folder = os.path.expanduser('~')
+    log_folder = os.path.join(user_home_folder,'.LG4X_V2/Logs')   
+    os.makedirs(log_folder, exist_ok=True)
+    log_file_path = os.path.join(user_home_folder, '.LG4X_V2/Logs/app.log')
 else:
     print(False)
-
-script_directory = os.path.dirname(os.path.abspath(__file__))
-log_folder = os.path.join(script_directory, '../Logs')
-os.makedirs(log_folder, exist_ok=True)
-log_file_path = os.path.join(script_directory, '../Logs/app.log')
+    script_directory = os.path.dirname(os.path.abspath(__file__))
+    log_folder = os.path.join(script_directory, '../Logs')
+    os.makedirs(log_folder, exist_ok=True)
+    log_file_path = os.path.join(script_directory, '../Logs/app.log')
+    
 max_log_size = 4*1024*1024 # 4MB
 backup_count = 5  # Number of backup files to keep
 handler = RotatingFileHandler(log_file_path, maxBytes=max_log_size, backupCount=backup_count)
