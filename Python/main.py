@@ -29,6 +29,8 @@ import logging  # error handling
 from logging.handlers import RotatingFileHandler
 import configparser
 
+print(os.environ)
+
 script_directory = os.path.dirname(os.path.abspath(__file__))
 log_folder = os.path.join(script_directory, '../Logs')
 os.makedirs(log_folder, exist_ok=True)
