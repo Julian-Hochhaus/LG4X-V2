@@ -31,9 +31,9 @@ import configparser
 
 if os.environ.get('container') == 'flatpak':
     user_home_folder = os.path.expanduser('~')
-    log_folder = os.path.join(user_home_folder,'.LG4X_V2/Logs')
+    log_folder = os.path.join(user_home_folder,'.var/app/io.github.julian_hochhaus.LG4X_V2/cache/Logs')
     os.makedirs(log_folder, exist_ok=True)
-    log_file_path = os.path.join(user_home_folder, '.LG4X_V2/Logs/app.log')
+    log_file_path = os.path.join(user_home_folder, '.var/app/io.github.julian_hochhaus.LG4X_V2/cache/Logs/app.log')
 else:
     script_directory = os.path.dirname(os.path.abspath(__file__))
     log_folder = os.path.join(script_directory, '../Logs')
