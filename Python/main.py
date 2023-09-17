@@ -119,7 +119,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
     def initTwoWindowUI(self):
         self.setGeometry(0, 0, self.resolution[0], self.resolution[1])
-        self.showFullScreen()
+        self.showNormal()
         self.center()
         self.setWindowTitle(self.version)
         self.statusBar().showMessage(
@@ -597,7 +597,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.second_window = QtWidgets.QMainWindow()
         second_window_layout = QtWidgets.QVBoxLayout()
         self.second_window.setGeometry(0, 0, self.resolution[0], self.resolution[1])
-        self.second_window.showFullScreen()
+        self.second_window.showNormal()
         self.second_window.setWindowTitle(self.version+'-second screen-')
         second_window_central_widget = QtWidgets.QWidget(self.second_window)
         second_window_central_widget.setLayout(second_window_layout)
@@ -641,7 +641,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
     def initSingleWindowUI(self):
         self.setGeometry(0, 0, self.resolution[0], self.resolution[1])
-        self.showFullScreen()
+        self.showNormal()
         self.center()
         self.setWindowTitle(self.version)
         self.statusBar().showMessage(
@@ -4053,12 +4053,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     w = PrettyWidget()
-    if w.two_window_mode:
-        w.initTwoWindowUI()
-        w.show()
-        w.second_window.show()
-    else:
-        w.initSingleWindowUI()
-        w.show()
+    #if w.two_window_mode:
+    #    w.initTwoWindowUI()
+    #    w.show()
+    #    w.second_window.show()
+    #else:
+    #    w.initSingleWindowUI()
+    #    w.show()
 
     sys.exit(app.exec_())
