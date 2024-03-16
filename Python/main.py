@@ -1921,73 +1921,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.comboBox_file.addItems(self.list_file)
         self.idx_imp = 0
 
-    def plot_pt(self):
-        # component elements from periodic table window selection
-        while len(self.ax.texts) > 0:
-            for txt in self.ax.texts:
-                txt.remove()
-            self.canvas.draw()
-            self.repaint()
-            # self.ax.texts.remove()
-        if self.pt.selected_elements:
-            if self.pre[0][3] == None:
-                if len(self.hv)==0:
-                    self.pre[0][3]=1486.6
-                    self.hv=1486.6
-                else:
-                    self.pre[0][3] = self.hv
-            if self.pre[0][4] == None:
-                if len(self.wf)==0:
-                    self.pre[0][4]=4
-                    self.wf=4
-                else:
-                    self.pre[0][4]=self.wf
-            if self.pre[0][5] == None:
-                if len(self.correct_energy) == 0:
-                    self.pre[0][5] = 0
-                    self.correct_energy = 0
-                else:
-                    self.pre[0][5] = self.correct_energy
-            self.hv_item.setText(str(self.hv))
-            self.wf_item.setText(str(self.wf))
-            self.correct_energy_item.setText(str(self.correct_energy))
-            hv=self.hv
-            wf=self.wf
-
-            ymin, ymax = self.ax.get_ylim()
-            xmin, xmax = self.ax.get_xlim()
-            for obj in self.pt.selected_elements:
-                alka = ast.literal_eval(obj['alka'].values[0])
-                if len(ast.literal_eval(alka['trans'])) > 0:
-                    for orb in range(len(ast.literal_eval(alka['trans']))):
-                        if xmin > xmax:
-                            en = float(ast.literal_eval(alka['be'])[orb])
-                        else:
-                            en = hv - wf - float(ast.literal_eval(alka['be'])[orb])-self.correct_energy
-                        if (xmin > xmax and xmin > en > xmax) or (xmin < xmax and xmin < en < xmax):
-                            elem_x = np.asarray([en])
-                            elem_y = np.asarray([float(ast.literal_eval(alka['rsf'])[orb])])
-                            elem_z =ast.literal_eval(alka['trans'])[orb]
-                            # obj.symbol+elem_z, color="r", rotation="vertical")
-                            self.ax.text(elem_x, ymin + (ymax - ymin) * math.log(elem_y + 1, 10) / 2,
-                                         obj['symbol'].values[0] + elem_z, color="r", rotation="vertical")
-                aes = ast.literal_eval(obj['aes'].values[0])
-                if len(ast.literal_eval(aes['trans'])) > 0:
-                    for orb in range(len(ast.literal_eval(aes['trans']))):
-                        if xmin > xmax:
-                            en = hv - wf - float(ast.literal_eval(aes['ke'])[orb])-self.correct_energy
-                        else:
-                            en = float(ast.literal_eval(aes['ke'])[orb])
-                        if (xmin > xmax and xmin > en > xmax) or (xmin < xmax and xmin < en < xmax):
-                            elem_x = np.asarray([en])
-                            elem_y = np.asarray([float(ast.literal_eval(aes['rsf'])[orb])])
-                            elem_z = ast.literal_eval(aes['trans'])[orb]
-                            # obj.symbol+elem_z, color="g", rotation="vertical")
-                            self.ax.text(elem_x, ymin + (ymax - ymin) * math.log(elem_y + 1, 10),
-                                         obj['symbol'].values[0] + elem_z,
-                                         color="g", rotation="vertical")
-            self.canvas.draw()
-            self.repaint()
 
     def plot(self):
         plottitle = self.comboBox_file.currentText().split('/')[-1]
@@ -2026,6 +1959,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
             else:
                 try:
+                    preview_dialog = PreviewDialog(str(self.comboBox_file.currentText()))
+                    if preview_dialog.exec_():
+                        separator, selected_columns = preview_dialog.get_options()
+                        self.df = pd.read_csv(str(self.comboBox_file.currentText()), sep=separator, usecols=selected_columns)
+
                     self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter='\t', skiprows=1)
                     # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1,
                     # header=None, delimiter = '\t')
@@ -2096,6 +2034,75 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.canvas.draw()
         # macOS's compatibility issue on pyqt5, add below to update window
         self.repaint()
+
+    def plot_pt(self):
+        # component elements from periodic table window selection
+        while len(self.ax.texts) > 0:
+            for txt in self.ax.texts:
+                txt.remove()
+            self.canvas.draw()
+            self.repaint()
+            # self.ax.texts.remove()
+        if self.pt.selected_elements:
+            if self.pre[0][3] == None:
+                if len(self.hv) == 0:
+                    self.pre[0][3] = 1486.6
+                    self.hv = 1486.6
+                else:
+                    self.pre[0][3] = self.hv
+            if self.pre[0][4] == None:
+                if len(self.wf) == 0:
+                    self.pre[0][4] = 4
+                    self.wf = 4
+                else:
+                    self.pre[0][4] = self.wf
+            if self.pre[0][5] == None:
+                if len(self.correct_energy) == 0:
+                    self.pre[0][5] = 0
+                    self.correct_energy = 0
+                else:
+                    self.pre[0][5] = self.correct_energy
+            self.hv_item.setText(str(self.hv))
+            self.wf_item.setText(str(self.wf))
+            self.correct_energy_item.setText(str(self.correct_energy))
+            hv = self.hv
+            wf = self.wf
+
+            ymin, ymax = self.ax.get_ylim()
+            xmin, xmax = self.ax.get_xlim()
+            for obj in self.pt.selected_elements:
+                alka = ast.literal_eval(obj['alka'].values[0])
+                if len(ast.literal_eval(alka['trans'])) > 0:
+                    for orb in range(len(ast.literal_eval(alka['trans']))):
+                        if xmin > xmax:
+                            en = float(ast.literal_eval(alka['be'])[orb])
+                        else:
+                            en = hv - wf - float(ast.literal_eval(alka['be'])[orb]) - self.correct_energy
+                        if (xmin > xmax and xmin > en > xmax) or (xmin < xmax and xmin < en < xmax):
+                            elem_x = np.asarray([en])
+                            elem_y = np.asarray([float(ast.literal_eval(alka['rsf'])[orb])])
+                            elem_z = ast.literal_eval(alka['trans'])[orb]
+                            # obj.symbol+elem_z, color="r", rotation="vertical")
+                            self.ax.text(elem_x, ymin + (ymax - ymin) * math.log(elem_y + 1, 10) / 2,
+                                         obj['symbol'].values[0] + elem_z, color="r", rotation="vertical")
+                aes = ast.literal_eval(obj['aes'].values[0])
+                if len(ast.literal_eval(aes['trans'])) > 0:
+                    for orb in range(len(ast.literal_eval(aes['trans']))):
+                        if xmin > xmax:
+                            en = hv - wf - float(ast.literal_eval(aes['ke'])[orb]) - self.correct_energy
+                        else:
+                            en = float(ast.literal_eval(aes['ke'])[orb])
+                        if (xmin > xmax and xmin > en > xmax) or (xmin < xmax and xmin < en < xmax):
+                            elem_x = np.asarray([en])
+                            elem_y = np.asarray([float(ast.literal_eval(aes['rsf'])[orb])])
+                            elem_z = ast.literal_eval(aes['trans'])[orb]
+                            # obj.symbol+elem_z, color="g", rotation="vertical")
+                            self.ax.text(elem_x, ymin + (ymax - ymin) * math.log(elem_y + 1, 10),
+                                         obj['symbol'].values[0] + elem_z,
+                                         color="g", rotation="vertical")
+            self.canvas.draw()
+            self.repaint()
+
 
     def eva(self):
         # simulation mode if no data in file list, otherwise evaluation mode

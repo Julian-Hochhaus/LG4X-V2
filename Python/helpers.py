@@ -11,6 +11,7 @@ import numpy as np
 import os
 import traceback
 import logging
+import pandas as pd
 
 def autoscale_y(ax, margin=0.1):
     """Rescales the y-axis based on the visible data given the current xlim of the axis.
@@ -542,3 +543,93 @@ def fit_range(x, y, xmin, xmax):
 
     # return [array(xn), array(yn)]
     return [xn, yn]
+
+
+class PreviewDialog(QtWidgets.QDialog):
+    def __init__(self, file_path):
+        super().__init__()
+        self.file_path = file_path
+        self.data = None
+        self.selected_separator = ','
+        self.selected_columns = []
+        self.initUI()
+
+    def initUI(self):
+        layout = QtWidgets.QVBoxLayout()
+
+        # Load data
+        self.load_data()
+
+        # Display data in a table widget for preview
+        self.table_widget = QtWidgets.QTableWidget()
+        if self.data is not None:
+            self.table_widget.setRowCount(self.data.shape[0])
+            self.table_widget.setColumnCount(self.data.shape[1])
+            self.table_widget.setHorizontalHeaderLabels(self.data.columns)
+
+            for i in range(self.data.shape[0]):
+                for j in range(self.data.shape[1]):
+                    item = QtWidgets.QTableWidgetItem(str(self.data.iat[i, j]))
+                    self.table_widget.setItem(i, j, item)
+
+            layout.addWidget(self.table_widget)
+
+        # Add options for choosing separator and columns
+        if self.data is not None:
+            separator_label = QtWidgets.QLabel("Choose Separator:")
+            self.separator_combobox = QtWidgets.QComboBox()
+            self.separator_combobox.addItems([",", ";", "\t"])  # Default options for separator
+            self.separator_combobox.setCurrentText(self.selected_separator)
+            self.separator_combobox.currentTextChanged.connect(self.update_preview)
+
+            layout.addWidget(separator_label)
+            layout.addWidget(self.separator_combobox)
+
+            self.columns_checkbox = []
+            for column in self.data.columns:
+                checkbox = QtWidgets.QCheckBox(column)
+                if column in self.selected_columns:
+                    checkbox.setChecked(True)
+                self.columns_checkbox.append(checkbox)
+                checkbox.stateChanged.connect(self.update_preview)
+                layout.addWidget(checkbox)
+
+        # Add buttons for confirmation and cancellation
+        button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
+        button_box.accepted.connect(self.accept)
+        button_box.rejected.connect(self.reject)
+
+        layout.addWidget(button_box)
+        self.setLayout(layout)
+        self.setWindowTitle("Preview and Options")
+
+    def load_data(self):
+        try:
+            self.data = pd.read_csv(self.file_path, nrows=5, delimiter=self.selected_separator)
+            self.data = self.data[self.selected_columns]
+        except Exception as e:
+            print(f"Error loading file {self.file_path}: {e}")
+            self.data = None
+
+    def update_preview(self):
+        self.selected_separator = self.separator_combobox.currentText()
+        self.selected_columns = [checkbox.text() for checkbox in self.columns_checkbox if checkbox.isChecked()]
+        self.load_data()
+
+        # Update table widget with new data
+        if self.data is not None:
+            self.table_widget.clear()
+            self.table_widget.setRowCount(self.data.shape[0])
+            self.table_widget.setColumnCount(self.data.shape[1])
+            self.table_widget.setHorizontalHeaderLabels(self.data.columns)
+
+            for i in range(self.data.shape[0]):
+                for j in range(self.data.shape[1]):
+                    item = QtWidgets.QTableWidgetItem(str(self.data.iat[i, j]))
+                    self.table_widget.setItem(i, j, item)
+
+    def get_options(self):
+        if self.data is None:
+            return None, None
+
+        return self.selected_separator, self.selected_columns
