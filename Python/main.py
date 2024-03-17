@@ -1921,7 +1921,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.comboBox_file.addItems(self.list_file)
         self.idx_imp = 0
 
-
     def plot(self):
         plottitle = self.comboBox_file.currentText().split('/')[-1]
         # when file list is selected
@@ -1959,10 +1958,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
             else:
                 try:
+                    # Open the PreviewDialog to get options
                     preview_dialog = PreviewDialog(str(self.comboBox_file.currentText()))
                     if preview_dialog.exec_():
                         separator, selected_columns = preview_dialog.get_options()
-                        self.df = pd.read_csv(str(self.comboBox_file.currentText()), sep=separator, usecols=selected_columns)
+                        self.df = pd.read_csv(str(self.comboBox_file.currentText()), sep=separator,
+                                              usecols=selected_columns)
 
                     self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter='\t', skiprows=1)
                     # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1,
@@ -1999,9 +2000,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if strpe[0] == 'PE:' and strpe[2] == 'eV':
                 pe = float(strpe[1])
                 print('Current Pass energy is PE= ', pe, 'eV')
-                #item = QtWidgets.QTableWidgetItem(str(pe))
-                #self.fitp0.setItem(0, 9, item)
-                #self.fitp0.setItem(0, 8, QtWidgets.QTableWidgetItem('Pass energy (eV)'))
+                # item = QtWidgets.QTableWidgetItem(str(pe))
+                # self.fitp0.setItem(0, 9, item)
+                # self.fitp0.setItem(0, 8, QtWidgets.QTableWidgetItem('Pass energy (eV)'))
             # plt.cla()
             self.ar.cla()
             self.ax.cla()
