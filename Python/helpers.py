@@ -544,7 +544,12 @@ def fit_range(x, y, xmin, xmax):
     # return [array(xn), array(yn)]
     return [xn, yn]
 
-
+separator_mapping = {
+    "Comma:\",\"": ",",
+    "Semicolon:\";\"": ";",
+    "Whitespace(s)/TAB": r'\s+',
+    "User Defined": None  # Placeholder for user-defined separator
+}
 class PreviewDialog(QtWidgets.QDialog):
     def __init__(self, file_path):
         super().__init__()
@@ -579,8 +584,8 @@ class PreviewDialog(QtWidgets.QDialog):
         if self.data is not None:
             separator_label = QtWidgets.QLabel("Choose Separator:")
             self.separator_combobox = QtWidgets.QComboBox()
-            self.separator_combobox.addItems([",", ";", "Whitespace(s)/TAB", "User Defined"])
-            self.separator_combobox.setCurrentText(self.selected_separator)
+            self.separator_combobox.addItems(["Comma:\",\" ", "Semicolon:\";\" ", "Whitespace(s)/TAB", "User Defined"])
+            self.separator_combobox.setCurrentText(self.get_sep_text())
             self.separator_combobox.currentTextChanged.connect(self.update_preview)
 
             self.custom_separator_input = QtWidgets.QLineEdit()
@@ -590,14 +595,15 @@ class PreviewDialog(QtWidgets.QDialog):
             layout.addWidget(self.separator_combobox)
             layout.addWidget(self.custom_separator_input)
 
-            self.columns_checkbox = []
-            for column in self.data.columns:
-                checkbox = QtWidgets.QCheckBox(column)
-                if column in self.selected_columns:
-                    checkbox.setChecked(True)
-                self.columns_checkbox.append(checkbox)
-                checkbox.stateChanged.connect(self.update_preview)
-                layout.addWidget(checkbox)
+            self.column1_combobox = QtWidgets.QComboBox()
+            self.column2_combobox = QtWidgets.QComboBox()
+
+            layout.addWidget(QtWidgets.QLabel("Select Energy (x) column:"))
+            layout.addWidget(self.column1_combobox)
+            layout.addWidget(QtWidgets.QLabel("Select intensity (y) column:"))
+            layout.addWidget(self.column2_combobox)
+
+            self.update_column_comboboxes()
 
         apply_button = QtWidgets.QPushButton("Apply Changes")
         apply_button.clicked.connect(self.apply_changes)
@@ -610,21 +616,30 @@ class PreviewDialog(QtWidgets.QDialog):
         layout.addWidget(button_box)
         self.setLayout(layout)
         self.setWindowTitle("Preview and Options")
-
+    def get_sep_text(self):
+        for key, val in separator_mapping.items():
+            if val == self.selected_separator:
+                return key
+        return None
     def load_data(self):
         try:
-            self.data = pd.read_csv(self.file_path, delimiter=self.selected_separator, engine = "python")
+            self.data = pd.read_csv(self.file_path, delimiter=self.selected_separator, engine="python", nrows=0)
+            if self.data.columns.values.tolist()[0] == '#':
+                self.data = pd.read_csv(self.file_path, delimiter=self.selected_separator, engine="python",
+                                   names=self.data.columns.values.tolist()[1:], skiprows=1)
+
             print(self.data)
             if not self.selected_columns:
-                self.selected_columns = list(self.data.columns)
+                self.selected_columns = self.data.columns.values.tolist()
             self.data = self.data[self.selected_columns]
         except Exception as e:
             print(f"Error loading file {self.file_path}: {e}")
             self.data = None
+
     def get_separator(self):
-        sep=self.separator_combobox.currentText()
-        sep= r'\s+' if sep=="Whitespace(s)/TAB" else sep
-        return sep
+        sep = self.separator_combobox.currentText()
+        return separator_mapping[sep]
+
     def update_preview(self):
         selected_separator = self.get_separator()
         if selected_separator == "User Defined":
@@ -632,8 +647,9 @@ class PreviewDialog(QtWidgets.QDialog):
             self.selected_separator = custom_separator
         else:
             self.selected_separator = selected_separator
-        print('sel sep', selected_separator)
-        self.selected_columns = [checkbox.text() for checkbox in self.columns_checkbox if checkbox.isChecked()]
+
+        self.selected_columns = [self.column1_combobox.currentText(), self.column2_combobox.currentText()]
+        print(self.selected_columns)
         self.load_data()
         if self.data is not None:
             self.table_widget.clear()
@@ -649,9 +665,17 @@ class PreviewDialog(QtWidgets.QDialog):
     def apply_changes(self):
         self.update_preview()
 
-
     def get_options(self):
         if self.data is None:
             return None, None
 
         return self.selected_separator, self.selected_columns
+
+    def update_column_comboboxes(self):
+        if self.data is not None:
+            self.column1_combobox.clear()
+            self.column2_combobox.clear()
+            self.column1_combobox.addItems(self.data.columns)
+            self.column2_combobox.addItems(self.data.columns)
+            self.column1_combobox.setCurrentText(self.selected_columns[0])
+            self.column2_combobox.setCurrentText(self.selected_columns[1])
