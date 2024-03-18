@@ -545,8 +545,8 @@ def fit_range(x, y, xmin, xmax):
     return [xn, yn]
 
 separator_mapping = {
-    "Comma:\",\"": ",",
-    "Semicolon:\";\"": ";",
+    "Comma: [,]": ",",
+    "Semicolon: [;]": ";",
     "Whitespace(s)/TAB": r'\s+',
     "User Defined": None  # Placeholder for user-defined separator
 }
@@ -561,7 +561,7 @@ class PreviewDialog(QtWidgets.QDialog):
 
     def initUI(self):
         layout = QtWidgets.QVBoxLayout()
-
+        self.message_label = QtWidgets.QLabel()
         self.load_data()
 
         self.table_widget = QtWidgets.QTableWidget()
@@ -584,7 +584,7 @@ class PreviewDialog(QtWidgets.QDialog):
         if self.data is not None:
             separator_label = QtWidgets.QLabel("Choose Separator:")
             self.separator_combobox = QtWidgets.QComboBox()
-            self.separator_combobox.addItems(["Comma:\",\" ", "Semicolon:\";\" ", "Whitespace(s)/TAB", "User Defined"])
+            self.separator_combobox.addItems(["Comma: [,]", "Semicolon: [;]", "Whitespace(s)/TAB", "User Defined"])
             self.separator_combobox.setCurrentText(self.get_sep_text())
             self.separator_combobox.currentTextChanged.connect(self.update_preview)
 
@@ -603,14 +603,13 @@ class PreviewDialog(QtWidgets.QDialog):
             layout.addWidget(QtWidgets.QLabel("Select intensity (y) column:"))
             layout.addWidget(self.column2_combobox)
 
+
             self.update_column_comboboxes()
 
-        apply_button = QtWidgets.QPushButton("Apply Changes")
-        apply_button.clicked.connect(self.apply_changes)
-        layout.addWidget(apply_button)
 
+        layout.addWidget(self.message_label)
         button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
-        button_box.accepted.connect(self.accept)
+        button_box.accepted.connect(self.accept_inputs)
         button_box.rejected.connect(self.reject)
 
         layout.addWidget(button_box)
@@ -630,10 +629,11 @@ class PreviewDialog(QtWidgets.QDialog):
 
             print(self.data)
             if not self.selected_columns:
-                self.selected_columns = self.data.columns.values.tolist()
-            self.data = self.data[self.selected_columns]
+                self.selected_columns = list(range(len(self.data.columns)))
+            self.data = self.data.iloc[:, self.selected_columns]
+            self.message_label.setText("Data loaded successfully.")
         except Exception as e:
-            print(f"Error loading file {self.file_path}: {e}")
+            self.message_label.setText(f"Failed to load data.{e}\n Please try with different parameters.")
             self.data = None
 
     def get_separator(self):
@@ -645,10 +645,11 @@ class PreviewDialog(QtWidgets.QDialog):
         if selected_separator == "User Defined":
             custom_separator = self.custom_separator_input.text()
             self.selected_separator = custom_separator
+            print(self.selected_separator)
         else:
             self.selected_separator = selected_separator
 
-        self.selected_columns = [self.column1_combobox.currentText(), self.column2_combobox.currentText()]
+        self.selected_columns = [self.column1_combobox.currentIndex(), self.column2_combobox.currentIndex()]
         print(self.selected_columns)
         self.load_data()
         if self.data is not None:
@@ -662,9 +663,9 @@ class PreviewDialog(QtWidgets.QDialog):
                     item = QtWidgets.QTableWidgetItem(str(self.data.iat[i, j]))
                     self.table_widget.setItem(i, j, item)
 
-    def apply_changes(self):
-        self.update_preview()
-
+    def accept_inputs(self):
+        if self.data is not None and self.data.columns.size==2:
+            self.accept()
     def get_options(self):
         if self.data is None:
             return None, None
@@ -677,5 +678,7 @@ class PreviewDialog(QtWidgets.QDialog):
             self.column2_combobox.clear()
             self.column1_combobox.addItems(self.data.columns)
             self.column2_combobox.addItems(self.data.columns)
-            self.column1_combobox.setCurrentText(self.selected_columns[0])
-            self.column2_combobox.setCurrentText(self.selected_columns[1])
+            self.column1_combobox.setCurrentText(self.data.columns.values.tolist()[self.selected_columns[0]])
+            self.column2_combobox.setCurrentText(self.data.columns.values.tolist()[self.selected_columns[1]])
+            self.column1_combobox.currentTextChanged.connect(self.update_preview)
+            self.column2_combobox.currentTextChanged.connect(self.update_preview)
