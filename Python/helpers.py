@@ -551,12 +551,17 @@ separator_mapping = {
     "User Defined": None  # Placeholder for user-defined separator
 }
 class PreviewDialog(QtWidgets.QDialog):
+    settings_changed = QtCore.pyqtSignal(bool)
     def __init__(self, file_path):
         super().__init__()
         self.file_path = file_path
-        self.selected_separator = r'\s+'
+        self.selected_separator = r'\s+' if file_path.endswith('.txt') else ","
         self.selected_columns = []
+        self.header_row = 0  # Row index where the header is located
+        self.has_header=True
         self.data = None
+        self.df=None
+        self.available_columns = []
         self.initUI()
 
     def initUI(self):
@@ -604,8 +609,21 @@ class PreviewDialog(QtWidgets.QDialog):
             layout.addWidget(self.column2_combobox)
 
 
-            self.update_column_comboboxes()
+            self.header_row_spinbox = QtWidgets.QSpinBox()
+            self.header_row_spinbox.setRange(0, 10)
+            self.header_row_spinbox.setValue(self.header_row)
+            self.header_row_spinbox.valueChanged.connect(self.update_preview)
+            layout.addWidget(QtWidgets.QLabel("Row index where the header is located \n (assuming, that data follows after header row):"))
+            layout.addWidget(self.header_row_spinbox)
+            self.no_header_checkbox = QtWidgets.QCheckBox("File has no column headers")
+            layout.addWidget(self.no_header_checkbox)
+            self.no_header_checkbox.stateChanged.connect(self.update_preview)
 
+            self.remember_settings_checkbox = QtWidgets.QCheckBox("Remember Settings")
+            self.remember_settings_checkbox.stateChanged.connect(self.emit_settings_changed)
+            layout.addWidget(self.remember_settings_checkbox)
+
+            self.update_column_comboboxes()
 
         layout.addWidget(self.message_label)
         button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
@@ -615,25 +633,38 @@ class PreviewDialog(QtWidgets.QDialog):
         layout.addWidget(button_box)
         self.setLayout(layout)
         self.setWindowTitle("Preview and Options")
+
+    def emit_settings_changed(self, state):
+        if state == QtCore.Qt.Checked:
+            self.settings_changed.emit(True)
+        else:
+            self.settings_changed.emit(False)
+
     def get_sep_text(self):
         for key, val in separator_mapping.items():
             if val == self.selected_separator:
                 return key
         return None
+
     def load_data(self):
         try:
-            self.data = pd.read_csv(self.file_path, delimiter=self.selected_separator, engine="python", nrows=0)
-            if self.data.columns.values.tolist()[0] == '#':
-                self.data = pd.read_csv(self.file_path, delimiter=self.selected_separator, engine="python",
-                                   names=self.data.columns.values.tolist()[1:], skiprows=1)
-
-            print(self.data)
+            if self.has_header:
+                self.data = pd.read_csv(self.file_path, delimiter=self.selected_separator, header=self.header_row, engine='python',nrows=0)
+                if self.data.columns.values.tolist()[0] == '#':
+                    self.data = pd.read_csv(self.file_path, delimiter=self.selected_separator, engine="python",
+                                        names=self.data.columns.values.tolist()[1:], skiprows=self.header_row+1)
+                else:
+                    self.data = pd.read_csv(self.file_path, delimiter=self.selected_separator, engine="python", skiprows=self.header_row)
+            else:
+                self.data = pd.read_csv(self.file_path, delimiter=self.selected_separator, engine="python", skiprows=self.header_row, header=None)
+                self.data.columns = [f"col{i+1}" for i in range(len(self.data.columns))]
+            self.available_columns=self.data.columns
             if not self.selected_columns:
                 self.selected_columns = list(range(len(self.data.columns)))
             self.data = self.data.iloc[:, self.selected_columns]
             self.message_label.setText("Data loaded successfully.")
         except Exception as e:
-            self.message_label.setText(f"Failed to load data.{e}\n Please try with different parameters.")
+            self.message_label.setText(f"Failed to load data: {e}\nPlease try with different parameters.")
             self.data = None
 
     def get_separator(self):
@@ -648,10 +679,14 @@ class PreviewDialog(QtWidgets.QDialog):
             print(self.selected_separator)
         else:
             self.selected_separator = selected_separator
-
+        if self.column1_combobox.currentIndex() == self.column2_combobox.currentIndex():
+            self.message_label.setText("Please select different columns for Energy (x) and Intensity (y).")
+            return
         self.selected_columns = [self.column1_combobox.currentIndex(), self.column2_combobox.currentIndex()]
-        print(self.selected_columns)
+        self.has_header = not self.no_header_checkbox.isChecked()
+        self.header_row = self.header_row_spinbox.value()
         self.load_data()
+        self.update_column_comboboxes()
         if self.data is not None:
             self.table_widget.clear()
             self.table_widget.setRowCount(self.data.shape[0])
@@ -664,8 +699,15 @@ class PreviewDialog(QtWidgets.QDialog):
                     self.table_widget.setItem(i, j, item)
 
     def accept_inputs(self):
-        if self.data is not None and self.data.columns.size==2:
-            self.accept()
+        if self.data is not None:
+            self.update_preview()
+            if self.data.columns.size==2:
+                self.df=self.data
+                self.accept()
+            else:
+                self.message_label.setText("Data not in correct format. Please select exactly 2 columns.")
+        else:
+            self.message_label.setText("Data not in correct format. Please select correct separator and columns.")
     def get_options(self):
         if self.data is None:
             return None, None
@@ -674,11 +716,18 @@ class PreviewDialog(QtWidgets.QDialog):
 
     def update_column_comboboxes(self):
         if self.data is not None:
+            self.column1_combobox.blockSignals(True)  # Block signal emission
+            self.column2_combobox.blockSignals(True)  # Block signal emission
+
             self.column1_combobox.clear()
             self.column2_combobox.clear()
-            self.column1_combobox.addItems(self.data.columns)
-            self.column2_combobox.addItems(self.data.columns)
-            self.column1_combobox.setCurrentText(self.data.columns.values.tolist()[self.selected_columns[0]])
-            self.column2_combobox.setCurrentText(self.data.columns.values.tolist()[self.selected_columns[1]])
+            self.column1_combobox.addItems(self.available_columns)
+            self.column2_combobox.addItems(self.available_columns)
+            self.column1_combobox.setCurrentText(self.available_columns.values.tolist()[self.selected_columns[0]])
+            self.column2_combobox.setCurrentText(self.available_columns.values.tolist()[self.selected_columns[1]])
+
+            self.column1_combobox.blockSignals(False)  # Unblock signal emission
+            self.column2_combobox.blockSignals(False)  # Unblock signal emission
+
             self.column1_combobox.currentTextChanged.connect(self.update_preview)
             self.column2_combobox.currentTextChanged.connect(self.update_preview)

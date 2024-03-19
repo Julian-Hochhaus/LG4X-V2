@@ -1842,6 +1842,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def imp(self):
         index = self.idx_imp
         if index == 1 or index == 2:
+            print('imp', index)
             if index == 1:
                 cfilePath, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open csv file', self.filePath,
                                                                      'CSV Files (*.csv)')
@@ -1924,6 +1925,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def plot(self):
         plottitle = self.comboBox_file.currentText().split('/')[-1]
         # when file list is selected
+        print('plot called')
         if self.comboBox_file.currentIndex() == 1:
             self.comboBox_file.clear()
             self.list_file = ['File list', 'Clear list']
@@ -1934,6 +1936,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
             fileName = os.path.basename(self.comboBox_file.currentText())
             if os.path.splitext(fileName)[1] == '.csv':
                 try:  # change import, so that export file is detected
+                    preview_dialog = PreviewDialog(str(self.comboBox_file.currentText()))
+                    if preview_dialog.exec_():
+                        separator, selected_columns = preview_dialog.get_options()
+                        self.df = pd.read_csv(str(self.comboBox_file.currentText()), sep=separator,
+                                              usecols=selected_columns)
                     data = np.genfromtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter=',', max_rows=2)
                     if all(elem in data for elem in ['raw_x', 'raw_y', 'sum_fit']):
                         self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=2,
