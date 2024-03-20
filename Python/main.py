@@ -278,7 +278,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.bgMenu.addAction(btn_tougaard_cross_section)
         menubar.addSeparator()
         settings_menu = menubar.addMenu('&Settings')
-        btn_settings = QtWidgets.QAction('&GUI settings', self)
+        btn_settings = QtWidgets.QAction('&Settings', self)
         btn_settings.triggered.connect(self.open_settings_window)
         settings_menu.addAction(btn_settings)
         menubar.addSeparator()
@@ -800,7 +800,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.bgMenu.addAction(btn_tougaard_cross_section)
         menubar.addSeparator()
         settings_menu = menubar.addMenu('&Settings')
-        btn_settings = QtWidgets.QAction('&GUI settings', self)
+        btn_settings = QtWidgets.QAction('&Settings', self)
         btn_settings.triggered.connect(self.open_settings_window)
         settings_menu.addAction(btn_settings)
         menubar.addSeparator()
@@ -1152,55 +1152,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.resizeAllColumns()
 
     def open_settings_window(self):
-        settings_dialog = QtWidgets.QDialog(self)
-        settings_dialog.setWindowTitle("GUI Settings")
-        # Create UI elements for changing column width
-        label_column_width = QtWidgets.QLabel("Column Width:")
-        line_edit_column_width = QtWidgets.QLineEdit()
+        self.settings_dialog = SettingsDialog(self,config, config_file_path)
+        self.settings_dialog.exec_()
 
-        # Retrieve the current column width from the configuration and display it in the QLineEdit
-        current_column_width = config.getint('GUI', 'column_width')
-        line_edit_column_width.setText(str(current_column_width))
 
-        # Create a button to save the changes
-        save_button = QtWidgets.QPushButton("Save")
-        save_button.clicked.connect(lambda: self.save_column_width(line_edit_column_width.text(), settings_dialog))
-
-        # Create a layout to organize the UI elements
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(label_column_width)
-        layout.addWidget(line_edit_column_width)
-        layout.addWidget(save_button)
-
-        # Set the layout for the settings dialog
-        settings_dialog.setLayout(layout)
-
-        settings_dialog.exec_()
-
-    def save_column_width(self, new_width, settings_dialog):
-        try:
-            new_column_width = int(new_width)
-            if new_column_width > 0:
-                config.set('GUI', 'column_width', str(new_column_width))
-                self.column_width=new_column_width
-
-                with open('config/config.ini', 'w') as config_file:
-                    config.write(config_file)
-
-                for column in range(self.fitp1.columnCount()):
-                    if column % 2 == 1:
-                        self.fitp1.setColumnWidth(column, self.column_width)
-                for column in range(self.fitp1_lims.columnCount()):
-                    if column % 3 != 0:
-                        self.fitp1_lims.setColumnWidth(column, self.column_width)
-                for column in range(self.res_tab.columnCount()):
-                    self.res_tab.setColumnWidth(column, self.column_width)
-
-                settings_dialog.accept()
-            else:
-                self.raise_error("Invalid Column Width", "Please enter a valid positive integer for column width.")
-        except ValueError:
-            self.raise_error("Invalid Input", "Please enter a valid positive integer for column width.")
     def duplicateComponentNames(self, new_label):
         if new_label in self.list_component:
             QtWidgets.QMessageBox.warning(self, "Duplicate Name", "Component name already exists.\n Defaulted to next free name in format 'C_xx' ")
@@ -1643,7 +1598,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             None
         """
         self.error_dialog.setWindowTitle(window_title)
-        error_message = error_message + r'\n *******************\n' + traceback.format_exc()
+        error_message = error_message + '\n *******************\n' + traceback.format_exc()
         self.error_dialog.showMessage(error_message)
         logging.error(error_message)
 
@@ -2684,8 +2639,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
     def history_manager(self, pars):
         """
-        Manages saving of the fit parameters and presets (e.g. how many components, aktive backgrounds and so on) in a list.
-        In this approach the insane function ana() must be extended. The ana() should be destroyd! and replaaced by couple of smaller methods for better readability
+        Manages saving of the fit parameters and presets (e.g. how many components, aktive backgrounds and so on) in
+        a list. In this approach the insane function ana() must be extended. The ana() should be destroyd! and
+        replaaced by couple of smaller methods for better readability
 
         Parameters
         ----------
