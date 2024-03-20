@@ -71,6 +71,13 @@ dictBG = {
     '6': 'Slope BG',
 
 }
+class DataSet():
+    def __init__(self, df, filepath, pe):
+        self.df = df
+        self.filepath = filepath
+        self.pe = pe
+
+
 
 
 class PrettyWidget(QtWidgets.QMainWindow):
@@ -117,6 +124,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fit_thread=FitThread(self)
         self.version = 'LG4X: LMFit GUI for XPS curve fitting v{}'.format(__version__)
         self.floating = '.3f'
+        self.data_arr={}
         self.initUI()
     def initUI(self):
         if self.two_window_mode:
@@ -2336,12 +2344,42 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if cfilePath != "":
                 # print (cfilePath)
                 self.filePath = cfilePath
-                self.list_file.append(str(cfilePath))
+                remember_settings = config.getboolean('Import', 'remember_settings')
+                ##exclude, that file was already added! [BUG]
+                if not remember_settings:
+                    preview_dialog = PreviewDialog(self.filePath)
+                    if preview_dialog.exec_():
+                        self.df = preview_dialog.df
+                        filename=preview_dialog.fname
+                        self.data_arr[filename]=DataSet(filepath=self.filePath, df=self.df, pe=None)
+                        print('if',filename, self.df.columns)
+                else:
+                    if config.getboolean('Import', 'has_header'):
+                        temp_header = pd.read_csv(self.filePath, delimiter=config.get('Import', 'separator'),
+                                                header=config.get('Import', 'header_row'), engine='python', nrows=0)
+                        if temp_header.columns.values.tolist()[0] == '#':
+                            self.df = pd.read_csv(self.filePath, delimiter=config.get('Import', 'separator'), engine="python",
+                                                    names=temp_header.columns.values.tolist()[1:],
+                                                    skiprows=int(config.get('Import', 'header_row')) + 1)
+                        else:
+                            self.df = pd.read_csv(self.filePath, delimiter=config.get('Import', 'separator'), engine="python",
+                                                    skiprows=int(config.get('Import', 'header_row')))
+                    else:
+                        self.df = pd.read_csv(self.filePath, delimiter=config.get('Import', 'separator'), engine="python",
+                                                skiprows=int(config.get('Import', 'header_row')), header=None)
+                        self.df.columns = [f"col{i + 1}" for i in range(len(self.df.columns))]
+                    self.df = self.df.iloc[:, config.get('Import', 'columns')]
+                    filename = os.path.basename(self.filePath)
+                    self.data_arr[filename] = DataSet(filepath=self.FilePath, df=self.df, pe=None)
+                    print('else',filename, self.df.columns)
+                print('fin', filename, self.df.columns)
                 self.comboBox_file.clear()
                 self.comboBox_file.addItems(self.list_file)
-                index = self.comboBox_file.findText(str(cfilePath), QtCore.Qt.MatchFixedString)
+                self.comboBox_file.addItems(self.data_arr.keys())
+                index = self.comboBox_file.findText(os.path.basename(self.filePath), QtCore.Qt.MatchFixedString)
                 if index >= 0:
                     self.comboBox_file.setCurrentIndex(index)
+                print('imp finished')
                 self.plot()
         if index == 3:
             cfilePath, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open VAMAS file', self.filePath,
@@ -2410,86 +2448,92 @@ class PrettyWidget(QtWidgets.QMainWindow):
         plottitle = self.comboBox_file.currentText().split('/')[-1]
         # when file list is selected
         print('plot called')
+        print(self.df.columns)
         if self.comboBox_file.currentIndex() == 1:
             self.comboBox_file.clear()
             self.list_file = ['File list', 'Clear list']
+            self.data_arr = {}
             self.comboBox_file.addItems(self.list_file)
             self.comboBox_file.setCurrentIndex(0)
         elif self.comboBox_file.currentIndex() > 1:
             # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
+            print('plotting', self.df.columns)
             fileName = os.path.basename(self.comboBox_file.currentText())
-            if os.path.splitext(fileName)[1] == '.csv':
-                try:  # change import, so that export file is detected
-                    preview_dialog = PreviewDialog(str(self.comboBox_file.currentText()))
-                    if preview_dialog.exec_():
-                        separator, selected_columns = preview_dialog.get_options()
-                        self.df = pd.read_csv(str(self.comboBox_file.currentText()), sep=separator,
-                                              usecols=selected_columns)
-                    data = np.genfromtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter=',', max_rows=2)
-                    if all(elem in data for elem in ['raw_x', 'raw_y', 'sum_fit']):
-                        self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=2,
-                                             usecols=(0, 1))
-                    else:
-                        self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
-                    # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1,
-                    # header=None)
-                    strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter=',', usecols=1,
-                                       max_rows=1)
-                    f = open(str(self.comboBox_file.currentText()), 'r')
-                    header_line = str(f.readline())
-                    if 'rows_lightened' in header_line:
-                        self.rows_lightened = int(header_line.split('=')[1])
-                    else:
-                        self.rows_lightened = 1
-
-                except Exception as e:
-                    return self.raise_error(window_title="Error: could not load .csv file.",
-                                            error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
-
-
+            # if os.path.splitext(fileName)[1] == '.csv':
+            #     try:  # change import, so that export file is detected
+            #         preview_dialog = PreviewDialog(str(self.comboBox_file.currentText()))
+            #         if preview_dialog.exec_():
+            #             separator, selected_columns = preview_dialog.get_options()
+            #             self.df = pd.read_csv(str(self.comboBox_file.currentText()), sep=separator,
+            #                                   usecols=selected_columns)
+            #         data = np.genfromtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter=',', max_rows=2)
+            #         if all(elem in data for elem in ['raw_x', 'raw_y', 'sum_fit']):
+            #             self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=2,
+            #                                  usecols=(0, 1))
+            #         else:
+            #             self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
+            #         # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1,
+            #         # header=None)
+            #         strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter=',', usecols=1,
+            #                            max_rows=1)
+            f = open(str(self.comboBox_file.currentText()), 'r')
+            header_line = str(f.readline())
+            if 'rows_lightened' in header_line:
+                self.rows_lightened = int(header_line.split('=')[1])
             else:
-                try:
-                    # Open the PreviewDialog to get options
-                    preview_dialog = PreviewDialog(str(self.comboBox_file.currentText()))
-                    if preview_dialog.exec_():
-                        separator, selected_columns = preview_dialog.get_options()
-                        self.df = pd.read_csv(str(self.comboBox_file.currentText()), sep=separator,
-                                              usecols=selected_columns)
+                self.rows_lightened = 1
 
-                    self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter='\t', skiprows=1)
-                    # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1,
-                    # header=None, delimiter = '\t')
-                    strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter='\t', usecols=1,
-                                       max_rows=1)
-                    f = open(str(self.comboBox_file.currentText()), 'r')
-                    header_line = str(f.readline())
-                    if 'rows_lightened' in header_line:
-                        self.rows_lightened = int(header_line.split('=')[1])
-                    else:
-                        self.rows_lightened = 1
-                except Exception as e:
-                    return self.raise_error(window_title="Error: could not load input file.",
-                                            error_message='The input file is not in the correct format!. The following traceback may help to solve the issue:')
+            # except Exception as e:
+            #         return self.raise_error(window_title="Error: could not load .csv file.",
+            #                                 error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
+
+
+            # else:
+            #     try:
+            #         # Open the PreviewDialog to get options
+            #         preview_dialog = PreviewDialog(str(self.comboBox_file.currentText()))
+            #         if preview_dialog.exec_():
+            #             separator, selected_columns = preview_dialog.get_options()
+            #             self.df = pd.read_csv(str(self.comboBox_file.currentText()), sep=separator,
+            #                                   usecols=selected_columns)
+            #
+            #         self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter='\t', skiprows=1)
+            #         # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1,
+            #         # header=None, delimiter = '\t')
+            #         strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter='\t', usecols=1,
+            #                            max_rows=1)
+            #         f = open(str(self.comboBox_file.currentText()), 'r')
+            #         header_line = str(f.readline())
+            #         if 'rows_lightened' in header_line:
+            #             self.rows_lightened = int(header_line.split('=')[1])
+            #         else:
+            #             self.rows_lightened = 1
+            #     except Exception as e:
+            #         return self.raise_error(window_title="Error: could not load input file.",
+            #                                 error_message='The input file is not in the correct format!. The following traceback may help to solve the issue:')
 
             # I have moved the error handling here directly to the import, there may exist situations, where already the
             # Import would fail. I still left the following error handling there, but I am not sure if there are cases
             # where this second error handling still will be necessary. However, we should check, if x0 and y0 have same
             # lenght I think
+            print(self.df.columns)
+            #get rid of self.df before here
+            self.df=self.data_arr[fileName].df
 
             try:
-                x0 = self.df[:, 0]
+                x0 = self.df.iloc[:, 0].values
             except Exception as e:
                 return self.raise_error(window_title="Error: could not load .csv file.",
                                         error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
             try:
-                y0 = self.df[:, 1]
+                y0 = self.df.iloc[:, 1].values
             except Exception as e:
                 return self.raise_error(window_title="Error: could not load .csv file.",
                                         error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
-            strpe = (str(strpe).split())
-
-            if strpe[0] == 'PE:' and strpe[2] == 'eV':
-                pe = float(strpe[1])
+            #strpe = (str(strpe).split())
+            print(x0)
+            pe=self.data_arr[fileName].pe
+            if pe is not None:
                 print('Current Pass energy is PE= ', pe, 'eV')
                 # item = QtWidgets.QTableWidgetItem(str(pe))
                 # self.fitp0.setItem(0, 9, item)

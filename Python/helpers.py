@@ -556,6 +556,7 @@ class PreviewDialog(QtWidgets.QDialog):
     def __init__(self, file_path):
         super().__init__()
         self.file_path = file_path
+        self.fname= os.path.basename(file_path)
         self.selected_separator = r'\s+' if file_path.endswith('.txt') else ","
         self.selected_columns = []
         self.header_row = 0  # Row index where the header is located
@@ -614,7 +615,7 @@ class PreviewDialog(QtWidgets.QDialog):
             self.header_row_spinbox.setRange(0, 10)
             self.header_row_spinbox.setValue(self.header_row)
             self.header_row_spinbox.valueChanged.connect(self.update_preview)
-            layout.addWidget(QtWidgets.QLabel("Row index where the header is located \n (assuming, that data follows after header row):"))
+            layout.addWidget(QtWidgets.QLabel("Row index where the header is located \n (assuming, that data follows after header row)/rows to skip:"))
             layout.addWidget(self.header_row_spinbox)
             self.no_header_checkbox = QtWidgets.QCheckBox("File has no column headers")
             layout.addWidget(self.no_header_checkbox)
@@ -704,6 +705,7 @@ class PreviewDialog(QtWidgets.QDialog):
             self.update_preview()
             if self.data.columns.size==2:
                 self.df=self.data
+
                 self.accept()
             else:
                 self.message_label.setText("Data not in correct format. Please select exactly 2 columns.")
@@ -784,7 +786,7 @@ class SettingsDialog(QtWidgets.QDialog):
         self.line_edit_columns = QtWidgets.QLineEdit()
         self.line_edit_columns.setText(str(config.get('Import', 'columns')))
 
-        label_header_row = QtWidgets.QLabel("Header Row:")
+        label_header_row = QtWidgets.QLabel("Header Row/(if no header: Rows to skip):")
         self.line_edit_header_row = QtWidgets.QLineEdit()
         self.line_edit_header_row.setText(str(config.getint('Import', 'header_row')))
 
