@@ -553,7 +553,7 @@ separator_mapping = {
 }
 class PreviewDialog(QtWidgets.QDialog):
     settings_changed = QtCore.pyqtSignal(bool)
-    def __init__(self, file_path):
+    def __init__(self, file_path, config, config_file_path):
         super().__init__()
         self.file_path = file_path
         self.fname= os.path.basename(file_path)
@@ -564,6 +564,9 @@ class PreviewDialog(QtWidgets.QDialog):
         self.data = None
         self.df=None
         self.available_columns = []
+        self.config = config
+        config.read(config_file_path)
+        self.config_file_path= config_file_path
         self.initUI()
 
     def initUI(self):
@@ -634,7 +637,7 @@ class PreviewDialog(QtWidgets.QDialog):
 
         layout.addWidget(button_box)
         self.setLayout(layout)
-        self.setWindowTitle("Preview and Options")
+        self.setWindowTitle("Preview and Load Data")
 
     def emit_settings_changed(self, state):
         if state == QtCore.Qt.Checked:
@@ -650,15 +653,16 @@ class PreviewDialog(QtWidgets.QDialog):
 
     def load_data(self):
         try:
+            print(self.file_path)
             if self.has_header:
-                self.data = pd.read_csv(self.file_path, delimiter=self.selected_separator, header=self.header_row, engine='python',nrows=0)
+                self.data = pd.read_csv(self.file_path, delimiter=self.selected_separator, header=self.header_row, engine='python',nrows=0,  on_bad_lines='skip')
                 if self.data.columns.values.tolist()[0] == '#':
                     self.data = pd.read_csv(self.file_path, delimiter=self.selected_separator, engine="python",
-                                        names=self.data.columns.values.tolist()[1:], skiprows=self.header_row+1)
+                                        names=self.data.columns.values.tolist()[1:], skiprows=self.header_row+1,  on_bad_lines='skip')
                 else:
-                    self.data = pd.read_csv(self.file_path, delimiter=self.selected_separator, engine="python", skiprows=self.header_row)
+                    self.data = pd.read_csv(self.file_path, delimiter=self.selected_separator, engine="python", skiprows=self.header_row,  on_bad_lines='skip')
             else:
-                self.data = pd.read_csv(self.file_path, delimiter=self.selected_separator, engine="python", skiprows=self.header_row, header=None)
+                self.data = pd.read_csv(self.file_path, delimiter=self.selected_separator, engine="python", skiprows=self.header_row, header=None,  on_bad_lines='skip')
                 self.data.columns = [f"col{i+1}" for i in range(len(self.data.columns))]
             self.available_columns=self.data.columns
             if not self.selected_columns:
@@ -666,8 +670,9 @@ class PreviewDialog(QtWidgets.QDialog):
             self.data = self.data.iloc[:, self.selected_columns]
             self.message_label.setText("Data loaded successfully.")
         except Exception as e:
-            self.message_label.setText(f"Failed to load data: {e}\nPlease try with different parameters.")
             self.data = None
+            self.message_label.setText(f"Failed to load data: {e}\nPlease try with different parameters.")
+
 
     def get_separator(self):
         sep = self.separator_combobox.currentText()
@@ -678,7 +683,6 @@ class PreviewDialog(QtWidgets.QDialog):
         if selected_separator == "User Defined":
             custom_separator = self.custom_separator_input.text()
             self.selected_separator = custom_separator
-            print(self.selected_separator)
         else:
             self.selected_separator = selected_separator
         if self.column1_combobox.currentIndex() == self.column2_combobox.currentIndex():
@@ -705,7 +709,14 @@ class PreviewDialog(QtWidgets.QDialog):
             self.update_preview()
             if self.data.columns.size==2:
                 self.df=self.data
-
+                if self.remember_settings_checkbox.isChecked():
+                    self.config.set('Import', 'separator', self.selected_separator)
+                    self.config.set('Import', 'columns', str(self.selected_columns))
+                    self.config.set('Import', 'header_row', str(self.header_row))
+                    self.config.set('Import', 'has_header', str(self.has_header))
+                    self.config.set('Import', 'remember_settings', str(self.remember_settings_checkbox.isChecked()))
+                    with open(self.config_file_path, 'w') as configfile:
+                        self.config.write(configfile)
                 self.accept()
             else:
                 self.message_label.setText("Data not in correct format. Please select exactly 2 columns.")
@@ -741,9 +752,7 @@ class SettingsDialog(QtWidgets.QDialog):
         super(SettingsDialog, self).__init__(parent)
         self.setWindowTitle("Settings")
         self.config = config
-        print(config.sections())
         config.read(config_file_path)
-        print(config.sections())
         self.config_file_path= config_file_path
         self.main_gui = mainGUI
         label_column_width = QtWidgets.QLabel("Column Width:")
@@ -847,7 +856,6 @@ class SettingsDialog(QtWidgets.QDialog):
 
     def save_settings(self):
         try:
-            print(self.config.sections())
             new_column_width = int(self.line_edit_column_width.text())
             if new_column_width > 0:
                 self.config.set('GUI', 'column_width', str(new_column_width))
@@ -876,12 +884,18 @@ class SettingsDialog(QtWidgets.QDialog):
         self.main_gui.column_width = int(self.line_edit_column_width.text())
         # apply changes to the main GUI
         for column in range(0,self.main_gui.fitp1.columnCount()):
-            print(self.main_gui.fitp1.columnWidth(column), column)
             if column % 2 != 0:
                 self.main_gui.fitp1.setColumnWidth(column,self.main_gui.column_width)
-            print(self.main_gui.fitp1.columnWidth(column))
         for column in range(self.main_gui.fitp1_lims.columnCount()):
             if column % 3 != 0:
                 self.main_gui.fitp1_lims.setColumnWidth(column, self.main_gui.column_width)
         for column in range(self.main_gui.res_tab.columnCount()):
             self.main_gui.res_tab.setColumnWidth(column, self.main_gui.column_width)
+
+
+class DataSet():
+    def __init__(self, df, filepath, pe):
+        self.df = df
+        self.filepath = filepath
+        self.filename= os.path.basename(filepath)
+        self.pe = pe
