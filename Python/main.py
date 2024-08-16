@@ -1815,8 +1815,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
             # load default preset
             if self.comboBox_file.currentIndex() > 0:
                 # self.df = np.loadtxt(str(self.comboBox_file.currentText()),	delimiter=',', skiprows=1)
-                x0 = self.df[:, 0]
-                y0 = self.df[:, 1]
+                x0 = self.df.iloc[:, 0].to_numpy()
+                y0 = self.df.iloc[:, 1].to_numpy()
                 pre_pk = [[0, 0], [0, x0[abs(y0 - y0.max()).argmin()]], [0, y0[abs(y0 - y0.max()).argmin()]], [2, 0],
                           [0, abs(x0[0] - x0[-1]) / (0.2 * len(x0))], [2, 0], [2, 0], [2, 0], [2, 0], [2, 0], [2, 0],
                           [2, 0], [2, 0]]
@@ -1830,7 +1830,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             except Exception as e:
                 return self.raise_error(window_title="Error: Could not load parameters!",
                                         error_message='Loading parameters failed. The following traceback may help to solve the issue:')
-            # print(self.df[0], self.df[1], self.df[2])
+            # print(self.df.iloc[0], self.df.iloc[1], self.df.iloc[2])
             if len(str(self.pre[0])) != 0 and len(self.pre[1]) != 0 and len(self.pre[2]) != 0 and len(self.pre) == 3:
                 # old format, reorder data!
                 self.reformat_pre()
@@ -1845,7 +1845,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             except Exception as e:
                 return self.raise_error(window_title="Error: Could not add parameters!",
                                         error_message='Adding parameters failed. The following traceback may help to solve the issue:')
-            # print(self.df[0], self.df[1], self.df[2])
+            # print(self.df.iloc[0], self.df.iloc[1], self.df.iloc[2])
             if len(str(self.pre[0])) != 0 and len(self.pre[1]) != 0 and len(self.pre[2]) != 0 and len(self.pre) == 3:
                 # old format, reorder data!
                 self.reformat_pre()
@@ -1872,8 +1872,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                       [2, 0, 2, 0, 2, 0, 2, 0, '', '']]
             if self.comboBox_file.currentIndex() > 0:
                 # self.df = np.loadtxt(str(self.comboBox_file.currentText()),	delimiter=',', skiprows=1)
-                # x0 = self.df[:, 0]
-                y0 = self.df[:, 1]
+                # x0 = self.df.iloc[:, 0]
+                y0 = self.df.iloc[:, 1].to_numpy()
                 pre_pk = [[0, 0, 0, 0, 0, 0, 0, 0], [2, 284.6, 2, 286.5, 2, 288.0, 2, 291.0],
                           [2, 0.85, 2, 0.85, 2, 1.28, 2, 1.28], [2, 0.85, 2, 0.85, 2, 1.28, 2, 1.28],
                           [0, y0[abs(y0 - y0.max()).argmin()] * 2.5 * 0.85, 0,
@@ -2554,12 +2554,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.df=self.data_arr[fileName].df
 
         try:
-            x0 = self.df.iloc[:, 0].values
+            x0 = self.df.iloc[:, 0].to_numpy()
         except Exception as e:
             return self.raise_error(window_title="Error: could not load .csv file.",
                                         error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
         try:
-            y0 = self.df.iloc[:, 1].values
+            y0 = self.df.iloc[:, 1].to_numpy()
         except Exception as e:
             return self.raise_error(window_title="Error: could not load .csv file.",
                                         error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
@@ -3730,13 +3730,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.savePreset()
         plottitle = self.plottitle.text()
         # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
-        x0 = self.df[:, 0]
+        print(self.df)
+        x0 = self.df.iloc[:, 0].to_numpy()
+        print(x0)
         if x0[-1] < x0[0]:
             self.binding_ener=True
         x0_corrected=np.copy(x0)
         if self.correct_energy is not None:
             x0_corrected -= self.correct_energy
-        y0 = self.df[:, 1]
+        y0 = self.df.iloc[:, 1].to_numpy()
         # print(x0[0], x0[len(x0)-1])
 
         # plot graph after selection data from popup
