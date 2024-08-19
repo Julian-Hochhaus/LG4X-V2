@@ -26,7 +26,7 @@ pandas>=2.0
 PyQt5>=5.15
 scipy>=1.6
 uncertainties>=3.1.4
-lmfitxps>=2.4.0
+lmfitxps>=2.4.1
 ```
 
 These requirements could be installed using ``pip``:
