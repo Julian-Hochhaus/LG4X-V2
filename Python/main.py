@@ -73,6 +73,9 @@ dictBG = {
 }
 
 
+
+
+
 class PrettyWidget(QtWidgets.QMainWindow):
     def __init__(self):
         self.two_window_mode = config.getboolean('GUI', 'two_window_mode')
@@ -117,6 +120,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fit_thread=FitThread(self)
         self.version = 'LG4X: LMFit GUI for XPS curve fitting v{}'.format(__version__)
         self.floating = '.3f'
+        self.data_arr={}
         self.initUI()
     def initUI(self):
         if self.two_window_mode:
@@ -278,7 +282,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.bgMenu.addAction(btn_tougaard_cross_section)
         menubar.addSeparator()
         settings_menu = menubar.addMenu('&Settings')
-        btn_settings = QtWidgets.QAction('&GUI settings', self)
+        btn_settings = QtWidgets.QAction('& Open Settings', self)
         btn_settings.triggered.connect(self.open_settings_window)
         settings_menu.addAction(btn_settings)
         menubar.addSeparator()
@@ -672,26 +676,36 @@ class PrettyWidget(QtWidgets.QMainWindow):
         fileMenu = menubar.addMenu('&File')
 
         btn_imp_csv = QtWidgets.QAction('Import &csv', self)
-        btn_imp_csv.setShortcut('Ctrl+Shift+C')
+        btn_imp_csv.setShortcut('Ctrl+Shift+X')
         btn_imp_csv.triggered.connect(lambda: self.clickOnBtnImp(idx=1))
 
         btn_imp_txt = QtWidgets.QAction('Import &txt', self)
-        btn_imp_txt.setShortcut('Ctrl+Shift+T')
+        btn_imp_txt.setShortcut('Ctrl+Shift+Y')
         btn_imp_txt.triggered.connect(lambda: self.clickOnBtnImp(idx=2))
 
         btn_imp_vms = QtWidgets.QAction('Import &vms', self)
         btn_imp_vms.setShortcut('Ctrl+Shift+V')
         btn_imp_vms.triggered.connect(lambda: self.clickOnBtnImp(idx=3))
 
-        btn_open_dir = QtWidgets.QAction('Open directory', self)
+        btn_open_dir = QtWidgets.QAction('Open directory (.txt and .csv)', self)
         btn_open_dir.setShortcut('Ctrl+Shift+D')
         btn_open_dir.triggered.connect(lambda: self.clickOnBtnImp(idx=4))
+
+        btn_open_dir_csv = QtWidgets.QAction('Open directory (only .csv)', self)
+        btn_open_dir_csv.setShortcut('Ctrl+Shift+C')
+        btn_open_dir_csv.triggered.connect(lambda: self.clickOnBtnImp(idx=5))
+
+        btn_open_dir_txt = QtWidgets.QAction('Open directory (only .txt)', self)
+        btn_open_dir_txt.setShortcut('Ctrl+Shift+T')
+        btn_open_dir_txt.triggered.connect(lambda: self.clickOnBtnImp(idx=6))
 
         importSubmenu = fileMenu.addMenu('&Import')
         importSubmenu.addAction(btn_imp_csv)
         importSubmenu.addAction(btn_imp_txt)
         importSubmenu.addAction(btn_imp_vms)
         importSubmenu.addAction(btn_open_dir)
+        importSubmenu.addAction(btn_open_dir_csv)
+        importSubmenu.addAction(btn_open_dir_txt)
         ### Export submenu
         btn_exp_results = QtWidgets.QAction('&Results', self)
         btn_exp_results.setShortcut('Ctrl+Shift+R')
@@ -800,7 +814,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.bgMenu.addAction(btn_tougaard_cross_section)
         menubar.addSeparator()
         settings_menu = menubar.addMenu('&Settings')
-        btn_settings = QtWidgets.QAction('&GUI settings', self)
+        btn_settings = QtWidgets.QAction('&Settings', self)
         btn_settings.triggered.connect(self.open_settings_window)
         settings_menu.addAction(btn_settings)
         menubar.addSeparator()
@@ -865,7 +879,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # DropDown file list
         self.comboBox_file = QtWidgets.QComboBox(self)
         self.comboBox_file.addItems(self.list_file)
-        self.comboBox_file.currentIndexChanged.connect(self.plot)
+        self.comboBox_file.currentIndexChanged.connect(self.value_change_filelist)
         layout_top_left.addWidget(self.comboBox_file)
         layout_top_left.addWidget(LayoutHline())
         plottitle_form = QtWidgets.QFormLayout()
@@ -1152,55 +1166,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.resizeAllColumns()
 
     def open_settings_window(self):
-        settings_dialog = QtWidgets.QDialog(self)
-        settings_dialog.setWindowTitle("GUI Settings")
-        # Create UI elements for changing column width
-        label_column_width = QtWidgets.QLabel("Column Width:")
-        line_edit_column_width = QtWidgets.QLineEdit()
+        self.settings_dialog = SettingsDialog(self,config, config_file_path)
+        self.settings_dialog.exec_()
 
-        # Retrieve the current column width from the configuration and display it in the QLineEdit
-        current_column_width = config.getint('GUI', 'column_width')
-        line_edit_column_width.setText(str(current_column_width))
 
-        # Create a button to save the changes
-        save_button = QtWidgets.QPushButton("Save")
-        save_button.clicked.connect(lambda: self.save_column_width(line_edit_column_width.text(), settings_dialog))
-
-        # Create a layout to organize the UI elements
-        layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(label_column_width)
-        layout.addWidget(line_edit_column_width)
-        layout.addWidget(save_button)
-
-        # Set the layout for the settings dialog
-        settings_dialog.setLayout(layout)
-
-        settings_dialog.exec_()
-
-    def save_column_width(self, new_width, settings_dialog):
-        try:
-            new_column_width = int(new_width)
-            if new_column_width > 0:
-                config.set('GUI', 'column_width', str(new_column_width))
-                self.column_width=new_column_width
-
-                with open('config/config.ini', 'w') as config_file:
-                    config.write(config_file)
-
-                for column in range(self.fitp1.columnCount()):
-                    if column % 2 == 1:
-                        self.fitp1.setColumnWidth(column, self.column_width)
-                for column in range(self.fitp1_lims.columnCount()):
-                    if column % 3 != 0:
-                        self.fitp1_lims.setColumnWidth(column, self.column_width)
-                for column in range(self.res_tab.columnCount()):
-                    self.res_tab.setColumnWidth(column, self.column_width)
-
-                settings_dialog.accept()
-            else:
-                self.raise_error("Invalid Column Width", "Please enter a valid positive integer for column width.")
-        except ValueError:
-            self.raise_error("Invalid Input", "Please enter a valid positive integer for column width.")
     def duplicateComponentNames(self, new_label):
         if new_label in self.list_component:
             QtWidgets.QMessageBox.warning(self, "Duplicate Name", "Component name already exists.\n Defaulted to next free name in format 'C_xx' ")
@@ -1643,7 +1612,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             None
         """
         self.error_dialog.setWindowTitle(window_title)
-        error_message = error_message + r'\n *******************\n' + traceback.format_exc()
+        error_message = error_message + '\n *******************\n' + traceback.format_exc()
         self.error_dialog.showMessage(error_message)
         logging.error(error_message)
 
@@ -1846,8 +1815,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
             # load default preset
             if self.comboBox_file.currentIndex() > 0:
                 # self.df = np.loadtxt(str(self.comboBox_file.currentText()),	delimiter=',', skiprows=1)
-                x0 = self.df[:, 0]
-                y0 = self.df[:, 1]
+                x0 = self.df.iloc[:, 0].to_numpy()
+                y0 = self.df.iloc[:, 1].to_numpy()
                 pre_pk = [[0, 0], [0, x0[abs(y0 - y0.max()).argmin()]], [0, y0[abs(y0 - y0.max()).argmin()]], [2, 0],
                           [0, abs(x0[0] - x0[-1]) / (0.2 * len(x0))], [2, 0], [2, 0], [2, 0], [2, 0], [2, 0], [2, 0],
                           [2, 0], [2, 0]]
@@ -1861,7 +1830,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             except Exception as e:
                 return self.raise_error(window_title="Error: Could not load parameters!",
                                         error_message='Loading parameters failed. The following traceback may help to solve the issue:')
-            # print(self.df[0], self.df[1], self.df[2])
+            # print(self.df.iloc[0], self.df.iloc[1], self.df.iloc[2])
             if len(str(self.pre[0])) != 0 and len(self.pre[1]) != 0 and len(self.pre[2]) != 0 and len(self.pre) == 3:
                 # old format, reorder data!
                 self.reformat_pre()
@@ -1876,7 +1845,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             except Exception as e:
                 return self.raise_error(window_title="Error: Could not add parameters!",
                                         error_message='Adding parameters failed. The following traceback may help to solve the issue:')
-            # print(self.df[0], self.df[1], self.df[2])
+            # print(self.df.iloc[0], self.df.iloc[1], self.df.iloc[2])
             if len(str(self.pre[0])) != 0 and len(self.pre[1]) != 0 and len(self.pre[2]) != 0 and len(self.pre) == 3:
                 # old format, reorder data!
                 self.reformat_pre()
@@ -1903,8 +1872,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                       [2, 0, 2, 0, 2, 0, 2, 0, '', '']]
             if self.comboBox_file.currentIndex() > 0:
                 # self.df = np.loadtxt(str(self.comboBox_file.currentText()),	delimiter=',', skiprows=1)
-                # x0 = self.df[:, 0]
-                y0 = self.df[:, 1]
+                # x0 = self.df.iloc[:, 0]
+                y0 = self.df.iloc[:, 1].to_numpy()
                 pre_pk = [[0, 0, 0, 0, 0, 0, 0, 0], [2, 284.6, 2, 286.5, 2, 288.0, 2, 291.0],
                           [2, 0.85, 2, 0.85, 2, 1.28, 2, 1.28], [2, 0.85, 2, 0.85, 2, 1.28, 2, 1.28],
                           [0, y0[abs(y0 - y0.max()).argmin()] * 2.5 * 0.85, 0,
@@ -2367,7 +2336,41 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.plottitle.setText('')  # reset text in plot title QlineEdit, otherwise the old one will remain
         self.idx_imp = idx
         self.imp()
+    def imp_csv_or_txt(self, cfilePath, remember_settings=True):
+            ##exclude, that file was already added! [BUG]
+            if not remember_settings:
+                preview_dialog = PreviewDialog(cfilePath, config, config_file_path)
 
+                if preview_dialog.exec_():
+                    df = preview_dialog.df
+                    filename = preview_dialog.fname
+                    if df is not None:
+                        self.data_arr[filename] = DataSet(filepath=cfilePath, df=df, pe=None)
+            else:
+                if config.getboolean('Import', 'has_header'):
+                    temp_header = pd.read_csv(cfilePath, delimiter=config.get('Import', 'separator'),header=config.get('Import', 'header_row'), engine='python', nrows=0)
+                    if temp_header.columns.values.tolist()[0] == '#':
+                        cols = [col+1 for col in config.get('Import', 'columns')]
+                        df = pd.read_csv(cfilePath, delimiter=config.get('Import', 'separator'), engine="python",
+                                         names=temp_header.columns.values.tolist()[1:],
+                                         skiprows=int(config.get('Import', 'header_row')) + 1)
+                    else:
+                        df = pd.read_csv(cfilePath, delimiter=config.get('Import', 'separator'), engine="python",
+                                         skiprows=int(config.get('Import', 'header_row')))
+
+                else:
+                    df = pd.read_csv(cfilePath, delimiter=config.get('Import', 'separator'), engine="python",
+                                     skiprows=int(config.get('Import', 'header_row')), header=None)
+                    df.columns = [f"col{i + 1}" for i in range(len(df.columns))]
+                df = df.iloc[:, eval(config.get('Import', 'columns'))]
+                filename = os.path.basename(cfilePath)
+                self.data_arr[filename] = DataSet(filepath=cfilePath, df=df, pe=None)
+            self.comboBox_file.clear()
+            self.comboBox_file.addItems(self.list_file)
+            self.comboBox_file.addItems(self.data_arr.keys())
+            index = self.comboBox_file.findText(filename, QtCore.Qt.MatchFixedString)
+            if index >= 0:
+                self.comboBox_file.setCurrentIndex(index)
     def imp(self):
         index = self.idx_imp
         if index == 1 or index == 2:
@@ -2376,17 +2379,18 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                                                      'CSV Files (*.csv)')
             else:
                 cfilePath, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open tab-separated text file',
-                                                                     self.filePath, 'TXT Files (*.txt)')
+                                                                  self.filePath, 'TXT Files (*.txt)')
             if cfilePath != "":
-                # print (cfilePath)
-                self.filePath = cfilePath
-                self.list_file.append(str(cfilePath))
-                self.comboBox_file.clear()
-                self.comboBox_file.addItems(self.list_file)
-                index = self.comboBox_file.findText(str(cfilePath), QtCore.Qt.MatchFixedString)
-                if index >= 0:
-                    self.comboBox_file.setCurrentIndex(index)
+                remember_settings = config.getboolean('Import', 'remember_settings')
+                try:
+                    self.imp_csv_or_txt(cfilePath, remember_settings=remember_settings)
+                except Exception as e:
+                    print(
+                        f"Error: could not auto-load file. Please select correct format!\n Traceback:\n ****************** \n  {e}")
+                    self.imp_csv_or_txt(cfilePath, remember_settings=False)
+            if self.comboBox_file.currentIndex() > 1:
                 self.plot()
+
         if index == 3:
             cfilePath, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open VAMAS file', self.filePath,
                                                                  'VMS Files (*.vms *.npl)')
@@ -2428,27 +2432,162 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     return self.raise_error(window_title="Error: could not load VAMAS source energy.",
                                             error_message=e.args[0])
 
-                self.list_file.extend(self.list_vamas)
+                for file in self.list_vamas:
+                    df = pd.read_csv(file, delimiter='\t', skiprows=1)
+                    strpe = np.loadtxt(file, dtype='str', delimiter='\t', usecols=1,
+                                       max_rows=1)
+                    strpe = (str(strpe).split())
 
-                # print (self.list_file)
+                    if strpe[0] == 'PE:' and strpe[2] == 'eV':
+                        pe = float(strpe[1])
+                        self.data_arr[os.path.basename(file)] = DataSet(filepath=file, df=df, pe=pe)
+                    else:
+                        self.data_arr[os.path.basename(file)] = DataSet(filepath=file, df=df, pe=None)
+
                 self.comboBox_file.clear()
                 self.comboBox_file.addItems(self.list_file)
-                index = self.comboBox_file.findText(str(self.list_vamas[0]), QtCore.Qt.MatchFixedString)
-                if index > 0:
+                self.comboBox_file.addItems(self.data_arr.keys())
+                index = self.comboBox_file.findText(os.path.basename(self.list_vamas[0]), QtCore.Qt.MatchFixedString)
+                if index >= 0:
                     self.comboBox_file.setCurrentIndex(index)
-                self.plot()
+                print(self.data_arr.keys())
+                if self.comboBox_file.currentIndex() > 1:
+                    self.plot()
         if index == 4:
             directory = QtWidgets.QFileDialog.getExistingDirectory(self, "Open Directory", self.filePath,
                                                                    QtWidgets.QFileDialog.ShowDirsOnly)
             if directory != "":
                 entries = os.listdir(directory)
-                entries.sort()
+                entries.sort(key=lambda x: (os.path.splitext(x)[1] != '.txt', x))
+                self.comboBox_file.blockSignals(True)
                 for entry in entries:
                     if os.path.splitext(entry)[1] == '.csv' or os.path.splitext(entry)[1] == '.txt':
-                        self.list_file.append(str(directory + os.sep + entry))
+                        cfilePath = os.path.join(directory, entry)
+                        try:
+                            self.imp_csv_or_txt(cfilePath, remember_settings=True)
+                        except Exception as e:
+                            print(f"Error: could not auto-load file. Please select correct format!\n Traceback:\n ****************** \n  {e}")
+                            self.imp_csv_or_txt(cfilePath, remember_settings=False)
+
                 self.comboBox_file.clear()
                 self.comboBox_file.addItems(self.list_file)
+                self.comboBox_file.addItems(self.data_arr.keys())
+                index = self.comboBox_file.findText(entries[0], QtCore.Qt.MatchFixedString)
+                self.comboBox_file.blockSignals(False)
+                if index >= 0:
+                    self.comboBox_file.setCurrentIndex(index)
+        if index== 5:
+            directory = QtWidgets.QFileDialog.getExistingDirectory(self, "Open Directory", self.filePath,
+                                                                   QtWidgets.QFileDialog.ShowDirsOnly)
+            if directory != "":
+                csv_files = [entry for entry in os.listdir(directory) if os.path.splitext(entry)[1] == '.csv']
+                if csv_files:
+                    csv_files.sort()
+                    for entry in csv_files:
+                        self.comboBox_file.blockSignals(True)
+                        cfile_path = os.path.join(directory, entry)
+                        try:
+                            self.imp_csv_or_txt(cfile_path, remember_settings=True)
+                        except Exception as e:
+                            print(
+                                f"Error: could not auto-load file. Please select correct format!\n Traceback:\n ****************** \n  {e}")
+                            self.imp_csv_or_txt(cfile_path, remember_settings=False)
+
+                    self.comboBox_file.clear()
+                    self.comboBox_file.addItems(self.list_file)
+                    self.comboBox_file.addItems(self.data_arr.keys())
+                    index = self.comboBox_file.findText(csv_files[0], QtCore.Qt.MatchFixedString)
+                    self.comboBox_file.blockSignals(False)
+                    if index >= 0:
+                        self.comboBox_file.setCurrentIndex(index)
+        if index == 6:
+            directory = QtWidgets.QFileDialog.getExistingDirectory(self, "Open Directory", self.filePath,
+                                                                   QtWidgets.QFileDialog.ShowDirsOnly)
+            if directory != "":
+                txt_files = [entry for entry in os.listdir(directory) if os.path.splitext(entry)[1] == '.txt']
+                if txt_files:
+                    txt_files.sort()
+                    for entry in txt_files:
+                        self.comboBox_file.blockSignals(True)
+                        cfile_path = os.path.join(directory, entry)
+                        try:
+                            self.imp_csv_or_txt(cfile_path, remember_settings=True)
+                        except Exception as e:
+                            print(
+                                f"Error: could not auto-load file. Please select correct format!\n Traceback:\n ****************** \n  {e}")
+                            self.imp_csv_or_txt(cfile_path, remember_settings=False)
+
+                    self.comboBox_file.clear()
+                    self.comboBox_file.addItems(self.list_file)
+                    self.comboBox_file.addItems(self.data_arr.keys())
+                    index = self.comboBox_file.findText(txt_files[0], QtCore.Qt.MatchFixedString)
+                    self.comboBox_file.blockSignals(False)
+                    if index >= 0:
+                        self.comboBox_file.setCurrentIndex(index)
         self.idx_imp = 0
+    def value_change_filelist(self):
+        if self.comboBox_file.currentIndex() == 1:
+            self.comboBox_file.clear()
+            self.list_file = ['File list', 'Clear list']
+            self.data_arr = {}
+            self.comboBox_file.addItems(self.list_file)
+            self.comboBox_file.setCurrentIndex(0)
+        elif self.comboBox_file.currentIndex() > 1:
+            self.plot()
+        if self.comboBox_file.currentIndex() == 0 and self.comboBox_file.count() > 1:
+            # plt.cla()
+            self.ar.cla()
+            self.ax.cla()
+            self.canvas.draw()
+    def plot(self):
+        plottitle = self.comboBox_file.currentText().split('/')[-1]
+        fileName=self.comboBox_file.currentText()
+        filePath = self.data_arr[str(self.comboBox_file.currentText())].filepath
+        f = open(filePath, 'r')
+        header_line = str(f.readline())
+        if 'rows_lightened' in header_line:
+            self.rows_lightened = int(header_line.split('=')[1])
+        else:
+            self.rows_lightened = 1
+
+        #get rid of self.df before here
+        self.df=self.data_arr[fileName].df
+
+        try:
+            x0 = self.df.iloc[:, 0].to_numpy()
+        except Exception as e:
+            return self.raise_error(window_title="Error: could not load .csv file.",
+                                        error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
+        try:
+            y0 = self.df.iloc[:, 1].to_numpy()
+        except Exception as e:
+            return self.raise_error(window_title="Error: could not load .csv file.",
+                                        error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
+        #strpe = (str(strpe).split())
+
+        pe=self.data_arr[fileName].pe
+        if pe is not None:
+            print('Current Pass energy is PE= ', pe, 'eV')
+        self.ar.cla()
+        self.ax.cla()
+        try:
+            self.ax.plot(x0, y0, linestyle='-', color="b", label="raw")
+        except:
+            return self.raise_error(window_title="Error: could not plot data.",
+                                    error_message='Plotting data failed. The following traceback may help to solve the issue:')
+        if x0[0] > x0[-1]:
+            self.ax.set_xlabel('Binding energy (eV)', fontsize=11)
+        else:
+            self.ax.set_xlabel('Energy (eV)', fontsize=11)
+
+        plt.xlim(x0[0], x0[-1])
+        self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
+        self.ax.grid(True)
+        self.ax.legend(loc=0)
+        self.canvas.draw()
+
+        # macOS's compatibility issue on pyqt5, add below to update window
+        self.repaint()
 
     def plot_pt(self):
         # component elements from periodic table window selection
@@ -2460,17 +2599,17 @@ class PrettyWidget(QtWidgets.QMainWindow):
             # self.ax.texts.remove()
         if self.pt.selected_elements:
             if self.pre[0][3] == None:
-                if len(self.hv)==0:
-                    self.pre[0][3]=1486.6
-                    self.hv=1486.6
+                if len(self.hv) == 0:
+                    self.pre[0][3] = 1486.6
+                    self.hv = 1486.6
                 else:
                     self.pre[0][3] = self.hv
             if self.pre[0][4] == None:
-                if len(self.wf)==0:
-                    self.pre[0][4]=4
-                    self.wf=4
+                if len(self.wf) == 0:
+                    self.pre[0][4] = 4
+                    self.wf = 4
                 else:
-                    self.pre[0][4]=self.wf
+                    self.pre[0][4] = self.wf
             if self.pre[0][5] == None:
                 if len(self.correct_energy) == 0:
                     self.pre[0][5] = 0
@@ -2480,8 +2619,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.hv_item.setText(str(self.hv))
             self.wf_item.setText(str(self.wf))
             self.correct_energy_item.setText(str(self.correct_energy))
-            hv=self.hv
-            wf=self.wf
+            hv = self.hv
+            wf = self.wf
 
             ymin, ymax = self.ax.get_ylim()
             xmin, xmax = self.ax.get_xlim()
@@ -2492,11 +2631,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         if xmin > xmax:
                             en = float(ast.literal_eval(alka['be'])[orb])
                         else:
-                            en = hv - wf - float(ast.literal_eval(alka['be'])[orb])-self.correct_energy
+                            en = hv - wf - float(ast.literal_eval(alka['be'])[orb]) - self.correct_energy
                         if (xmin > xmax and xmin > en > xmax) or (xmin < xmax and xmin < en < xmax):
                             elem_x = np.asarray([en])
                             elem_y = np.asarray([float(ast.literal_eval(alka['rsf'])[orb])])
-                            elem_z =ast.literal_eval(alka['trans'])[orb]
+                            elem_z = ast.literal_eval(alka['trans'])[orb]
                             # obj.symbol+elem_z, color="r", rotation="vertical")
                             self.ax.text(elem_x, ymin + (ymax - ymin) * math.log(elem_y + 1, 10) / 2,
                                          obj['symbol'].values[0] + elem_z, color="r", rotation="vertical")
@@ -2504,7 +2643,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if len(ast.literal_eval(aes['trans'])) > 0:
                     for orb in range(len(ast.literal_eval(aes['trans']))):
                         if xmin > xmax:
-                            en = hv - wf - float(ast.literal_eval(aes['ke'])[orb])-self.correct_energy
+                            en = hv - wf - float(ast.literal_eval(aes['ke'])[orb]) - self.correct_energy
                         else:
                             en = float(ast.literal_eval(aes['ke'])[orb])
                         if (xmin > xmax and xmin > en > xmax) or (xmin < xmax and xmin < en < xmax):
@@ -2518,113 +2657,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.canvas.draw()
             self.repaint()
 
-    def plot(self):
-        plottitle = self.comboBox_file.currentText().split('/')[-1]
-        # when file list is selected
-        if self.comboBox_file.currentIndex() == 1:
-            self.comboBox_file.clear()
-            self.list_file = ['File list', 'Clear list']
-            self.comboBox_file.addItems(self.list_file)
-            self.comboBox_file.setCurrentIndex(0)
-        elif self.comboBox_file.currentIndex() > 1:
-            # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
-            fileName = os.path.basename(self.comboBox_file.currentText())
-            if os.path.splitext(fileName)[1] == '.csv':
-                try:  # change import, so that export file is detected
-                    data = np.genfromtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter=',', max_rows=2)
-                    if all(elem in data for elem in ['raw_x', 'raw_y', 'sum_fit']):
-                        self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=2,
-                                             usecols=(0, 1))
-                    else:
-                        self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
-                    # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1,
-                    # header=None)
-                    strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter=',', usecols=1,
-                                       max_rows=1)
-                    f = open(str(self.comboBox_file.currentText()), 'r')
-                    header_line = str(f.readline())
-                    if 'rows_lightened' in header_line:
-                        self.rows_lightened = int(header_line.split('=')[1])
-                    else:
-                        self.rows_lightened = 1
-
-                except Exception as e:
-                    return self.raise_error(window_title="Error: could not load .csv file.",
-                                            error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
-
-
-            else:
-                try:
-                    self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter='\t', skiprows=1)
-                    # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1,
-                    # header=None, delimiter = '\t')
-                    strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter='\t', usecols=1,
-                                       max_rows=1)
-                    f = open(str(self.comboBox_file.currentText()), 'r')
-                    header_line = str(f.readline())
-                    if 'rows_lightened' in header_line:
-                        self.rows_lightened = int(header_line.split('=')[1])
-                    else:
-                        self.rows_lightened = 1
-                except Exception as e:
-                    return self.raise_error(window_title="Error: could not load input file.",
-                                            error_message='The input file is not in the correct format!. The following traceback may help to solve the issue:')
-
-            # I have moved the error handling here directly to the import, there may exist situations, where already the
-            # Import would fail. I still left the following error handling there, but I am not sure if there are cases
-            # where this second error handling still will be necessary. However, we should check, if x0 and y0 have same
-            # lenght I think
-
-            try:
-                x0 = self.df[:, 0]
-            except Exception as e:
-                return self.raise_error(window_title="Error: could not load .csv file.",
-                                        error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
-            try:
-                y0 = self.df[:, 1]
-            except Exception as e:
-                return self.raise_error(window_title="Error: could not load .csv file.",
-                                        error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
-            strpe = (str(strpe).split())
-
-            if strpe[0] == 'PE:' and strpe[2] == 'eV':
-                pe = float(strpe[1])
-                print('Current Pass energy is PE= ', pe, 'eV')
-                #item = QtWidgets.QTableWidgetItem(str(pe))
-                #self.fitp0.setItem(0, 9, item)
-                #self.fitp0.setItem(0, 8, QtWidgets.QTableWidgetItem('Pass energy (eV)'))
-            # plt.cla()
-            self.ar.cla()
-            self.ax.cla()
-            # ax = self.figure.add_subplot(221)
-            # self.ax.plot(x0, y0, 'o', color="b", label="raw")
-            self.ax.plot(x0, y0, linestyle='-', color="b", label="raw")
-            if x0[0] > x0[-1]:
-                # self.ax.invert_xaxis()
-                self.ax.set_xlabel('Binding energy (eV)', fontsize=11)
-            else:
-                self.ax.set_xlabel('Energy (eV)', fontsize=11)
-
-            plt.xlim(x0[0], x0[-1])
-            self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
-            self.ax.grid(True)
-            self.ax.legend(loc=0)
-            self.canvas.draw()
-
-            # item = QtWidgets.QTableWidgetItem(str(x0[0]))
-            # self.fitp0.setItem(0, 1, item)
-            # item = QtWidgets.QTableWidgetItem(str(x0[len(x0) - 1]))
-            # self.fitp0.setItem(0, 3, item)
-
-            # print(str(plt.get_fignums()))
-        # select file list index ==0 to clear figure for simulation
-        if self.comboBox_file.currentIndex() == 0 and self.comboBox_file.count() > 1:
-            # plt.cla()
-            self.ar.cla()
-            self.ax.cla()
-            self.canvas.draw()
-        # macOS's compatibility issue on pyqt5, add below to update window
-        self.repaint()
 
     def eva(self):
         # simulation mode if no data in file list, otherwise evaluation mode
@@ -2669,8 +2701,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
     def history_manager(self, pars):
         """
-        Manages saving of the fit parameters and presets (e.g. how many components, aktive backgrounds and so on) in a list.
-        In this approach the insane function ana() must be extended. The ana() should be destroyd! and replaaced by couple of smaller methods for better readability
+        Manages saving of the fit parameters and presets (e.g. how many components, aktive backgrounds and so on) in
+        a list. In this approach the insane function ana() must be extended. The ana() should be destroyd! and
+        replaaced by couple of smaller methods for better readability
 
         Parameters
         ----------
@@ -3697,13 +3730,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.savePreset()
         plottitle = self.plottitle.text()
         # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
-        x0 = self.df[:, 0]
+        print(self.df)
+        x0 = self.df.iloc[:, 0].to_numpy()
+        print(x0)
         if x0[-1] < x0[0]:
             self.binding_ener=True
         x0_corrected=np.copy(x0)
         if self.correct_energy is not None:
             x0_corrected -= self.correct_energy
-        y0 = self.df[:, 1]
+        y0 = self.df.iloc[:, 1].to_numpy()
         # print(x0[0], x0[len(x0)-1])
 
         # plot graph after selection data from popup

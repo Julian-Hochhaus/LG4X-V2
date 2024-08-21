@@ -11,7 +11,9 @@ import numpy as np
 import os
 import traceback
 import logging
-
+import pandas as pd
+import configparser
+config = configparser.ConfigParser()
 def autoscale_y(ax, margin=0.1):
     """Rescales the y-axis based on the visible data given the current xlim of the axis.
 
@@ -542,3 +544,358 @@ def fit_range(x, y, xmin, xmax):
 
     # return [array(xn), array(yn)]
     return [xn, yn]
+
+separator_mapping = {
+    "Comma: [,]": ",",
+    "Semicolon: [;]": ";",
+    "Whitespace(s)/TAB": r'\s+',
+    "User Defined": None  # Placeholder for user-defined separator
+}
+class PreviewDialog(QtWidgets.QDialog):
+    settings_changed = QtCore.pyqtSignal(bool)
+    def __init__(self, file_path, config, config_file_path):
+        super().__init__()
+        self.file_path = file_path
+        self.fname= os.path.basename(file_path)
+        self.selected_separator = r'\s+' if file_path.endswith('.txt') else ","
+        self.selected_columns = []
+        self.header_row = 0  # Row index where the header is located
+        self.has_header=True
+        self.data = None
+        self.df=None
+        self.available_columns = []
+        self.config = config
+        config.read(config_file_path)
+        self.config_file_path= config_file_path
+        self.initUI()
+
+    def initUI(self):
+        layout = QtWidgets.QVBoxLayout()
+        self.message_label = QtWidgets.QLabel()
+        self.load_data()
+
+        self.table_widget = QtWidgets.QTableWidget()
+        if self.data is not None:
+            self.table_widget.setRowCount(self.data.shape[0])
+            self.table_widget.setColumnCount(self.data.shape[1])
+            self.table_widget.setHorizontalHeaderLabels(self.data.columns)
+
+            for i in range(self.data.shape[0]):
+                for j in range(self.data.shape[1]):
+                    item = QtWidgets.QTableWidgetItem(str(self.data.iat[i, j]))
+                    self.table_widget.setItem(i, j, item)
+
+            self.table_widget.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
+            self.table_widget.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+            self.table_widget.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
+
+            layout.addWidget(self.table_widget)
+
+        if self.data is not None:
+            separator_label = QtWidgets.QLabel("Choose Separator:")
+            self.separator_combobox = QtWidgets.QComboBox()
+            self.separator_combobox.addItems(["Comma: [,]", "Semicolon: [;]", "Whitespace(s)/TAB", "User Defined"])
+            self.separator_combobox.setCurrentText(self.get_sep_text())
+            self.separator_combobox.currentTextChanged.connect(self.update_preview)
+
+            self.custom_separator_input = QtWidgets.QLineEdit()
+            self.custom_separator_input.setPlaceholderText("Enter Custom Separator")
+
+            layout.addWidget(separator_label)
+            layout.addWidget(self.separator_combobox)
+            layout.addWidget(self.custom_separator_input)
+
+            self.column1_combobox = QtWidgets.QComboBox()
+            self.column2_combobox = QtWidgets.QComboBox()
+
+            layout.addWidget(QtWidgets.QLabel("Select Energy (x) column:"))
+            layout.addWidget(self.column1_combobox)
+            layout.addWidget(QtWidgets.QLabel("Select intensity (y) column:"))
+            layout.addWidget(self.column2_combobox)
+
+
+            self.header_row_spinbox = QtWidgets.QSpinBox()
+            self.header_row_spinbox.setRange(0, 10)
+            self.header_row_spinbox.setValue(self.header_row)
+            self.header_row_spinbox.valueChanged.connect(self.update_preview)
+            layout.addWidget(QtWidgets.QLabel("Row index where the header is located \n (assuming, that data follows after header row)/rows to skip:"))
+            layout.addWidget(self.header_row_spinbox)
+            self.no_header_checkbox = QtWidgets.QCheckBox("File has no column headers")
+            layout.addWidget(self.no_header_checkbox)
+            self.no_header_checkbox.stateChanged.connect(self.update_preview)
+
+            self.remember_settings_checkbox = QtWidgets.QCheckBox("Remember Settings")
+            self.remember_settings_checkbox.stateChanged.connect(self.emit_settings_changed)
+            layout.addWidget(self.remember_settings_checkbox)
+
+            self.update_column_comboboxes()
+
+        layout.addWidget(self.message_label)
+        button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
+        button_box.accepted.connect(self.accept_inputs)
+        button_box.rejected.connect(self.reject)
+
+        layout.addWidget(button_box)
+        self.setLayout(layout)
+        self.setWindowTitle("Preview and Load Data")
+
+    def emit_settings_changed(self, state):
+        if state == QtCore.Qt.Checked:
+            self.settings_changed.emit(True)
+        else:
+            self.settings_changed.emit(False)
+
+    def get_sep_text(self):
+        for key, val in separator_mapping.items():
+            if val == self.selected_separator:
+                return key
+        return None
+
+    def load_data(self):
+        try:
+            print(self.file_path)
+            if self.has_header:
+                self.data = pd.read_csv(self.file_path, delimiter=self.selected_separator, header=self.header_row, engine='python',nrows=0,  on_bad_lines='skip')
+                if self.data.columns.values.tolist()[0] == '#':
+                    self.data = pd.read_csv(self.file_path, delimiter=self.selected_separator, engine="python",
+                                        names=self.data.columns.values.tolist()[1:], skiprows=self.header_row+1,  on_bad_lines='skip')
+                else:
+                    self.data = pd.read_csv(self.file_path, delimiter=self.selected_separator, engine="python", skiprows=self.header_row,  on_bad_lines='skip')
+            else:
+                self.data = pd.read_csv(self.file_path, delimiter=self.selected_separator, engine="python", skiprows=self.header_row, header=None,  on_bad_lines='skip')
+                self.data.columns = [f"col{i+1}" for i in range(len(self.data.columns))]
+            self.available_columns=self.data.columns
+            if not self.selected_columns:
+                self.selected_columns = list(range(len(self.data.columns)))
+            self.data = self.data.iloc[:, self.selected_columns]
+            self.message_label.setText("Data loaded successfully.")
+        except Exception as e:
+            self.data = None
+            self.message_label.setText(f"Failed to load data: {e}\nPlease try with different parameters.")
+
+
+    def get_separator(self):
+        sep = self.separator_combobox.currentText()
+        return separator_mapping[sep]
+
+    def update_preview(self):
+        selected_separator = self.get_separator()
+        if selected_separator == "User Defined":
+            custom_separator = self.custom_separator_input.text()
+            self.selected_separator = custom_separator
+        else:
+            self.selected_separator = selected_separator
+        if self.column1_combobox.currentIndex() == self.column2_combobox.currentIndex():
+            self.message_label.setText("Please select different columns for Energy (x) and Intensity (y).")
+            return
+        self.selected_columns = [self.column1_combobox.currentIndex(), self.column2_combobox.currentIndex()]
+        self.has_header = not self.no_header_checkbox.isChecked()
+        self.header_row = self.header_row_spinbox.value()
+        self.load_data()
+        self.update_column_comboboxes()
+        if self.data is not None:
+            self.table_widget.clear()
+            self.table_widget.setRowCount(self.data.shape[0])
+            self.table_widget.setColumnCount(self.data.shape[1])
+            self.table_widget.setHorizontalHeaderLabels(self.data.columns)
+
+            for i in range(self.data.shape[0]):
+                for j in range(self.data.shape[1]):
+                    item = QtWidgets.QTableWidgetItem(str(self.data.iat[i, j]))
+                    self.table_widget.setItem(i, j, item)
+
+    def accept_inputs(self):
+        if self.data is not None:
+            self.update_preview()
+            if self.data.columns.size==2:
+                self.df=self.data
+                if self.remember_settings_checkbox.isChecked():
+                    self.config.set('Import', 'separator', self.selected_separator)
+                    self.config.set('Import', 'columns', str(self.selected_columns))
+                    self.config.set('Import', 'header_row', str(self.header_row))
+                    self.config.set('Import', 'has_header', str(self.has_header))
+                    self.config.set('Import', 'remember_settings', str(self.remember_settings_checkbox.isChecked()))
+                    with open(self.config_file_path, 'w') as configfile:
+                        self.config.write(configfile)
+                self.accept()
+            else:
+                self.message_label.setText("Data not in correct format. Please select exactly 2 columns.")
+        else:
+            self.message_label.setText("Data not in correct format. Please select correct separator and columns.")
+    def get_options(self):
+        if self.data is None:
+            return None, None
+
+        return self.selected_separator, self.selected_columns
+
+    def update_column_comboboxes(self):
+        if self.data is not None:
+            self.column1_combobox.blockSignals(True)  # Block signal emission
+            self.column2_combobox.blockSignals(True)  # Block signal emission
+
+            self.column1_combobox.clear()
+            self.column2_combobox.clear()
+            self.column1_combobox.addItems(self.available_columns)
+            self.column2_combobox.addItems(self.available_columns)
+            self.column1_combobox.setCurrentText(self.available_columns.values.tolist()[self.selected_columns[0]])
+            self.column2_combobox.setCurrentText(self.available_columns.values.tolist()[self.selected_columns[1]])
+
+            self.column1_combobox.blockSignals(False)  # Unblock signal emission
+            self.column2_combobox.blockSignals(False)  # Unblock signal emission
+
+            self.column1_combobox.currentTextChanged.connect(self.update_preview)
+            self.column2_combobox.currentTextChanged.connect(self.update_preview)
+
+
+class SettingsDialog(QtWidgets.QDialog):
+    def __init__(self, mainGUI, config,config_file_path,parent=None):
+        super(SettingsDialog, self).__init__(parent)
+        self.setWindowTitle("Settings")
+        self.config = config
+        config.read(config_file_path)
+        self.config_file_path= config_file_path
+        self.main_gui = mainGUI
+        label_column_width = QtWidgets.QLabel("Column Width:")
+        self.line_edit_column_width = QtWidgets.QLineEdit()
+        current_column_width = config.getint('GUI', 'column_width')
+        self.line_edit_column_width.setText(str(current_column_width))
+        apply_column_button = QtWidgets.QPushButton("Apply Column width")
+        apply_column_button.clicked.connect(self.apply_to_main)
+
+        # GUI settings
+        label_gui_settings_static = QtWidgets.QLabel("The following GUI settings in blue are \n only applied after restarting the application.")
+        label_gui_settings_static.setStyleSheet('color:blue')
+        self.checkbox_two_window_mode = QtWidgets.QCheckBox("Two Window Mode")
+        self.checkbox_two_window_mode.setChecked(config.getboolean('GUI', 'two_window_mode'))
+        self.checkbox_two_window_mode.setStyleSheet('color:blue')
+
+        label_resolution_width = QtWidgets.QLabel("Resolution Width:")
+        label_resolution_width.setToolTip("Set the width of the main window.")
+        label_resolution_width.setStyleSheet('color:blue')
+        self.line_edit_resolution_width = QtWidgets.QLineEdit()
+        self.line_edit_resolution_width.setText(str(config.getint('GUI', 'resolution_width')))
+        self.line_edit_resolution_width.setStyleSheet('color:blue')
+
+        label_resolution_height = QtWidgets.QLabel("Resolution Height:")
+        label_resolution_height.setToolTip("Set the height of the main window.")
+        label_resolution_height.setStyleSheet('color:blue')
+        self.line_edit_resolution_height = QtWidgets.QLineEdit()
+        self.line_edit_resolution_height.setText(str(config.getint('GUI', 'resolution_height')))
+        self.line_edit_resolution_height.setStyleSheet('color:blue')
+
+        # File import settings
+        label_file_settings = QtWidgets.QLabel(
+            "The following settings are used for importing data files. \n These settings are applied when opening a new file.")
+        label_separator = QtWidgets.QLabel("Separator:")
+        self.line_edit_separator = QtWidgets.QLineEdit()
+        self.line_edit_separator.setText(config.get('Import', 'separator'))
+
+
+        label_columns = QtWidgets.QLabel("Columns (Format e.g.: [0,1]):")
+        self.line_edit_columns = QtWidgets.QLineEdit()
+        self.line_edit_columns.setText(str(config.get('Import', 'columns')))
+
+        label_header_row = QtWidgets.QLabel("Header Row/(if no header: Rows to skip):")
+        self.line_edit_header_row = QtWidgets.QLineEdit()
+        self.line_edit_header_row.setText(str(config.getint('Import', 'header_row')))
+
+
+        self.checkbox_has_header = QtWidgets.QCheckBox("Has Header")
+        self.checkbox_has_header.setChecked(config.getboolean('Import', 'has_header'))
+
+        self.checkbox_remember_settings = QtWidgets.QCheckBox("No Preview dialogue on file open\n (Unset to get back Preview Dialog on file open)")
+        self.checkbox_remember_settings.setChecked(config.getboolean('Import', 'remember_settings'))
+
+        save_button = QtWidgets.QPushButton("Save")
+        save_button.clicked.connect(self.save_settings)
+
+
+
+        gui_layout = QtWidgets.QVBoxLayout()
+        gui_layout_dynamic = QtWidgets.QVBoxLayout()
+        layout_column_width = QtWidgets.QHBoxLayout()
+        gui_layout_dynamic.addWidget(label_column_width)
+        layout_column_width.addWidget(self.line_edit_column_width)
+        layout_column_width.addWidget(apply_column_button)
+        gui_layout_dynamic.addLayout(layout_column_width)
+        gui_layout_static = QtWidgets.QVBoxLayout()
+        gui_layout_static.addWidget(label_gui_settings_static)
+        gui_layout_static.addWidget(self.checkbox_two_window_mode)
+        gui_layout_static.addWidget(label_resolution_width)
+        gui_layout_static.addWidget(self.line_edit_resolution_width)
+        gui_layout_static.addWidget(label_resolution_height)
+        gui_layout_static.addWidget(self.line_edit_resolution_height)
+        gui_layout.addLayout(gui_layout_dynamic)
+        gui_layout.addWidget(LayoutHline())
+
+        gui_layout.addLayout(gui_layout_static)
+
+
+        import_layout = QtWidgets.QVBoxLayout()
+        import_layout.addWidget(label_file_settings)
+        import_layout.addWidget(label_separator)
+        import_layout.addWidget(self.line_edit_separator)
+        import_layout.addWidget(label_columns)
+        import_layout.addWidget(self.line_edit_columns)
+        import_layout.addWidget(label_header_row)
+        import_layout.addWidget(self.line_edit_header_row)
+        import_layout.addWidget(self.checkbox_has_header)
+        import_layout.addWidget(self.checkbox_remember_settings)
+
+        # Create a main layout for the dialog
+        main_layout = QtWidgets.QVBoxLayout()
+        main_layout.addLayout(gui_layout)
+        main_layout.addWidget(LayoutHline())
+        main_layout.addLayout(import_layout)
+        main_layout.addWidget(LayoutHline())
+        main_layout.addWidget(save_button)
+
+        # Set the main layout for the dialog
+        self.setLayout(main_layout)
+
+
+    def save_settings(self):
+        try:
+            new_column_width = int(self.line_edit_column_width.text())
+            if new_column_width > 0:
+                self.config.set('GUI', 'column_width', str(new_column_width))
+                self.main_gui.column_width = new_column_width
+            else:
+                self.main_gui.raise_error("Invalid Column Width", "Please enter a valid positive integer for column width.")
+            self.config.set('GUI', 'two_window_mode', str(self.checkbox_two_window_mode.isChecked()))
+
+            self.config.set('GUI', 'resolution_width', str(self.line_edit_resolution_width.text()))
+            self.config.set('GUI', 'resolution_height', str(self.line_edit_resolution_height.text()))
+
+            # Save Import settings
+            self.config.set('Import', 'separator', self.line_edit_separator.text())
+            self.config.set('Import', 'columns', str(self.line_edit_columns.text()))
+            self.config.set('Import', 'header_row', str(self.line_edit_header_row.text()))
+            self.config.set('Import', 'has_header', str(self.checkbox_has_header.isChecked()))
+            self.config.set('Import', 'remember_settings', str(self.checkbox_remember_settings.isChecked()))
+
+            with open(self.config_file_path, 'w') as config_file:
+                self.config.write(config_file)
+            self.accept()
+        except ValueError as e:
+            QtWidgets.QMessageBox.warning(self, "Saving settings failed: \n ", str(e))
+
+    def apply_to_main(self):
+        self.main_gui.column_width = int(self.line_edit_column_width.text())
+        # apply changes to the main GUI
+        for column in range(0,self.main_gui.fitp1.columnCount()):
+            if column % 2 != 0:
+                self.main_gui.fitp1.setColumnWidth(column,self.main_gui.column_width)
+        for column in range(self.main_gui.fitp1_lims.columnCount()):
+            if column % 3 != 0:
+                self.main_gui.fitp1_lims.setColumnWidth(column, self.main_gui.column_width)
+        for column in range(self.main_gui.res_tab.columnCount()):
+            self.main_gui.res_tab.setColumnWidth(column, self.main_gui.column_width)
+
+
+class DataSet():
+    def __init__(self, df, filepath, pe):
+        self.df = df
+        self.filepath = filepath
+        self.filename= os.path.basename(filepath)
+        self.pe = pe
