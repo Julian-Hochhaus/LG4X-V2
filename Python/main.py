@@ -56,7 +56,7 @@ if len(config_file_path)>=256:
     print('Error: config file path too long (more than 256 characters). Please move the install directory of the project to a shorter path. Otherwise, configparser cannot read the config file and the program does not work.')
 config.read(config_file_path)
 
-__version__ = "2.1.5"
+__version__ = "2.2.0"
 # style.use('ggplot')
 style.use('seaborn-v0_8-colorblind')
 dictBG = {
