@@ -2344,11 +2344,14 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if preview_dialog.exec_():
                     df = preview_dialog.df
                     filename = preview_dialog.fname
+                    if df.isna().any().any():
+                        print('automatic import failed, please select correct format!')
+                        self.imp_csv_or_txt(cfilePath, remember_settings=False)
                     if df is not None:
                         self.data_arr[filename] = DataSet(filepath=cfilePath, df=df, pe=None)
             else:
                 if config.getboolean('Import', 'has_header'):
-                    temp_header = pd.read_csv(cfilePath, delimiter=config.get('Import', 'separator'),header=config.get('Import', 'header_row'), engine='python', nrows=0)
+                    temp_header = pd.read_csv(cfilePath, delimiter=config.get('Import', 'separator'),header=int(config.get('Import', 'header_row')), engine='python', nrows=0)
                     if temp_header.columns.values.tolist()[0] == '#':
                         cols = [col+1 for col in config.get('Import', 'columns')]
                         df = pd.read_csv(cfilePath, delimiter=config.get('Import', 'separator'), engine="python",
@@ -2363,6 +2366,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                      skiprows=int(config.get('Import', 'header_row')), header=None)
                     df.columns = [f"col{i + 1}" for i in range(len(df.columns))]
                 df = df.iloc[:, eval(config.get('Import', 'columns'))]
+                if df.isna().any().any():
+                    print('automatic import failed, please select correct format')
+                    self.imp_csv_or_txt(cfilePath, remember_settings=False)
                 filename = os.path.basename(cfilePath)
                 self.data_arr[filename] = DataSet(filepath=cfilePath, df=df, pe=None)
             self.comboBox_file.clear()
@@ -2382,6 +2388,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                                                   self.filePath, 'TXT Files (*.txt)')
             if cfilePath != "":
                 remember_settings = config.getboolean('Import', 'remember_settings')
+                print(remember_settings)
                 try:
                     self.imp_csv_or_txt(cfilePath, remember_settings=remember_settings)
                 except Exception as e:
