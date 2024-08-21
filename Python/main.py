@@ -30,10 +30,17 @@ import logging  # error handling
 from logging.handlers import RotatingFileHandler
 import configparser
 
-script_directory = os.path.dirname(os.path.abspath(__file__))
-log_folder = os.path.join(script_directory, '../Logs')
-os.makedirs(log_folder, exist_ok=True)
-log_file_path = os.path.join(script_directory, '../Logs/app.log')
+if os.environ.get('container') == 'flatpak':
+    user_home_folder = os.path.expanduser('~')
+    log_folder = os.path.join(user_home_folder,'.var/app/io.github.julian_hochhaus.LG4X_V2/cache/Logs')
+    os.makedirs(log_folder, exist_ok=True)
+    log_file_path = os.path.join(user_home_folder, '.var/app/io.github.julian_hochhaus.LG4X_V2/cache/Logs/app.log')
+else:
+    script_directory = os.path.dirname(os.path.abspath(__file__))
+    log_folder = os.path.join(script_directory, '../Logs')
+    os.makedirs(log_folder, exist_ok=True)
+    log_file_path = os.path.join(script_directory, '../Logs/app.log')
+    
 max_log_size = 4*1024*1024 # 4MB
 backup_count = 5  # Number of backup files to keep
 handler = RotatingFileHandler(log_file_path, maxBytes=max_log_size, backupCount=backup_count)
@@ -3085,7 +3092,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def ratio_setup(self, pars, index_pk, strind, index):
         if index == 2 or index == 6:  # unset default expression which sets sigma and gamma for the voigt and skewed-voigt always to the same value
             pars[strind + str(index_pk + 1) + '_gamma'].expr = ''
-            pars[strind + str(index_pk + 1) + '_gamma'].vary = True
+            if not self.pre[2][3][2 * index_pk] == 2: pars[strind + str(index_pk + 1) + '_gamma'].vary = True
         # amp ratio setup
         if self.pre[2][15][2 * index_pk + 1] > 0:
             pktar = self.pre[2][15][2 * index_pk + 1]
