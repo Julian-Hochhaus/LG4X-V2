@@ -86,7 +86,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.export_out = None
         self.export_pars = None
         self.pre = [[], [], [], []]
-        self.results = []
+        self.meta_result_export=[]
         self.res_label = None
         self.pars_label = None
         self.stats_label = None
@@ -2309,11 +2309,51 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     Text += '\n' + par_name[indpar] + '\t'
                     for indpk in range(ncomponent):
                         Text += str(par_list[indpk][indpar]) + '\t'
+                Text += '\n\n[[Peak Metadata]]\n\n'
+                row_labels = list({key.split('_', 1)[-1] for d in self.meta_result_export for key in d.keys()})
+                column_titles = list({key.split('_', 1)[0] for d in self.meta_result_export for key in d.keys()})
 
+                column_widths = {"Property\\Component": max(len("Property\\Component"),
+                                                            max(len(row_label) for row_label in row_labels))}
+                for column_title in column_titles:
+                    column_widths[column_title] = max(len(column_title), 20)  # Set minimum width for readability
+
+                for d in self.meta_result_export:
+                    for key, value in d.items():
+                        component, property_name = key.split('_', 1)
+                        column_widths[property_name] = max(column_widths.get(property_name, 0), len(str(value)))
+
+                header = ["Property\\Component".ljust(column_widths["Property\\Component"])]
+                for column_title in column_titles:
+                    header.append(column_title.ljust(column_widths[column_title]))
+                Text += "\t".join(header) + "\n"
+
+                table_data = []
+                for row_label in row_labels:
+                    row = [row_label.ljust(column_widths["Property\\Component"])]
+                    for column_title in column_titles:
+                        value = None
+                        for d in self.meta_result_export:
+                            key = f"{column_title}_{row_label}"
+                            if key in d:
+                                value = d[key]
+                                break
+                        formatted_value = str(value).ljust(
+                            column_widths[column_title]) if value is not None else "N/A".ljust(
+                            column_widths[column_title])
+                        row.append(formatted_value)  # Ensure the value is aligned
+                    table_data.append(row)
+
+                for row in table_data:
+                    Text += "\t".join(row) + "\n"
                 self.savePreset()
                 Text += '\n\n[[LG4X parameters]]\n\n' + str(self.parText) + '\n\n[[lmfit parameters]]\n\n' + str(
                     self.export_pars) + '\n\n' + str(self.export_out.fit_report(min_correl=0.1))
-
+                Text += '\n\n[[Metadata/Values of the Components as dictionary ]]\n\n{\n'
+                for dic in self.meta_result_export:
+                    for key in dic.keys():
+                        Text +=  "\""+key +"\" : "+ str(dic[key])+ ',\n'
+                Text += '}\n'
                 self.export_pickle(cfilePath)  # export las fit parameters as dict int po pickle file
 
                 with open(cfilePath, 'w') as file:
@@ -3510,6 +3550,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         x_peak = [i for i, j in zip(x, peak_norm) if j >= 0.5]
         return abs(x_peak[-1] - x_peak[0])
     def fillTabResults(self, x, y, out):
+        self.meta_result_export=[]
+        precision=np.int(self.floating.split('.')[1].split('f')[0])+2
         y_components = [0 for idx in range(len(y))]
         nrows = len(self.pre[2])
         ncols = int(len(self.pre[2][0]) / 2)
@@ -3526,26 +3568,43 @@ class PrettyWidget(QtWidgets.QMainWindow):
             index = self.pre[2][0][2 * index_pk + 1]
             strind = self.list_shape[index]
             strind = strind.split(":", 1)[0]
+            temp_result_export={
+                strind + str(index_pk + 1) +'_gaussian_fwhm':None,
+                strind + str(index_pk + 1) +'_lorentzian_fwhm_p1':None,
+                strind + str(index_pk + 1) +'_lorentzian_fwhm_p2':None,
+                strind + str(index_pk + 1) +'_fwhm_p1':None,
+                strind + str(index_pk + 1) +'_fwhm_p2':None,
+                strind + str(index_pk + 1) +'_height_p1':None,
+                strind + str(index_pk + 1) +'_height_p2':None,
+                strind + str(index_pk + 1) +'_approx_area_p1':None,
+                strind + str(index_pk + 1) +'_approx_area_p2':None,
+                strind + str(index_pk + 1) +'_area_total':None
+            }
             if index == 0 :
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_fwhm'].value, self.floating)))
                 self.res_tab.setItem(0, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_gaussian_fwhm']=np.round(out.params[strind + str(index_pk + 1) + '_fwhm'].value, precision)
                 item = QtWidgets.QTableWidgetItem('')
+                temp_result_export[strind + str(index_pk + 1) +'_lorentzian_fwhm_p1'] = None
                 self.res_tab.setItem(1, index_pk, item)
             if index == 1:
                 item = QtWidgets.QTableWidgetItem('')
                 self.res_tab.setItem(0, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_gaussian_fwhm'] = None
                 item = QtWidgets.QTableWidgetItem(
-                    str(format(out.params[strind + str(index_pk + 1) + '_fwhm'].value, self.floating)))
+                    str(format(2*out.params[strind + str(index_pk + 1) + '_fwhm'].value, self.floating)))
                 self.res_tab.setItem(1, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_lorentzian_fwhm_p1'] = np.round(out.params[strind + str(index_pk + 1) + '_fwhm'].value, precision)
             if index == 0 or index == 1 or index == 2 or index == 3:
                 item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk + 1) + '_fwhm'].value, self.floating)))
                 self.res_tab.setItem(3, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_fwhm_p1'] = np.round(out.params[strind + str(index_pk + 1) + '_fwhm'].value, precision)
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_height'].value, self.floating)))
                 self.res_tab.setItem(5, index_pk, item)
-            if index == 0 or index == 1 or index == 2 or index == 3 or index==4:
-
+                temp_result_export[strind + str(index_pk + 1) +'_height_p1'] = np.round(out.params[strind + str(index_pk + 1) + '_height'].value, precision)
+            if index == 0 or index == 1 or index == 2 or index == 3 or index == 4:
                 y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
                 if self.binding_ener:
                     area = abs(integrate.simps([y for y, x in zip(y_area, x[::-1])], x[::-1]))
@@ -3553,16 +3612,22 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     area= abs(integrate.simps([y for y, x in zip(y_area, x)], x))
                 item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                 self.res_tab.setItem(7, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_approx_area_p1'] = str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f')))
                 item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                 self.res_tab.setItem(9, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_area_total'] = str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f')))
                 item = QtWidgets.QTableWidgetItem('')
                 self.res_tab.setItem(2, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_lorentzian_fwhm_p2'] = None
                 item = QtWidgets.QTableWidgetItem('')
                 self.res_tab.setItem(4, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_fwhm_p2'] = None
                 item = QtWidgets.QTableWidgetItem('')
                 self.res_tab.setItem(6, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_height_p2'] = None
                 item = QtWidgets.QTableWidgetItem('')
                 self.res_tab.setItem(8, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_approx_area_p2'] = None
             if index == 4 or index == 5 or index == 6 or index == 7 or index == 8 or index == 9 or index == 12:
                 rows = self.res_tab.rowCount()
                 for row in range(rows):
@@ -3577,47 +3642,59 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         area = abs(integrate.simps([y for y, x in zip(y_area, x)], x))
                     item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                     self.res_tab.setItem(7, index_pk, item)
+                    temp_result_export[strind + str(index_pk + 1) +'_approx_area_p1'] = str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f')))
                     item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                     self.res_tab.setItem(9, index_pk, item)
+                    temp_result_export[strind + str(index_pk + 1) +'_area_total'] = str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f')))
             if index == 2:
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_sigma'].value, self.floating)))
                 self.res_tab.setItem(0, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_gaussian_fwhm'] = np.round(out.params[strind + str(index_pk + 1) + '_sigma'].value , precision)
                 item = QtWidgets.QTableWidgetItem(
-                    str(format(out.params[strind + str(index_pk + 1) + '_gamma'].value, self.floating)))
+                    str(format(2*out.params[strind + str(index_pk + 1) + '_gamma'].value, self.floating)))
                 self.res_tab.setItem(1, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_lorentzian_fwhm_p1'] = np.round(2*out.params[strind + str(index_pk + 1) + '_gamma'].value, precision)
             if index == 3:
                 item = QtWidgets.QTableWidgetItem(
-                    str(format(out.params[strind + str(index_pk + 1) + '_sigma'].value, self.floating)))
+                    str(format(out.params[strind + str(index_pk + 1) + '_sigma'].value/np.sqrt(2*np.log(2)), self.floating)))
                 self.res_tab.setItem(0, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_gaussian_fwhm'] = np.round(out.params[strind + str(index_pk + 1) + '_sigma'].value/np.sqrt(2*np.log(2)), precision)
                 item = QtWidgets.QTableWidgetItem(
-                    str(format(out.params[strind + str(index_pk + 1) + '_sigma'].value, self.floating)))
+                    str(format(2*out.params[strind + str(index_pk + 1) + '_sigma'].value, self.floating)))
                 self.res_tab.setItem(1, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_lorentzian_fwhm_p1'] = np.round(2*out.params[strind + str(index_pk + 1) + '_sigma'].value, precision)
             if index == 9:
                 item = QtWidgets.QTableWidgetItem(
                     str(format(2*out.params[strind + str(index_pk + 1) + '_sigma'].value, self.floating)))
                 self.res_tab.setItem(1, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_lorentzian_fwhm_p1'] = np.round(2*out.params[strind + str(index_pk + 1) + '_sigma'].value, precision)
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_amplitude'].value, self.floating)))
                 self.res_tab.setItem(5, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_height_p1'] = np.round(out.params[strind + str(index_pk + 1) + '_amplitude'].value, precision)
                 y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
                 fwhm_temp = self.approx_fwhm(x, y_area)
                 item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp, self.floating)))
                 self.res_tab.setItem(3, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_fwhm_p1'] = np.round(fwhm_temp, precision)
             if index == 11:
                 item = QtWidgets.QTableWidgetItem(
-                    str(format(out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm'].value, self.floating)))
+                    str(format(2*out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm'].value, self.floating)))
                 self.res_tab.setItem(1, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_lorentzian_fwhm_p1'] = np.round(2*out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm'].value, precision)
                 y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
                 if np.max(y_area) != 0:
                     fwhm_temp = self.approx_fwhm(x, y_area)
                     item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp, self.floating)))
                     self.res_tab.setItem(3, index_pk, item)
+                    temp_result_export[strind + str(index_pk + 1) +'_fwhm_p1'] = np.round(fwhm_temp, precision)
                 else:
                     print("WARNING: Invalid value encountered in true division: Probably one of the amplitudes is "
                           "set to 0.")
                     item = QtWidgets.QTableWidgetItem("Error in calculation")
                     self.res_tab.setItem(3, index_pk, item)
+                    temp_result_export[strind + str(index_pk + 1) +'_fwhm_p1'] = "Error in calculation"
                 # included area
                 if self.binding_ener:
                     area= abs(integrate.simps([y for y, x in zip(y_area, x[::-1])], x[::-1]))
@@ -3626,27 +3703,36 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f'))))
                 self.res_tab.setItem(7, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_approx_area_p1'] = str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f')))
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f'))))
                 self.res_tab.setItem(9, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_area_total'] = str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f')))
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_amplitude'].value, self.floating)))
                 self.res_tab.setItem(5, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_height_p1'] = np.round(out.params[strind + str(index_pk + 1) + '_amplitude'].value, precision)
                 item = QtWidgets.QTableWidgetItem('')
                 self.res_tab.setItem(2, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_lorentzian_fwhm_p2'] = None
                 item = QtWidgets.QTableWidgetItem('')
                 self.res_tab.setItem(4, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_fwhm_p2'] = None
                 item = QtWidgets.QTableWidgetItem('')
                 self.res_tab.setItem(6, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_height_p2'] = None
                 item = QtWidgets.QTableWidgetItem('')
                 self.res_tab.setItem(8, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_approx_area_p2'] = None
             if index == 10:
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm_p1'].value, self.floating)))
                 self.res_tab.setItem(1, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_lorentzian_fwhm_p1'] = np.round(out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm_p1'].value, precision)
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm_p2'].value, self.floating)))
                 self.res_tab.setItem(2, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_lorentzian_fwhm_p2'] = np.round(out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm_p2'].value, precision)
                 # included fwhm
                 x_interpol=np.linspace(x[0], x[-1], 5*len(x))
                 y_area_p1 = singlett(x_interpol,
@@ -3669,17 +3755,19 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     fwhm_temp_p1 = self.approx_fwhm(x_interpol, y_area_p1)
                     item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp_p1, self.floating)))
                     self.res_tab.setItem(3, index_pk, item)
+                    temp_result_export[strind + str(index_pk + 1) +'_fwhm_p1'] = np.round(fwhm_temp_p1, precision)
                     fwhm_temp_p2 = self.approx_fwhm(x_interpol, y_area_p2)
                     item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp_p2, self.floating)))
                     self.res_tab.setItem(4, index_pk, item)
+                    temp_result_export[strind + str(index_pk + 1) +'_fwhm_p2'] = np.round(fwhm_temp_p2, precision)
                 else:
                     print("WARNING: Invalid value encountered in true division: Probably one of the amplitudes is "
                           "set to 0.")
                     item = QtWidgets.QTableWidgetItem("Error in calculation")
                     self.res_tab.setItem(3, index_pk, item)
-                    item = QtWidgets.QTableWidgetItem("Error in calculation")
+                    temp_result_export[strind + str(index_pk + 1) +'_fwhm_p1'] = "Error in calculation"
                     self.res_tab.setItem(4, index_pk, item)
-
+                    temp_result_export[strind + str(index_pk + 1) +'_fwhm_p2'] = "Error in calculation"
                     # included area
 
                 if self.binding_ener:
@@ -3692,22 +3780,41 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area_p1, '.1f') + r' ({}%)'.format(format(area_p1 / area_ges * 100, '.2f'))))
                 self.res_tab.setItem(7, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_approx_area_p1'] = str(format(area_p1, '.1f') + r' ({}%)'.format(format(area_p1 / area_ges * 100, '.2f')))
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area_p2, '.1f') + r' ({}%)'.format(format(area_p2 / area_ges * 100, '.2f'))))
                 self.res_tab.setItem(8, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_approx_area_p2'] = str(format(area_p2, '.1f') + r' ({}%)'.format(format(area_p2 / area_ges * 100, '.2f')))
                 y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
                 area = abs(integrate.simps([y for y, x in zip(y_area, x)], x))
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f'))))
                 self.res_tab.setItem(9, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_area_total'] = str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f')))
                 h_p1_expr = "{pre:s}amplitude"
                 h_p2_expr = "{pre:s}amplitude*{pre:s}height_ratio"
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_amplitude'].value, self.floating)))
                 self.res_tab.setItem(5, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_height_p1'] = np.round(out.params[strind + str(index_pk + 1) + '_amplitude'].value, precision)
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_amplitude'].value*out.params[strind + str(index_pk + 1) + '_height_ratio'].value, self.floating)))
                 self.res_tab.setItem(6, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_height_p2'] = np.round(out.params[strind + str(index_pk + 1) + '_amplitude'].value*out.params[strind + str(index_pk + 1) + '_height_ratio'].value, precision)
+            if index == 10 or index == 11:
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk + 1) + '_sigma'].value*2*np.sqrt(2*np.log(2)), self.floating)))
+                self.res_tab.setItem(0, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_gaussian_fwhm'] = np.round(out.params[strind + str(index_pk + 1) + '_sigma'].value*2*np.sqrt(2*np.log(2)), precision)
+            if index == 12:
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk + 1) + '_amplitude'].value, self.floating)))
+                self.res_tab.setItem(5, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_height_p1'] = np.round(out.params[strind + str(index_pk + 1) + '_amplitude'].value,precision)
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk + 1) + '_sigma'].value*2*np.sqrt(2*np.log(2)), self.floating)))
+                self.res_tab.setItem(0, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_gaussian_fwhm'] = np.round(out.params[strind + str(index_pk + 1) + '_sigma'].value*2*np.sqrt(2*np.log(2)), precision)
+                self.res_tab.setItem(3, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_fwhm_p1'] = np.round(out.params[strind + str(index_pk + 1) + '_sigma'].value*2*np.sqrt(2*np.log(2)), precision)
+            self.meta_result_export.append(temp_result_export)
 
 
     def BGModCreator(self, x, y, mode):
