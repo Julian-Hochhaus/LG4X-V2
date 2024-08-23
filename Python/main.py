@@ -2021,7 +2021,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         cfilePath, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open data file', self.filePath, "DAT Files (*.dat)")
         if cfilePath != "":
             print(cfilePath)
-            self.filePath = cfilePath
+            self.filePath = cfilePath.rsplit('/',1)[0]
             with open(cfilePath, 'r') as file:
                 temp_pre = file.read()
             file.close()
@@ -2058,7 +2058,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         cfilePath, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open data file', self.filePath, "DAT Files (*.dat)")
         if cfilePath != "":
             print(cfilePath)
-            self.filePath = cfilePath
+            self.filePath = cfilePath.rsplit('/',1)[0]
             with open(cfilePath, 'r') as file:
                 temp_pre = file.read()
             file.close()
@@ -2181,7 +2181,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             fileName = os.path.basename(str(self.comboBox_file.currentText()))
             fileName = os.path.splitext(fileName)[0] + '_pars'
         else:
-            cfilePath = self.filePath
+            cfilePath = self.filePath.rsplit('/',1)[0]
             fileName = 'sample_pars'
 
         # S_File will get the directory path and extension.
@@ -2189,7 +2189,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                                              cfilePath + os.sep + fileName + '.dat',
                                                              "DAT Files (*.dat)")
         if cfilePath != "":
-            self.filePath = cfilePath
+            self.filePath = cfilePath.rsplit('/',1)[0]
             # Finally, this will Save your file to the path selected.
             with open(cfilePath, 'w') as file:
                 file.write(str(self.parText))
@@ -2251,7 +2251,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 fileName = os.path.basename(str(self.comboBox_file.currentText()))
                 fileName = os.path.splitext(fileName)[0]
             else:
-                cfilePath = self.filePath
+                cfilePath = self.filePath.rsplit('/',1)[0]
                 fileName = 'sample'
 
             # S_File will get the directory path and extension.
@@ -2259,7 +2259,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                                                  cfilePath + os.sep + fileName + '_fit.txt',
                                                                  "Text Files (*.txt)")
             if cfilePath != "":
-                self.filePath = cfilePath
+                self.filePath = cfilePath.rsplit('/',1)[0]
                 if self.comboBox_file.currentIndex() == 0:
                     strmode = 'simulation mode'
                 else:
@@ -2393,6 +2393,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 cfilePath, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open tab-separated text file',
                                                                   self.filePath, 'TXT Files (*.txt)')
             if cfilePath != "":
+                self.filePath = cfilePath.rsplit('/',1)[0]
                 remember_settings = config.getboolean('Import', 'remember_settings')
                 try:
                     self.imp_csv_or_txt(cfilePath, remember_settings=remember_settings)
@@ -2407,6 +2408,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             cfilePath, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open VAMAS file', self.filePath,
                                                                  'VMS Files (*.vms *.npl)')
             if cfilePath != "":
+                self.filePath = cfilePath.rsplit('/',1)[0]
                 # print (cfilePath)
                 try:
                     self.list_vamas = vpy.list_vms(cfilePath)
@@ -2468,6 +2470,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             directory = QtWidgets.QFileDialog.getExistingDirectory(self, "Open Directory", self.filePath,
                                                                    QtWidgets.QFileDialog.ShowDirsOnly)
             if directory != "":
+                self.filePath = directory
                 entries = os.listdir(directory)
                 entries.sort(key=lambda x: (os.path.splitext(x)[1] != '.txt', x))
                 self.comboBox_file.blockSignals(True)
@@ -2491,6 +2494,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             directory = QtWidgets.QFileDialog.getExistingDirectory(self, "Open Directory", self.filePath,
                                                                    QtWidgets.QFileDialog.ShowDirsOnly)
             if directory != "":
+                self.filePath = directory
                 csv_files = [entry for entry in os.listdir(directory) if os.path.splitext(entry)[1] == '.csv']
                 if csv_files:
                     csv_files.sort()
@@ -2514,7 +2518,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if index == 6:
             directory = QtWidgets.QFileDialog.getExistingDirectory(self, "Open Directory", self.filePath,
                                                                    QtWidgets.QFileDialog.ShowDirsOnly)
+
             if directory != "":
+                self.filePath = directory
                 txt_files = [entry for entry in os.listdir(directory) if os.path.splitext(entry)[1] == '.txt']
                 if txt_files:
                     txt_files.sort()
