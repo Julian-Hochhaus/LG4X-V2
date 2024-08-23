@@ -2377,7 +2377,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.imp()
     def imp_csv_or_txt(self, cfilePath, remember_settings=True):
             ##exclude, that file was already added! [BUG]
-            if not remember_settings:
+            df = pd.read_csv(cfilePath, comment='#')
+            num_columns = len(df.columns)
+            if not remember_settings or not num_columns == 2:
                 preview_dialog = PreviewDialog(cfilePath, config, config_file_path)
 
                 if preview_dialog.exec_():
@@ -2395,15 +2397,18 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         cols = [col+1 for col in config.get('Import', 'columns')]
                         df = pd.read_csv(cfilePath, delimiter=config.get('Import', 'separator'), engine="python",
                                          names=temp_header.columns.values.tolist()[1:],
-                                         skiprows=int(config.get('Import', 'header_row')) + 1)
+                                         skiprows=int(config.get('Import', 'header_row')) + 1, comment='#')
                     else:
                         df = pd.read_csv(cfilePath, delimiter=config.get('Import', 'separator'), engine="python",
-                                         skiprows=int(config.get('Import', 'header_row')))
+                                         skiprows=int(config.get('Import', 'header_row')), comment='#')
 
                 else:
                     df = pd.read_csv(cfilePath, delimiter=config.get('Import', 'separator'), engine="python",
-                                     skiprows=int(config.get('Import', 'header_row')), header=None)
+                                     skiprows=int(config.get('Import', 'header_row')), header=None, comment='#')
                     df.columns = [f"col{i + 1}" for i in range(len(df.columns))]
+                if not num_columns == 2:
+                    print('automatic import failed, please select correct format!')
+                    self.imp_csv_or_txt(cfilePath, remember_settings=False)
                 df = df.iloc[:, eval(config.get('Import', 'columns'))]
                 if df.isna().any().any():
                     print('automatic import failed, please select correct format')
