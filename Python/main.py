@@ -2239,7 +2239,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 protocol=pickle.HIGHEST_PROTOCOL)
 
     def exportResults(self):
-        print(self.result)
         if self.result.empty:
             self.raise_error(window_title="Error: No Results exported!",
                              error_message='There is nothing to export here, results are empty.')
@@ -2428,7 +2427,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                                                   self.filePath, 'TXT Files (*.txt)')
             if cfilePath != "":
                 remember_settings = config.getboolean('Import', 'remember_settings')
-                print(remember_settings)
                 try:
                     self.imp_csv_or_txt(cfilePath, remember_settings=remember_settings)
                 except Exception as e:
@@ -2497,7 +2495,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 index = self.comboBox_file.findText(os.path.basename(self.list_vamas[0]), QtCore.Qt.MatchFixedString)
                 if index >= 0:
                     self.comboBox_file.setCurrentIndex(index)
-                print(self.data_arr.keys())
                 if self.comboBox_file.currentIndex() > 1:
                     self.plot()
         if index == 4:
@@ -3844,9 +3841,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.savePreset()
         plottitle = self.plottitle.text()
         # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
-        print(self.df)
         x0 = self.df.iloc[:, 0].to_numpy()
-        print(x0)
         if x0[-1] < x0[0]:
             self.binding_ener=True
         x0_corrected=np.copy(x0)
