@@ -2265,53 +2265,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 else:
                     strmode = self.comboBox_file.currentText()
                 Text = self.version + '\n\n[[Data file]]\n\n' + strmode + '\n\n[[Fit results]]\n\n'
-
-                # fit results to be checked
-                # for key in self.export_out.params:
-                # Text += str(key) + '\t' + str(self.export_out.params[key].value) + '\n'
-                indpk = 0
-                indpar = 0
-                strpk = ''
-                # strpar = ''
-                ncomponent = self.fitp1.columnCount()
-                ncomponent = int(ncomponent / 2)
-                pk_name = np.array([None] * int(ncomponent), dtype='U')
-                par_name = ['amplitude', 'center', 'sigma', 'gamma', 'fwhm', 'height', 'fraction', 'skew',
-                            'q']  # [bug] add new params
-                par_list = np.array([[None] * 9] * int(ncomponent), dtype='f')
-                for key in self.export_out.params:
-                    if str(key)[1] == 'g':
-                        Text += str(key) + '\t' + str(self.export_out.params[key].value) + '\n'
-                    else:
-                        if len(strpk) > 0:
-                            if str(key)[:int(str(key).find('_'))] == strpk:
-                                strpar = str(key)[int(str(key).find('_')) + 1:]
-                                for indpar in range(len(par_name)):
-                                    if strpar == par_name[indpar]:
-                                        par_list[indpk][indpar] = str(self.export_out.params[key].value)
-                                        strpk = str(key)[:int(str(key).find('_'))]
-                            else:
-                                indpk += 1
-                                indpar = 0
-                                par_list[indpk][indpar] = str(self.export_out.params[key].value)
-                                strpk = str(key)[:int(str(key).find('_'))]
-                                pk_name[indpk] = strpk
-                        else:
-                            par_list[indpk][indpar] = str(self.export_out.params[key].value)
-                            strpk = str(key)[:int(str(key).find('_'))]
-                            pk_name[indpk] = strpk
-
-                Text += '\n'
-                for indpk in range(ncomponent):
-                    Text += '\t' + pk_name[indpk]
-                for indpar in range(9):
-                    Text += '\n' + par_name[indpar] + '\t'
-                    for indpk in range(ncomponent):
-                        Text += str(par_list[indpk][indpar]) + '\t'
+                self.savePreset()
+                Text += '\n\n[[LG4X parameters]]\n\n' + str(self.parText) +'\n\n' + str(self.export_out.fit_report(min_correl=0.1))
+                Text += '\n\n[[lmfit parameters]]\n\n' + str(
+                    self.export_pars)
                 Text += '\n\n[[Peak Metadata]]\n\n'
-                row_labels = list({key.split('_', 1)[-1] for d in self.meta_result_export for key in d.keys()})
-                column_titles = list({key.split('_', 1)[0] for d in self.meta_result_export for key in d.keys()})
+                row_labels = list(
+                    dict.fromkeys([key.split('_', 1)[-1] for d in self.meta_result_export for key in d.keys()]))
 
+                column_titles = list(dict.fromkeys([key.split('_', 1)[0] for d in self.meta_result_export for key in d.keys()]))
                 column_widths = {"Property\\Component": max(len("Property\\Component"),
                                                             max(len(row_label) for row_label in row_labels))}
                 for column_title in column_titles:
@@ -2345,9 +2307,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
                 for row in table_data:
                     Text += "\t".join(row) + "\n"
-                self.savePreset()
-                Text += '\n\n[[LG4X parameters]]\n\n' + str(self.parText) + '\n\n[[lmfit parameters]]\n\n' + str(
-                    self.export_pars) + '\n\n' + str(self.export_out.fit_report(min_correl=0.1))
+
+                Text += '\n\n[[Parameters and Metaparameters as dictionaries]]\n\n'
+                Text += '\n\n[[Fit parameters as dictionary]]\n\n' + str(self.export_pars.valuesdict())
                 Text += '\n\n[[Metadata/Values of the Components as dictionary ]]\n\n{\n'
                 for dic in self.meta_result_export:
                     for key in dic.keys():
@@ -3553,7 +3515,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         return abs(x_peak[-1] - x_peak[0])
     def fillTabResults(self, x, y, out):
         self.meta_result_export=[]
-        precision=np.int(self.floating.split('.')[1].split('f')[0])+2
+        precision=int(self.floating.split('.')[1].split('f')[0])+2
         y_components = [0 for idx in range(len(y))]
         nrows = len(self.pre[2])
         ncols = int(len(self.pre[2][0]) / 2)
