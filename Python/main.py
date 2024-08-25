@@ -35,11 +35,13 @@ if os.environ.get('container') == 'flatpak':
     log_folder = os.path.join(user_home_folder,'.var/app/io.github.julian_hochhaus.LG4X_V2/cache/Logs')
     os.makedirs(log_folder, exist_ok=True)
     log_file_path = os.path.join(user_home_folder, '.var/app/io.github.julian_hochhaus.LG4X_V2/cache/Logs/app.log')
+    config_file_path = (user_home_folder, '.var/app/io.github.julian_hochhaus.LG4X_V2/config/config.ini')
 else:
     script_directory = os.path.dirname(os.path.abspath(__file__))
     log_folder = os.path.join(script_directory, '../Logs')
     os.makedirs(log_folder, exist_ok=True)
     log_file_path = os.path.join(script_directory, '../Logs/app.log')
+    config_file_path = os.path.join(script_directory, '../config/config.ini')
     
 max_log_size = 4*1024*1024 # 4MB
 backup_count = 5  # Number of backup files to keep
@@ -51,7 +53,7 @@ logger.setLevel(logging.INFO)
 logger.addHandler(handler)
 
 config = configparser.ConfigParser()
-config_file_path = os.path.join(script_directory, '../config/config.ini')
+
 if len(config_file_path)>=256:
     print('Error: config file path too long (more than 256 characters). Please move the install directory of the project to a shorter path. Otherwise, configparser cannot read the config file and the program does not work.')
 config.read(config_file_path)
