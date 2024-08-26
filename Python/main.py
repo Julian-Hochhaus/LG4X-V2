@@ -31,11 +31,10 @@ from logging.handlers import RotatingFileHandler
 import configparser
 
 if os.environ.get('container') == 'flatpak':
-    user_home_folder = os.path.expanduser('~')
-    log_folder = os.path.join(user_home_folder,'.var/app/io.github.julian_hochhaus.LG4X_V2/cache/Logs')
+    log_folder = ('/app/cache/Logs')
     os.makedirs(log_folder, exist_ok=True)
-    log_file_path = os.path.join(user_home_folder, '.var/app/io.github.julian_hochhaus.LG4X_V2/cache/Logs/app.log')
-    config_file_path = (user_home_folder, '.var/app/io.github.julian_hochhaus.LG4X_V2/config/config.ini')
+    log_file_path = ('/app/cache/Logs/app.log')
+    config_file_path = ('/app/config/config.ini')
 else:
     script_directory = os.path.dirname(os.path.abspath(__file__))
     log_folder = os.path.join(script_directory, '../Logs')
