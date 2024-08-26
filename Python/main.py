@@ -31,9 +31,9 @@ from logging.handlers import RotatingFileHandler
 import configparser
 
 if os.environ.get('container') == 'flatpak':
-    log_folder = ('/app/cache/Logs')
+    log_folder = ('.var/app/io.github.julian_hochhaus.LG4X_V2/cache/Logs')
     os.makedirs(log_folder, exist_ok=True)
-    log_file_path = ('/app/cache/Logs/app.log')
+    log_file_path = ('.var/app/io.github.julian_hochhaus.LG4X_V2/cache/Logs/app.log')
     config_file_path = ('/app/config/config.ini')
 else:
     script_directory = os.path.dirname(os.path.abspath(__file__))
