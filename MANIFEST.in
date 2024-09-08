@@ -1,0 +1,11 @@
+include README.md
+include LICENSE
+include CITATION.cff
+include requirements.txt
+recursive-include config *
+recursive-include data *
+recursive-include Databases *
+recursive-include Example *
+recursive-include Images *
+recursive-include Logs *
+recursive-include Preset *

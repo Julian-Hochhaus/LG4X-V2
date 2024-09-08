@@ -1,0 +1,61 @@
+#pyproject.toml
+
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lg4x"
+version = "2.2.1"
+description = "A graphical user interface of Python lmfit package was developed for standard X-ray photoemission spectroscopy (XPS) curve fitting analysis. The interface streamlines the fitting procedures for validating results and their consistency."
+readme = "README.md"
+requires-python = ">=3.6"
+license = {text = "MIT"}
+authors = [
+    {name = "Julian Hochhaus", email = "julian.hochhaus@tu-dortmund.de"},
+    {name = "Hideki Nakajima"}
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent"
+]
+dependencies = [
+    "asteval>=0.9.28",
+    "lmfit>=1.1.0",
+    "matplotlib >=3.6",
+    "numpy >=1.19",
+    "pandas >=2.0",
+    "PyQt5 >=5.15",
+    "scipy >=1.6",
+    "uncertainties >=3.1.4",
+    "lmfitxps >=2.4.1",
+    "configparser >=6.0.0"
+]
+
+[project.urls]
+homepage="https://github.com/Julian-Hochhaus/LG4X-V2'"
+documentation="https://julian-hochhaus.github.io/LG4X-V2/"
+
+[project.scripts]
+lg4x = "lg4x.main:main"
+
+
+[tool.setuptools]
+py-modules = ['lg4x']
+
+[tool.setuptools.package-data]
+lg4x = [
+    "config/*",
+    "data/*",
+    "Databases/*",
+    "Example/*",
+    "Images/*",
+    "Logs/*",
+    "Preset/*",
+    "README.md",
+    "LICENSE",
+    "CITATION.cff",
+    "requirements.txt"
+]
+
