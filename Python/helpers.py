@@ -842,18 +842,28 @@ class SettingsDialog(QtWidgets.QDialog):
         import_layout.addWidget(self.checkbox_has_header)
         import_layout.addWidget(self.checkbox_remember_settings)
 
-        # Create a main layout for the dialog
-        main_layout = QtWidgets.QVBoxLayout()
-        main_layout.addLayout(gui_layout)
-        main_layout.addWidget(LayoutHline())
-        main_layout.addLayout(import_layout)
-        main_layout.addWidget(LayoutHline())
-        main_layout.addWidget(save_button)
 
-        # Set the main layout for the dialog
-        self.setLayout(main_layout)
+        database_layout = QtWidgets.QVBoxLayout()
+        
+        # Create a main layout for the dialog with tabs
+        container = QtWidgets.QVBoxLayout(self)
+        tabs = QtWidgets.QTabWidget()
+        tab1 = QtWidgets.QWidget() # GUI settings
+        tab2 = QtWidgets.QWidget() # File import settings
+        tab3 = QtWidgets.QWidget() # Database path   
+       
+        tab1.setLayout(gui_layout)
+        
+        tab2.setLayout(import_layout)
+        
+        tab3.setLayout(database_layout)
 
-
+        tabs.addTab(tab1,"GUI")
+        tabs.addTab(tab2,"File import")
+        tabs.addTab(tab3,"Database")
+        container.addWidget(tabs)
+        container.addWidget(save_button)
+        
     def save_settings(self):
         try:
             new_column_width = int(self.line_edit_column_width.text())
