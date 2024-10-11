@@ -2313,7 +2313,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 Text += '\n\n[[Metadata/Values of the Components as dictionary ]]\n\n{\n'
                 for dic in self.meta_result_export:
                     for key in dic.keys():
-                        Text +=  "\""+key +"\" : "+ str(dic[key])+ ',\n'
+                        Text +=  "'"+key +"' : "+ str(dic[key])+ ',\n'
                 Text += '}\n'
                 self.export_pickle(cfilePath)  # export las fit parameters as dict int po pickle file
 
@@ -2971,6 +2971,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     pars['bg_poly_c' + str(index)].value = self.pre[1][2][2 * index + 1]
                     if self.pre[1][2][2 * index] == 2:
                         pars['bg_poly_c' + str(index)].vary = False
+                pars['bg_poly_c0'].max=np.mean(y[-5:])
+                pars['bg_poly_c0'].min = 0
         if idx_bg == 6:
             mod = SlopeBG(independent_vars=['y'], prefix='bg_slope_')
             bg_mod = 0
@@ -3517,8 +3519,19 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.peakResult2Pre(out_params, mode)
     def approx_fwhm(self,x, peak):
         peak_norm = peak / np.max(peak)
-        x_peak = [i for i, j in zip(x, peak_norm) if j >= 0.5]
-        return abs(x_peak[-1] - x_peak[0])
+        indices = np.where(peak_norm >= 0.5)[0]
+        i1 = indices[0]
+        if i1 > 0:
+            x1 = x[i1 - 1] + (0.5 - peak_norm[i1 - 1]) * (x[i1] - x[i1 - 1]) / (peak_norm[i1] - peak_norm[i1 - 1])
+        else:
+            x1 = x[i1]
+
+        i2 = indices[-1]
+        if i2 < len(peak_norm) - 1:
+            x2 = x[i2] + (0.5 - peak_norm[i2]) * (x[i2 + 1] - x[i2]) / (peak_norm[i2 + 1] - peak_norm[i2])
+        else:
+            x2 = x[i2]
+        return abs(x2 - x1)
     def fillTabResults(self, x, y, out):
         self.meta_result_export=[]
         precision=int(self.floating.split('.')[1].split('f')[0])+2
@@ -4177,12 +4190,4 @@ class PrettyWidget(QtWidgets.QMainWindow):
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     w = PrettyWidget()
-    #if w.two_window_mode:
-    #    w.initTwoWindowUI()
-    #    w.show()
-    #    w.second_window.show()
-    #else:
-    #    w.initSingleWindowUI()
-    #    w.show()
-
     sys.exit(app.exec_())

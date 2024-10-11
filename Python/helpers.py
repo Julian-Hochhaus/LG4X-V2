@@ -569,6 +569,27 @@ class PreviewDialog(QtWidgets.QDialog):
         self.config_file_path= config_file_path
         self.initUI()
 
+    def read_config(self):
+        self.selected_separator = self.config.get('Import', 'separator')
+        for description, value in separator_mapping.items():
+            if self.selected_separator == value:
+                self.separator_combobox.setCurrentText(description)
+                break
+            else:
+                self.separator_combobox.setCurrentText("User Defined")
+
+        self.selected_columns = eval(self.config.get('Import', 'columns'))
+        if len(self.selected_columns) == 2:
+            self.column1_combobox.setCurrentIndex(self.selected_columns[0])
+            self.column2_combobox.setCurrentIndex(self.selected_columns[1])
+
+        self.header_row = int(self.config.get('Import', 'header_row'))
+        self.header_row_spinbox.setValue(self.header_row)
+
+        self.has_header = self.config.getboolean('Import', 'has_header')
+        self.no_header_checkbox.setChecked(not self.has_header)
+
+
     def initUI(self):
         layout = QtWidgets.QVBoxLayout()
         self.message_label = QtWidgets.QLabel()
@@ -627,7 +648,7 @@ class PreviewDialog(QtWidgets.QDialog):
             self.remember_settings_checkbox = QtWidgets.QCheckBox("Remember Settings")
             self.remember_settings_checkbox.stateChanged.connect(self.emit_settings_changed)
             layout.addWidget(self.remember_settings_checkbox)
-
+            self.read_config()
             self.update_column_comboboxes()
 
         layout.addWidget(self.message_label)
@@ -653,7 +674,6 @@ class PreviewDialog(QtWidgets.QDialog):
 
     def load_data(self):
         try:
-            print(self.file_path)
             if self.has_header:
                 self.data = pd.read_csv(self.file_path, delimiter=self.selected_separator, header=self.header_row, engine='python',nrows=0,  on_bad_lines='skip')
                 if self.data.columns.values.tolist()[0] == '#':
