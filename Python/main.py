@@ -138,7 +138,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.pt = PeriodicTable()
         self.pt.setWindowTitle('Periodic Table')
         # data template
-        # self.df = pd.DataFrame()
         self.df = []
         self.result = pd.DataFrame()
         outer_layout = QtWidgets.QVBoxLayout()
@@ -660,7 +659,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.pt = PeriodicTable()
         self.pt.setWindowTitle('Periodic Table')
         # data template
-        # self.df = pd.DataFrame()
         self.df = []
         self.result = pd.DataFrame()
         outer_layout = QtWidgets.QVBoxLayout()
@@ -1814,7 +1812,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.removeCol(idx=None)
             # load default preset
             if self.comboBox_file.currentIndex() > 0:
-                # self.df = np.loadtxt(str(self.comboBox_file.currentText()),	delimiter=',', skiprows=1)
                 x0 = self.df.iloc[:, 0].to_numpy()
                 y0 = self.df.iloc[:, 1].to_numpy()
                 pre_pk = [[0, 0], [0, x0[abs(y0 - y0.max()).argmin()]], [0, y0[abs(y0 - y0.max()).argmin()]], [2, 0],
@@ -1830,7 +1827,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
             except Exception as e:
                 return self.raise_error(window_title="Error: Could not load parameters!",
                                         error_message='Loading parameters failed. The following traceback may help to solve the issue:')
-            # print(self.df.iloc[0], self.df.iloc[1], self.df.iloc[2])
             if len(str(self.pre[0])) != 0 and len(self.pre[1]) != 0 and len(self.pre[2]) != 0 and len(self.pre) == 3:
                 # old format, reorder data!
                 self.reformat_pre()
@@ -1845,7 +1841,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
             except Exception as e:
                 return self.raise_error(window_title="Error: Could not add parameters!",
                                         error_message='Adding parameters failed. The following traceback may help to solve the issue:')
-            # print(self.df.iloc[0], self.df.iloc[1], self.df.iloc[2])
             if len(str(self.pre[0])) != 0 and len(self.pre[1]) != 0 and len(self.pre[2]) != 0 and len(self.pre) == 3:
                 # old format, reorder data!
                 self.reformat_pre()
@@ -1871,8 +1866,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
                       ['B', 2866.0, 'C', 1643.0, 'C*', 1.0, 'D', 1.0, 'Keep fixed?', 0],
                       [2, 0, 2, 0, 2, 0, 2, 0, '', '']]
             if self.comboBox_file.currentIndex() > 0:
-                # self.df = np.loadtxt(str(self.comboBox_file.currentText()),	delimiter=',', skiprows=1)
-                # x0 = self.df.iloc[:, 0]
                 y0 = self.df.iloc[:, 1].to_numpy()
                 pre_pk = [[0, 0, 0, 0, 0, 0, 0, 0], [2, 284.6, 2, 286.5, 2, 288.0, 2, 291.0],
                           [2, 0.85, 2, 0.85, 2, 1.28, 2, 1.28], [2, 0.85, 2, 0.85, 2, 1.28, 2, 1.28],
@@ -2682,7 +2675,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 x1 = float(self.xmin)
                 x2 = float(self.xmax)
             points = 999
-            self.df = np.random.random_sample((points, 2)) + 0.01
+            self.df = np.zeros((points, 2))+0.01
             self.df[:, 0] = np.linspace(x1, x2, points)
             self.ana('sim')
         else:
@@ -2703,7 +2696,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 x1 = float(self.xmin)
                 x2 = float(self.xmax)
             points = 999
-            self.df = np.random.random_sample((points, 2)) + 0.01
+            self.df = np.zeros((points, 2))+0.01
             self.df[:, 0] = np.linspace(x1, x2, points)
             self.ana('sim')
     def interrupt_fit(self):
@@ -3442,7 +3435,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if idx_bg == 6:
                 self.pre[1][3][1] = out_params['bg_slope_k'].value
             if idx_bg == 100:
-                if mode != "eva":
+                if mode != "eva" and mode != "sim":
                     self.pre[1][0][5] = out_params['bg_shirley_k'].value
                     self.pre[1][0][7] = out_params['bg_shirley_const'].value
             if idx_bg == 101:
@@ -3536,6 +3529,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.meta_result_export=[]
         precision=int(self.floating.split('.')[1].split('f')[0])+2
         y_components = [0 for idx in range(len(y))]
+        x_interpolate=np.linspace(x[0],x[-1],10*len(x))
         nrows = len(self.pre[2])
         ncols = int(len(self.pre[2][0]) / 2)
         for index_pk in range(int(len(self.pre[2][0]) / 2)):
@@ -3588,7 +3582,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.res_tab.setItem(5, index_pk, item)
                 temp_result_export[strind + str(index_pk + 1) +'_height_p1'] = np.round(out.params[strind + str(index_pk + 1) + '_height'].value, precision)
             if index == 0 or index == 1 or index == 2 or index == 3 or index == 4:
-                y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
+                y_area = out.eval_components(x=x_interpolate)[strind + str(index_pk + 1) + '_']
                 if self.binding_ener:
                     area = abs(integrate.simps([y for y, x in zip(y_area, x[::-1])], x[::-1]))
                 else:
@@ -3618,7 +3612,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         item = QtWidgets.QTableWidgetItem('')
                         self.res_tab.setItem(row, index_pk, item)
                     # included area
-                    y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
+                    y_area = out.eval_components(x=x_interpolate)[strind + str(index_pk + 1) + '_']
                     if self.binding_ener:
                         area = abs(integrate.simps([y for y, x in zip(y_area, x[::-1])], x[::-1]))
                     else:
@@ -3656,7 +3650,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     str(format(out.params[strind + str(index_pk + 1) + '_amplitude'].value, self.floating)))
                 self.res_tab.setItem(5, index_pk, item)
                 temp_result_export[strind + str(index_pk + 1) +'_height_p1'] = np.round(out.params[strind + str(index_pk + 1) + '_amplitude'].value, precision)
-                y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
+                y_area = out.eval_components(x=x_interpolate)[strind + str(index_pk + 1) + '_']
                 fwhm_temp = self.approx_fwhm(x, y_area)
                 item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp, self.floating)))
                 self.res_tab.setItem(3, index_pk, item)
@@ -3666,7 +3660,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     str(format(2*out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm'].value, self.floating)))
                 self.res_tab.setItem(1, index_pk, item)
                 temp_result_export[strind + str(index_pk + 1) +'_lorentzian_fwhm_p1'] = np.round(2*out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm'].value, precision)
-                y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
+                y_area = out.eval_components(x=x_interpolate)[strind + str(index_pk + 1) + '_']
                 if np.max(y_area) != 0:
                     fwhm_temp = self.approx_fwhm(x, y_area)
                     item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp, self.floating)))
@@ -3717,7 +3711,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.res_tab.setItem(2, index_pk, item)
                 temp_result_export[strind + str(index_pk + 1) +'_lorentzian_fwhm_p2'] = np.round(out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm_p2'].value, precision)
                 # included fwhm
-                x_interpol=np.linspace(x[0], x[-1], 5*len(x))
+                x_interpol=np.linspace(x[0], x[-1], 10*len(x))
                 y_area_p1 = singlett(x_interpol,
                                      amplitude=out.params[strind + str(index_pk + 1) + '_amplitude'].value,
                                      sigma=out.params[strind + str(index_pk + 1) + '_sigma'].value,
@@ -3768,8 +3762,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     str(format(area_p2, '.1f') + r' ({}%)'.format(format(area_p2 / area_ges * 100, '.2f'))))
                 self.res_tab.setItem(8, index_pk, item)
                 temp_result_export[strind + str(index_pk + 1) +'_approx_area_p2'] = str(format(area_p2, '.1f') + r' ({}%)'.format(format(area_p2 / area_ges * 100, '.2f')))
-                y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
-                area = abs(integrate.simps([y for y, x in zip(y_area, x)], x))
+                y_area = out.eval_components(x=x_interpolate)[strind + str(index_pk + 1) + '_']
+                area = abs(integrate.simps([y for y, x in zip(y_area, x_interpolate)], x_interpolate))
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f'))))
                 self.res_tab.setItem(9, index_pk, item)
@@ -3826,30 +3820,38 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def ana(self, mode):
         self.savePreset()
         plottitle = self.plottitle.text()
-        # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
-        x0 = self.df.iloc[:, 0].to_numpy()
-        if x0[-1] < x0[0]:
-            self.binding_ener=True
-        x0_corrected=np.copy(x0)
-        if self.correct_energy is not None:
-            x0_corrected -= self.correct_energy
-        y0 = self.df.iloc[:, 1].to_numpy()
-        # print(x0[0], x0[len(x0)-1])
-
-        # plot graph after selection data from popup
-        # plt.clf()
-        # plt.cla()
         self.ax.cla()
         self.ar.cla()
         # ax = self.figure.add_subplot(211)
         if mode == 'fit':
+            x0 = self.df.iloc[:, 0].to_numpy()
+            if x0[-1] < x0[0]:
+                self.binding_ener = True
+            x0_corrected = np.copy(x0)
+            if self.correct_energy is not None:
+                x0_corrected -= self.correct_energy
+            y0 = self.df.iloc[:, 1].to_numpy()
             self.ax.plot(x0_corrected, y0, 'o', color='b', label='raw')
         else:
             # simulation mode
             if mode == 'sim':
+                x0 = self.df[:,0]
+                if x0[-1] < x0[0]:
+                    self.binding_ener = True
+                x0_corrected = np.copy(x0)
+                if self.correct_energy is not None:
+                    x0_corrected -= self.correct_energy
+                y0 = self.df[:,1]
                 self.ax.plot(x0_corrected, y0, ',', color='b', label='raw')
             # evaluation mode
             else:
+                x0 = self.df.iloc[:, 0].to_numpy()
+                if x0[-1] < x0[0]:
+                    self.binding_ener = True
+                x0_corrected = np.copy(x0)
+                if self.correct_energy is not None:
+                    x0_corrected -= self.correct_energy
+                y0 = self.df.iloc[:, 1].to_numpy()
                 self.ax.plot(x0_corrected, y0, 'o', mfc='none', color='b', label='raw')
 
         if x0_corrected[0] > x0_corrected[-1]:
