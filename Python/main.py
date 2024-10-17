@@ -4144,13 +4144,14 @@ class PrettyWidget(QtWidgets.QMainWindow):
         df_y = pd.DataFrame(raw_y - sum_background - self.static_bg, columns=['data-bg'])
         df_pks = pd.DataFrame(out.best_fit - sum_background, columns=['sum_components'])
         df_b = pd.DataFrame(sum_background + self.static_bg, columns=['bg'])
+        df_residual = pd.DataFrame(out.residual, columns=['residual'])
         if isinstance(self.static_bg, int):
             df_b_static = pd.DataFrame([0] * len(sum_background), columns=['bg_static (not used)'])
             df_sum = pd.DataFrame(out.best_fit, columns=['sum_fit'])
         else:
             df_b_static = pd.DataFrame(self.static_bg, columns=['bg_static'])
             df_sum = pd.DataFrame(out.best_fit+self.static_bg, columns=['sum_fit'])
-        self.result = pd.concat([df_raw_x, df_raw_y, df_corrected_x, df_y, df_pks, df_b, df_b_static, df_sum], axis=1)
+        self.result = pd.concat([df_raw_x, df_raw_y, df_corrected_x, df_y, df_pks, df_b, df_b_static, df_sum, df_residual], axis=1)
         df_bg_comps = pd.DataFrame.from_dict(self.bg_comps, orient='columns')
         self.result = pd.concat([self.result, df_bg_comps], axis=1)
         for index_pk in range(int(self.fitp1.columnCount() / 2)):
