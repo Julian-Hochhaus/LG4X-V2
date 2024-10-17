@@ -1,3 +1,7 @@
+## Hint:
+Please use a released version for the productive use of the software (i.e. the latest Release) as they are tested for several different use cases and not the newest Commit, as the different branches are used to work on new and not extensively tested features. The newest commits on the master branch might as well contain bugs as the software is work in progress.
+
+
 ## Introduction
  LG4X-V2 is an open-source GUI for X-ray photoemission spectroscopy (XPS) curve fitting based on the python lmfit package. It streamlines the fitting process for easier validation and consistency. It is inspired by its predecessor software [LG4X](https://github.com/hidecode221b/LG4X) by [Hideki Nakajima](https://github.com/hidecode221b).
 
