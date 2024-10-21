@@ -2335,7 +2335,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             ##exclude, that file was already added! [BUG]
             df = pd.read_csv(cfilePath, comment='#')
             num_columns = len(df.columns)
-            if not remember_settings or not num_columns == 2:
+            if not remember_settings:
                 preview_dialog = PreviewDialog(cfilePath, config, config_file_path)
 
                 if preview_dialog.exec_():
@@ -2362,7 +2362,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     df = pd.read_csv(cfilePath, delimiter=config.get('Import', 'separator'), engine="python",
                                      skiprows=int(config.get('Import', 'header_row')), header=None, comment='#')
                     df.columns = [f"col{i + 1}" for i in range(len(df.columns))]
-                if not num_columns == 2:
+                if not num_columns == 2 and not remember_settings:
                     print('automatic import failed, please select correct format!')
                     self.imp_csv_or_txt(cfilePath, remember_settings=False)
                 df = df.iloc[:, eval(config.get('Import', 'columns'))]
