@@ -3585,9 +3585,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if index == 0 or index == 1 or index == 2 or index == 3 or index == 4:
                 y_area = out.eval_components(x=x_interpolate)[strind + str(index_pk + 1) + '_']
                 if self.binding_ener:
-                    area = abs(integrate.simps([y for y, x in zip(y_area, x[::-1])], x[::-1]))
+                    area = abs(integrate.simps([y for y, x in zip(y_area, x_interpolate[::-1])], x_interpolate[::-1]))
                 else:
-                    area= abs(integrate.simps([y for y, x in zip(y_area, x)], x))
+                    area= abs(integrate.simps([y for y, x in zip(y_area, x_interpolate)], x_interpolate))
                 item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                 self.res_tab.setItem(7, index_pk, item)
                 temp_result_export[strind + str(index_pk + 1) +'_approx_area_p1'] = str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f')))
@@ -3615,9 +3615,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     # included area
                     y_area = out.eval_components(x=x_interpolate)[strind + str(index_pk + 1) + '_']
                     if self.binding_ener:
-                        area = abs(integrate.simps([y for y, x in zip(y_area, x[::-1])], x[::-1]))
+                        area = abs(integrate.simps([y for y, x in zip(y_area, x_interpolate[::-1])], x_interpolate[::-1]))
                     else:
-                        area = abs(integrate.simps([y for y, x in zip(y_area, x)], x))
+                        area = abs(integrate.simps([y for y, x in zip(y_area, x_interpolate)], x_interpolate))
                     item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                     self.res_tab.setItem(7, index_pk, item)
                     temp_result_export[strind + str(index_pk + 1) +'_approx_area_p1'] = str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f')))
@@ -3652,7 +3652,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.res_tab.setItem(5, index_pk, item)
                 temp_result_export[strind + str(index_pk + 1) +'_height_p1'] = np.round(out.params[strind + str(index_pk + 1) + '_amplitude'].value, precision)
                 y_area = out.eval_components(x=x_interpolate)[strind + str(index_pk + 1) + '_']
-                fwhm_temp = self.approx_fwhm(x, y_area)
+                fwhm_temp = self.approx_fwhm(x_interpolate, y_area)
                 item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp, self.floating)))
                 self.res_tab.setItem(3, index_pk, item)
                 temp_result_export[strind + str(index_pk + 1) +'_fwhm_p1'] = np.round(fwhm_temp, precision)
@@ -3663,7 +3663,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 temp_result_export[strind + str(index_pk + 1) +'_lorentzian_fwhm_p1'] = np.round(2*out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm'].value, precision)
                 y_area = out.eval_components(x=x_interpolate)[strind + str(index_pk + 1) + '_']
                 if np.max(y_area) != 0:
-                    fwhm_temp = self.approx_fwhm(x, y_area)
+                    fwhm_temp = self.approx_fwhm(x_interpolate, y_area)
                     item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp, self.floating)))
                     self.res_tab.setItem(3, index_pk, item)
                     temp_result_export[strind + str(index_pk + 1) +'_fwhm_p1'] = np.round(fwhm_temp, precision)
