@@ -1,40 +1,61 @@
-# pyproject.toml
+#pyproject.toml
 
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=61.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name='LG4X-V2'
-readme='README.md'
-version = "2.4.3"
-authors=[{name='Julian Hochhaus', email='julian.hochhaus@tu-dortmund.de'}, {name='Julian Hochhaus', email='julian.hochhaus@tu-dortmund.de'}]
-license={file='LICENSE', name='MIT'}
-description='A graphical user interface for X-ray photoemission spectroscopy (XPS) curve fitting analysis/ X-ray absorption spectroscopy (XAS) analysis. The curve fitting is done using the LMFIT and lmfitxps packages.'
-
-[project.urls]
-homepage='https://github.com/Julian-Hochhaus/lmfitxps'
-documentation='https://lmfitxps.readthedocs.io/en/latest/'
-
-
-[tool.setuptools]
-package-dir = {"" = "src"}
-packages = ["lmfitxps"]
-
-
-[project]
-name = "your_package_name"
-version = "0.1.0"
-description = "A short description of your project"
-authors = [{name = "Your Name", email = "you@example.com"}]
+name = "lg4x"
+version = "2.2.1"
+description = "A graphical user interface of Python lmfit package was developed for standard X-ray photoemission spectroscopy (XPS) curve fitting analysis. The interface streamlines the fitting procedures for validating results and their consistency."
+readme = "README.md"
+requires-python = ">=3.6"
 license = {text = "MIT"}
-readme = "Readme.md"
-requires-python = ">=3.7"
+authors = [
+    {name = "Julian Hochhaus", email = "julian.hochhaus@tu-dortmund.de"},
+    {name = "Hideki Nakajima"}
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent"
+]
 dependencies = [
-    "numpy>=1.21.0",
-    "pandas>=1.3.0",
-    "requests>=2.26.0",
+    "asteval>=0.9.28",
+    "lmfit>=1.1.0",
+    "matplotlib >=3.6",
+    "numpy >=1.19",
+    "pandas >=2.0",
+    "PyQt5 >=5.15",
+    "scipy >=1.6",
+    "uncertainties >=3.1.4",
+    "lmfitxps >=2.4.1",
+    "configparser >=6.0.0"
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/your-repo"
+homepage="https://github.com/Julian-Hochhaus/LG4X-V2'"
+documentation="https://julian-hochhaus.github.io/LG4X-V2/"
+
+[project.scripts]
+lg4x = "lg4x.main:main"
+
+
+[tool.setuptools]
+py-modules = ['lg4x']
+
+[tool.setuptools.package-data]
+lg4x = [
+    "config/*",
+    "data/*",
+    "Databases/*",
+    "Example/*",
+    "Images/*",
+    "Logs/*",
+    "Preset/*",
+    "README.md",
+    "LICENSE",
+    "CITATION.cff",
+    "requirements.txt"
+]
+

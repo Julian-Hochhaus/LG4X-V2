@@ -1,0 +1,51 @@
+CITATION.cff
+LICENSE
+MANIFEST.in
+README.md
+pyproject.toml
+requirements.txt
+Databases/elements.csv
+Databases/xps_data.csv
+Databases/CrossSections/cross_sections.csv
+Example/0-150W.vms
+Example/0-150W_NiWC1s_C1s.txt
+Example/0-150W_NiWNi2p_Ni2p.txt
+Example/0-150W_NiWO1s_O1s.txt
+Example/0-150W_NiWW4f_W4f.txt
+Example/0-150W_NiWwide_wide.txt
+Example/111126_0100.csv
+Example/111216_0459_O1s.csv
+Example/170109_1712_Ef.csv
+Example/C1s_sample.csv
+Example/CK.csv
+Example/Mutlipak_vms.npl
+Example/PET_C1s.csv
+Example/readme.md
+Images/Capture.PNG
+Images/Screen Shot 2020-05-21 at 20.11.36.png
+Images/Screen Shot 2020-05-21 at 20.50.59.png
+Images/Screen Shot 2020-05-22 at 1.15.35.png
+Images/Screen Shot 2020-05-22 at 1.45.37.png
+Images/Screen Shot 2020-05-24 at 21.24.14.png
+Images/Screen Shot 2020-05-27 at 23.14.49.png
+Images/Screen Shot 2021-10-05 at 21.36.26.png
+Images/Screen Shot 2021-10-07 at 0.03.56.png
+Images/cross_section.png
+Images/main_window.png
+Images/readme.md
+Images/survey_periodictable.png
+Logs/app.log
+Preset/Presets.zip
+Preset/readme.md
+config/config.ini
+data/io.github.julian_hochhaus.LG4X_V2.desktop
+data/io.github.julian_hochhaus.LG4X_V2.metainfo.xml
+data/logo/logo.svg
+data/logo/logo_256x256.png
+data/logo/logo_black.svg
+lg4x.egg-info/PKG-INFO
+lg4x.egg-info/SOURCES.txt
+lg4x.egg-info/dependency_links.txt
+lg4x.egg-info/entry_points.txt
+lg4x.egg-info/requires.txt
+lg4x.egg-info/top_level.txt

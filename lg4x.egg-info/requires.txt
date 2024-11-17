@@ -1,0 +1,10 @@
+asteval>=0.9.28
+lmfit>=1.1.0
+matplotlib>=3.6
+numpy>=1.19
+pandas>=2.0
+PyQt5>=5.15
+scipy>=1.6
+uncertainties>=3.1.4
+lmfitxps>=2.4.1
+configparser>=6.0.0
