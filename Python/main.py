@@ -3539,9 +3539,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
             strind = strind.split(":", 1)[0]
             y_components += out.eval_components()[strind + str(index_pk + 1) + '_']
         if self.binding_ener:
-            area_components = integrate.simps([y for y, x in zip(y_components, x[::-1])],x[::-1])
+            area_components = integrate.simpson(y_components, x=x[::-1])
         else:
-            area_components = integrate.simps([y for y, x in zip(y_components, x)], x)
+            area_components = integrate.simpson(y_components, x=x)
         for index_pk in range(int(len(self.pre[2][0]) / 2)):
             index = self.pre[2][0][2 * index_pk + 1]
             strind = self.list_shape[index]
@@ -3585,9 +3585,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if index == 0 or index == 1 or index == 2 or index == 3 or index == 4:
                 y_area = out.eval_components(x=x_interpolate)[strind + str(index_pk + 1) + '_']
                 if self.binding_ener:
-                    area = abs(integrate.simps([y for y, x in zip(y_area, x_interpolate[::-1])], x_interpolate[::-1]))
+                    area = abs(integrate.simpson(y_area, x=x_interpolate[::-1]))
                 else:
-                    area= abs(integrate.simps([y for y, x in zip(y_area, x_interpolate)], x_interpolate))
+                    area= abs(integrate.simpson(y_area, x=x_interpolate))
                 item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                 self.res_tab.setItem(7, index_pk, item)
                 temp_result_export[strind + str(index_pk + 1) +'_approx_area_p1'] = str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f')))
@@ -3615,9 +3615,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     # included area
                     y_area = out.eval_components(x=x_interpolate)[strind + str(index_pk + 1) + '_']
                     if self.binding_ener:
-                        area = abs(integrate.simps([y for y, x in zip(y_area, x_interpolate[::-1])], x_interpolate[::-1]))
+                        area = abs(integrate.simpson(y_area, x=x_interpolate[::-1]))
                     else:
-                        area = abs(integrate.simps([y for y, x in zip(y_area, x_interpolate)], x_interpolate))
+                        area = abs(integrate.simpson(y_area, x=x_interpolate))
                     item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                     self.res_tab.setItem(7, index_pk, item)
                     temp_result_export[strind + str(index_pk + 1) +'_approx_area_p1'] = str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f')))
@@ -3675,9 +3675,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     temp_result_export[strind + str(index_pk + 1) +'_fwhm_p1'] = "Error in calculation"
                 # included area
                 if self.binding_ener:
-                    area= abs(integrate.simps([y for y, x in zip(y_area, x[::-1])], x[::-1]))
+                    area= abs(integrate.simpson(y_area, x=x[::-1]))
                 else:
-                    area = abs(integrate.simps([y for y, x in zip(y_area, x)], x))
+                    area = abs(integrate.simpson(y_area, x=x))
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f'))))
                 self.res_tab.setItem(7, index_pk, item)
@@ -3749,11 +3749,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     # included area
 
                 if self.binding_ener:
-                    area_p1 = abs(integrate.simps([y for y, x in zip(y_area_p1, x_interpol[::-1])], x_interpol[::-1]))
-                    area_p2 = abs(integrate.simps([y for y, x in zip(y_area_p2, x_interpol[::-1])], x_interpol[::-1]))
+                    area_p1 = abs(integrate.simpson(y_area_p1, x=x_interpol[::-1]))
+                    area_p2 = abs(integrate.simpson(y_area_p2, x=x_interpol[::-1]))
                 else:
-                    area_p1 = integrate.simps([y for y, x in zip(y_area_p1, x_interpol)], x_interpol)
-                    area_p2 = integrate.simps([y for y, x in zip(y_area_p2, x_interpol)], x_interpol)
+                    area_p1 = integrate.simpson(y_area_p1, x=x_interpol)
+                    area_p2 = integrate.simpson(y_area_p2, x=x_interpol)
                 area_ges = area_p1 + area_p2
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area_p1, '.1f') + r' ({}%)'.format(format(area_p1 / area_ges * 100, '.2f'))))
@@ -3764,7 +3764,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.res_tab.setItem(8, index_pk, item)
                 temp_result_export[strind + str(index_pk + 1) +'_approx_area_p2'] = str(format(area_p2, '.1f') + r' ({}%)'.format(format(area_p2 / area_ges * 100, '.2f')))
                 y_area = out.eval_components(x=x_interpolate)[strind + str(index_pk + 1) + '_']
-                area = abs(integrate.simps([y for y, x in zip(y_area, x_interpolate)], x_interpolate))
+                area = abs(integrate.simpson(y_area, x=x_interpolate))
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f'))))
                 self.res_tab.setItem(9, index_pk, item)
