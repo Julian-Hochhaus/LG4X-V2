@@ -42,5 +42,6 @@ def big_bang():
         if conn:
             conn.close()
             print("sqlite connection is closed")
-            
+
+
 big_bang()
