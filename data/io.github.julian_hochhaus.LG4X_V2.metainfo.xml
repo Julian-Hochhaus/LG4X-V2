@@ -23,7 +23,7 @@
     <image>https://raw.githubusercontent.com/Julian-Hochhaus/LG4X-V2/master/Images/cross_section.png</image>
   </screenshot>
     <screenshot>
-    <image>https://github.com/hidecode221b/LG4X/blob/master/Images/Capture.PNG</image>
+    <image>https://raw.githubusercontent.com/hidecode221b/LG4X/master/Images/Capture.PNG</image>
   </screenshot>
  </screenshots>
  <url type="homepage">https://julian-hochhaus.github.io/LG4X-V2/</url>
@@ -32,6 +32,9 @@
  <url type="bugtracker">https://github.com/Julian-Hochhaus/LG4X-V2/issues</url>
  <content_rating type="oars-1.1"/>
  <releases>
+     <release version="2.2.0" date="2024-08-21"/>
+     <release version="2.1.5" date="2023-08-19"/>
+     <release version="V2.1.0" date="2023-07-19"/>
      <release version="V2.0.4" date="2023-05-15"/>
  </releases>
 </component>

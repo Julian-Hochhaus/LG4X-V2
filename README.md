@@ -1,3 +1,7 @@
+## Hint:
+Please use a released version for the productive use of the software (i.e. the latest Release) as they are tested for several different use cases and not the newest Commit, as the different branches are used to work on new and not extensively tested features. The newest commits on the master branch might as well contain bugs as the software is work in progress.
+
+
 ## Introduction
  LG4X-V2 is an open-source GUI for X-ray photoemission spectroscopy (XPS) curve fitting based on the python lmfit package. It streamlines the fitting process for easier validation and consistency. It is inspired by its predecessor software [LG4X](https://github.com/hidecode221b/LG4X) by [Hideki Nakajima](https://github.com/hidecode221b).
 
@@ -42,6 +46,18 @@ If LG4X-V2 has been significant in your research, and you would like to acknowle
 You can use our [CITATION.cff](https://github.com/Julian-Hochhaus/LG4X-V2/blob/master/CITATION.cff) too to generate a citation.
 
 
+### Publications
+Below is a selection of publications that have made use of LG4X-V2. If you have used LG4X-V2 for your publication and would like to be mentioned in the list, please let us know:
+
+- K. Teenakul et al. [Treatment of carbon electrodes with Ti3C2Tx MXene coating and thermal method for vanadium redox flow batteries: a comparative study](https://doi.org/10.1039/D4RA01380H) RSC Adv., **14**, 12807-12816 (2024).
+
+- P. Weinert et al. [Structural, chemical, and magnetic investigation of a graphene/cobalt/platinum multilayer system on silicon carbide](http://dx.doi.org/10.1088/1361-6528/ad1d7b) Nanotechnology, **35** 165702 (2024). 
+
+- P. Lamichhane et al. [Investigating the synergy of rapidly synthesized iron oxide predecessor and plasma-gaseous species for dye-removal to reuse water in irrigation](https://doi.org/10.1016/j.chemosphere.2024.143040) Chemosphere, **24** 143040 (2024).
+
+- P. Weinert [Structural, chemical, and magnetic investigation of a graphene/cobalt/platinum multilayer system on silicon carbide : About the formation of magnetic structures in 2D cobalt layers](https://d-nb.info/1328839591) Dissertation (2024).
+
+  
 ### License
 
 LG4X-V2 is distributed under [MIT license](https://github.com/Julian-Hochhaus/LG4X-V2/blob/master/LICENSE). 

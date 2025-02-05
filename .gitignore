@@ -2,3 +2,4 @@ Python/__pycache__/*
 .idea/workspace.xml
 .idea/*
 docs/_site/*
+Logs/*
