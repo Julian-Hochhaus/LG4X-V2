@@ -18,12 +18,12 @@
 # You can create any custom variable you would like, and they will be accessible
 # in the templates via {{ site.myvariable }}.
 
-title: LG4X-V2
+title: LG4X-V2 - GUI for fitting XPS/XAS spectra
 author: Julian Hochhaus
 email: julian.hochhaus@tu-dortmund.de
 description: >- # this means to ignore newlines until "baseurl:"
-  LG4X-V2 is an open-source GUI for X-ray photoemission spectroscopy (XPS) curve fitting based on the python lmfit package. It streamlines the fitting process for easier validation and consistency. It is inspired by its predecessor software LG4X by Hideki Nakajima.
-#baseurl: "" # the subpath of your site, e.g. /blog
+ description
+ #baseurl: "" # the subpath of your site, e.g. /blog
 #url: "" # the base hostname & protocol for your site, e.g. http://example.com
 linkedin: julian-hochhaus
 ORCID: 0000-0002-8328-607X
@@ -32,7 +32,7 @@ github_username:  Julian-Hochhaus
 
 
 # The keywords to associate with your website, for SEO purposes
-keywords: "XPS,lmfit,GUI,open-source, curve fitting, spectra analysis, XAS, open-source software, graphical user interface, X-ray photoemission spectroscopy, XPS curve fitting, fitting procedure, data analysis, Julian Hochhaus, Hideki Nakajima "
+keywords: "XPS,lmfit,lmfitxps, curve fitting, X-ray photoemission spectroscopy, XPS curve fitting, fitting procedure, data analysis, lmfit models, Tougaard, Shirley, Doniach-Sunjic, Convolution, Voigt-Profile, Doniach,  Julian Hochhaus"
 
 # Build settings
 # Theme
@@ -45,19 +45,15 @@ plugins:
 # Theme-specific settings
 aux_links:
   "LG4X-V2 on GitHub":
-    - "//github.com/Julian-Hochhaus/LG4X-V2"
+    - "https://github.com/Julian-Hochhaus/LG4X-V2"
 
 nav_external_links:
-  - title: LG4X-V2 on GitHub
+  - title: See on Github
     url: https://github.com/Julian-Hochhaus/LG4X-V2
     hide_icon: false # set to true to hide the external link icon - defaults to false
 
 header_pages:
- - pages/setup.md
- - pages/guide.md
- - pages/versions.md
- - pages/bugs.md
- - pages/about.md
+ - index.rst
 
 defaults:
   -

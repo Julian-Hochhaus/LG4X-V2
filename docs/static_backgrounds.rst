@@ -1,0 +1,4 @@
+Static backgrounds
+==================
+.. index:: backgrounds
+

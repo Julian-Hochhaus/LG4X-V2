@@ -1,0 +1,234 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LG4X-V2 &mdash; LG4X-V2 4.1.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+
+  
+    <link rel="shortcut icon" href="_static/icon.ico"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=c4d3e1ec"></script>
+      <script src="_static/doctools.js?v=888ff710"></script>
+      <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="about.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Static backgrounds" href="static_backgrounds.html" />
+    <link rel="prev" title="Index of the LG4X-V2 Documentation" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html">
+            
+              <img src="_static/logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">LG4X-V2</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#installation">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#stable-version">Stable Version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#development-version">Development Version</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dependencies">Dependencies</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#getting-started">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="static_backgrounds.html">Static backgrounds</a></li>
+<li class="toctree-l1"><a class="reference internal" href="backgrounds.html">Background Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lineshapes.html">Model functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="about.html">About</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">LG4X-V2</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">LG4X-V2</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/introduction.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This software was developed by enthusiastic scientists duct-taping code together to make our lives easier. We didn’t account for all the weird ways things could break—so if you’ve found a bug, head over to our <a class="reference external" href="https://github.com/Julian-Hochhaus/LG4X-V2">GitHub repository</a> and open an <a class="reference external" href="https://github.com/Julian-Hochhaus/LG4X-V2/issues">issue</a>. We’ll do our best to fix it!</p>
+<p>The software and docs are a work in progress. If something’s unclear, open a discussion or issue on our <a class="reference external" href="https://github.com/Julian-Hochhaus/LG4X-V2">GitHub page</a> —your feedback helps us improve!</p>
+</div>
+<section id="lg4x-v2">
+<h1>LG4X-V2<a class="headerlink" href="#lg4x-v2" title="Permalink to this heading"></a></h1>
+<p>LG4X-V2 is an open-source GUI for X-ray photoemission spectroscopy (XPS) curve fitting based on the Python <code class="docutils literal notranslate"><span class="pre">lmfit</span></code> package. It streamlines the fitting process for easier validation and consistency. It is inspired by its predecessor software LG4X <a class="reference external" href="https://github.com/hidecode221b/LG4X">https://github.com/hidecode221b/LG4X</a> by Hideki Nakajima.</p>
+</section>
+<section id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h1>
+<section id="stable-version">
+<span id="index-0"></span><h2>Stable Version<a class="headerlink" href="#stable-version" title="Permalink to this heading"></a></h2>
+<p>LG4X-V2 is built upon the <code class="docutils literal notranslate"><span class="pre">lmfit</span></code> and <code class="docutils literal notranslate"><span class="pre">lmfitxps</span></code> package using <code class="docutils literal notranslate"><span class="pre">PyQt5</span></code> for the GUI.</p>
+<p>Download the latest release if you want to use the (hopefully) stable version:</p>
+<p><a class="reference external" href="https://github.com/Julian-Hochhaus/LG4X-V2/releases">https://github.com/Julian-Hochhaus/LG4X-V2/releases</a></p>
+</section>
+<section id="development-version">
+<h2>Development Version<a class="headerlink" href="#development-version" title="Permalink to this heading"></a></h2>
+<p>To install the development version or contribute to <code class="docutils literal notranslate"><span class="pre">LG4X-V2</span></code>, please clone the GitHub repository:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Julian-Hochhaus/LG4X-V2.git
+</pre></div>
+</div>
+</section>
+<section id="dependencies">
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this heading"></a></h2>
+<p>After downloading the code, you have to install the following packages in order for the software to work as intended:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>asteval&gt;=0.9.28
+lmfit&gt;=1.1.0
+matplotlib&gt;=3.6
+numpy&gt;=1.19
+pandas&gt;=2.0
+PyQt5&gt;=5.15
+scipy&gt;=1.6
+uncertainties&gt;=3.1.4
+lmfitxps&gt;=4.1.0
+</pre></div>
+</div>
+<p>This could be done by navigating to the main folder of the software and installing the required packages using <code class="docutils literal notranslate"><span class="pre">pip</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+</pre></div>
+</div>
+</section>
+</section>
+<section id="getting-started">
+<h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this heading"></a></h1>
+<p>While <code class="docutils literal notranslate"><span class="pre">lmfit</span></code> provides simple tools to build complex fitting models for non-linear least-squares problems and applies these models to real data, as well as introduces several built-in models, <code class="docutils literal notranslate"><span class="pre">lmfitxps</span></code> acts as an extension to <code class="docutils literal notranslate"><span class="pre">lmfit</span></code> designed for XPS data analysis.
+<code class="docutils literal notranslate"><span class="pre">lmfitxps</span></code> provides a comprehensive set of functions and models that facilitate the fitting of XPS spectra.</p>
+<p>Although <code class="docutils literal notranslate"><span class="pre">lmfit</span></code> already provides several useful models for fitting XPS data, it often proves insufficient in adequately representing experimental XPS data out of the box. In the context of XPS experiments, the observed data is a convolution of both the sample’s underlying physical properties and a Gaussian component arising from experimental broadening.</p>
+<p>This Gaussian distribution serves as an effective approximation for the convolution of three distinct Gaussian broadening functions, each of which contributes to the complex interplay inherent in the photoemission process:</p>
+<ol class="arabic simple">
+<li><p>Broadening caused by the excitation source.</p></li>
+<li><p>Broadening resulting from thermal broadening and vibration modes (phonon broadening, depending on the material).</p></li>
+<li><p>Broadening introduced by the analyzer/spectrometer.</p></li>
+</ol>
+<p>For further details, please refer to, for example, the <a class="reference external" href="https://pubs.aip.org/avs/jva/article/38/6/061203/1023652/Practical-guide-for-curve-fitting-in-x-ray">Practical guide for curve fitting in x-ray photoelectron spectroscopy</a> by G.H. Major et al.</p>
+<p><code class="docutils literal notranslate"><span class="pre">lmfitxps</span></code> therefore provides convolution functions based on scipy’s and numpy’s convolution functions to enable users to build custom <a class="reference external" href="https://lmfit.github.io/lmfit-py/model.html#lmfit.model.CompositeModel">lmfit CompositeModels</a> using convolution of models. In addition, <code class="docutils literal notranslate"><span class="pre">lmfitxps</span></code> provides several pre-built models that use convolutions with model functions from lmfit and offer users the following options:</p>
+<table class="docutils align-default" id="id2">
+<caption><span class="caption-number">Table 1 </span><span class="caption-text">Model functions</span><a class="headerlink" href="#id2" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 35.0%" />
+<col style="width: 65.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Model</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ConvGaussianDoniachSinglett</span></code></p></td>
+<td><p>Convolution of a Gaussian with a Doniach lineshape used to
+fit singlet XPS peaks such as <em>s-orbitals</em>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ConvGaussianDoniachDublett</span></code></p></td>
+<td><p>Convolution of a Gaussian with a pair of Doniach lineshapes
+used to fit doublet XPS peaks such as <em>p-, d-, f-orbitals</em>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FermiEdgeModel</span></code></p></td>
+<td><p>Convolution of a Gaussian with a Fermi Dirac Step function
+using the thermal distribution lineshape from lmfit.</p></td>
+</tr>
+</tbody>
+</table>
+<p>In addition to models for fitting signals in XPS data, <code class="docutils literal notranslate"><span class="pre">lmfitxps</span></code> introduces several background models that can be included in fit models instead of subtracting precalculated backgrounds. This is known as an active approach as suggested by <a class="reference external" href="https://doi.org/10.1002/sia.5453">A. Herrera-Gomez</a> and generally leads to better fit results.
+The available background models are:</p>
+<table class="docutils align-default" id="id3">
+<caption><span class="caption-number">Table 2 </span><span class="caption-text">Background Models</span><a class="headerlink" href="#id3" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Model</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ShirleyBG</span></code></p></td>
+<td><p>The commonly used step-like Shirley background.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TougaardBG</span></code></p></td>
+<td><p>The Tougaard background based on four-parameter loss
+function (4-PIESCS) as suggested by
+<a class="reference external" href="https://doi.org/10.1002/sia.3746">R.Hesse</a>.</p></td>
+</tr>
+<tr class="row-even"><td colspan="2"><p><code class="docutils literal notranslate"><span class="pre">SlopeBG</span></code>                           | Calculates a sloping background</p></td>
+</tr>
+</tbody>
+</table>
+<p>In addition to these discussed models, <code class="docutils literal notranslate"><span class="pre">lmfitxps</span></code> provides all underlying functions that serve as bases for these models. Furthermore, it includes functions for removing Tougaard and Shirley background components before performing data fitting.</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Index of the LG4X-V2 Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="static_backgrounds.html" class="btn btn-neutral float-right" title="Static backgrounds" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2025, Julian A. Hochhaus.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
