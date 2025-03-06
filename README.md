@@ -62,6 +62,9 @@ Below is a selection of publications that have made use of LG4X-V2. If you have 
 
 LG4X-V2 is distributed under [MIT license](https://github.com/Julian-Hochhaus/LG4X-V2/blob/master/LICENSE). 
 
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FJulian-Hochhaus%2FLG4X-V2.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FJulian-Hochhaus%2FLG4X-V2?ref=badge_large)
+
 ### Contributing
 
 We would love your help, either as ideas, documentation, or code. If you have a new algorithm or want to add or fix existing code, please do! Here's how you can get started:
@@ -298,6 +301,7 @@ A comprehensive review on XPS technique and analytical procedures is available i
 ## Examples
 
 ![XPS C1s spectrum](https://github.com/heitler/LG4X/blob/master/Images/Capture.PNG "XPS C1s spectrum")
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FJulian-Hochhaus%2FLG4X-V2.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FJulian-Hochhaus%2FLG4X-V2?ref=badge_shield)
 
 ![XPS Ag3d spectrum](https://github.com/heitler/LG4X/blob/master/Images/Screen%20Shot%202020-05-27%20at%2023.14.49.png "XPS Ag3d spectrum")
 
@@ -321,6 +325,3 @@ You can find the VAMAS format data of various spectra from [Spectroscopy Hub](ht
 - [ ] rewrite the Readme to explain the features introduced in LG4X-V2
 - [ ] Export fit parameters as readable table to be able to use them in e.g. a presentation
 - [ ] Introduce 'Clear all' button for clearing all parameters/limits etc.
-
-
-
