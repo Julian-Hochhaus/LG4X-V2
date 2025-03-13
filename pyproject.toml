@@ -1,0 +1,40 @@
+# pyproject.toml
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name='LG4X-V2'
+readme='README.md'
+version = "2.4.3"
+authors=[{name='Julian Hochhaus', email='julian.hochhaus@tu-dortmund.de'}, {name='Julian Hochhaus', email='julian.hochhaus@tu-dortmund.de'}]
+license={file='LICENSE', name='MIT'}
+description='A graphical user interface for X-ray photoemission spectroscopy (XPS) curve fitting analysis/ X-ray absorption spectroscopy (XAS) analysis. The curve fitting is done using the LMFIT and lmfitxps packages.'
+
+[project.urls]
+homepage='https://github.com/Julian-Hochhaus/lmfitxps'
+documentation='https://lmfitxps.readthedocs.io/en/latest/'
+
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["lmfitxps"]
+
+
+[project]
+name = "your_package_name"
+version = "0.1.0"
+description = "A short description of your project"
+authors = [{name = "Your Name", email = "you@example.com"}]
+license = {text = "MIT"}
+readme = "Readme.md"
+requires-python = ">=3.7"
+dependencies = [
+    "numpy>=1.21.0",
+    "pandas>=1.3.0",
+    "requests>=2.26.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/your-repo"

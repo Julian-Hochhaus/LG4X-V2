@@ -70,8 +70,13 @@ class VAMAS:
 			self.blocks.append(VAMASBlock(self.header, content)) # Block is an object
 		
 		# Should now get the experiment terminator: check.
+
+		try:
+			check_line = next(content).strip()
+		except StopIteration:
+			# Reached end of file
+			check_line = None
 		
-		check_line = next(content).strip()
 		if check_line != 'end of experiment':
 			print('Warning (VAMAS.py, VAMAS::LoadFromText): Failed to find experiment terminator in expected place. VAMAS file may be corrupt.')
 		
