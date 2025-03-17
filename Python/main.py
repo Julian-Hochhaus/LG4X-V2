@@ -17,6 +17,7 @@ from lmfit import Model
 from matplotlib import style
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from PyQt5.QtWidgets import QApplication, QDesktopWidget
 
 import vamas_export as vpy
 from periodictable import PeriodicTable
@@ -26,7 +27,37 @@ import threading
 
 import traceback  # error handling
 import logging  # error handling
-__version__ = "1.3.2"
+from logging.handlers import RotatingFileHandler
+import configparser
+
+if os.environ.get('container') == 'flatpak':
+    log_folder = ('.var/app/io.github.julian_hochhaus.LG4X_V2/cache/Logs')
+    os.makedirs(log_folder, exist_ok=True)
+    log_file_path = ('.var/app/io.github.julian_hochhaus.LG4X_V2/cache/Logs/app.log')
+    config_file_path = ('/app/config/config.ini')
+else:
+    script_directory = os.path.dirname(os.path.abspath(__file__))
+    log_folder = os.path.join(script_directory, '../Logs')
+    os.makedirs(log_folder, exist_ok=True)
+    log_file_path = os.path.join(script_directory, '../Logs/app.log')
+    config_file_path = os.path.join(script_directory, '../config/config.ini')
+    
+max_log_size = 4*1024*1024 # 4MB
+backup_count = 5  # Number of backup files to keep
+handler = RotatingFileHandler(log_file_path, maxBytes=max_log_size, backupCount=backup_count)
+handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+logger.addHandler(handler)
+
+config = configparser.ConfigParser()
+
+if len(config_file_path)>=256:
+    print('Error: config file path too long (more than 256 characters). Please move the install directory of the project to a shorter path. Otherwise, configparser cannot read the config file and the program does not work.')
+config.read(config_file_path)
+
+__version__ = "2.3.0"
 # style.use('ggplot')
 style.use('seaborn-v0_8-colorblind')
 dictBG = {
@@ -43,15 +74,20 @@ dictBG = {
 }
 
 
+
+
+
 class PrettyWidget(QtWidgets.QMainWindow):
     def __init__(self):
+        self.two_window_mode = config.getboolean('GUI', 'two_window_mode')
+        self.resolution= [config.getint('GUI', 'resolution_width'), config.getint('GUI', 'resolution_height')]
         super(PrettyWidget, self).__init__()
         # super(PrettyWidget, self).__init__()
         self.rows_lightened = 1
         self.export_out = None
         self.export_pars = None
         self.pre = [[], [], [], []]
-        self.results = []
+        self.meta_result_export=[]
         self.res_label = None
         self.pars_label = None
         self.stats_label = None
@@ -81,13 +117,21 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.displayChoosenBG = QtWidgets.QLabel()
         self.delegate = TableItemDelegate()
         self.binding_ener=False
-        self.initUI()
-
-    def initUI(self):
+        self.column_width = config.getint('GUI', 'column_width')
         self.fit_thread=FitThread(self)
         self.version = 'LG4X: LMFit GUI for XPS curve fitting v{}'.format(__version__)
         self.floating = '.3f'
-        self.setGeometry(700, 500, 1600, 900)
+        self.data_arr={}
+        self.initUI()
+    def initUI(self):
+        if self.two_window_mode:
+            self.initTwoWindowUI()
+        else:
+            self.initSingleWindowUI()
+
+    def initTwoWindowUI(self):
+        self.setGeometry(0, 0, self.resolution[0], self.resolution[1])
+        self.showNormal()
         self.center()
         self.setWindowTitle(self.version)
         self.statusBar().showMessage(
@@ -95,11 +139,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.pt = PeriodicTable()
         self.pt.setWindowTitle('Periodic Table')
         # data template
-        # self.df = pd.DataFrame()
         self.df = []
         self.result = pd.DataFrame()
         outer_layout = QtWidgets.QVBoxLayout()
-        self.static_bg=int(0)
+        self.static_bg = int(0)
         self.idx_imp = 0
 
         self.idx_bg = [2]
@@ -237,7 +280,542 @@ class PrettyWidget(QtWidgets.QMainWindow):
         btn_tougaard_cross_section.triggered.connect(self.clicked_cross_section)
         self.bgMenu.addSeparator()
         self.bgMenu.addAction(btn_tougaard_cross_section)
+        menubar.addSeparator()
+        settings_menu = menubar.addMenu('&Settings')
+        btn_settings = QtWidgets.QAction('& Open Settings', self)
+        btn_settings.triggered.connect(self.open_settings_window)
+        settings_menu.addAction(btn_settings)
+        menubar.addSeparator()
+        links_menu = menubar.addMenu('&Help/Info')
+        # manual_link= QtWidgets.QAction('&Manual', self)
+        # manual_link.triggered.connect(lambda: webbrowser.open('https://julian-hochhaus.github.io/LG4X-V2/'))
+        # links_menu.addAction(manual_link)
+        github_link = QtWidgets.QAction('See on &Github', self)
+        github_link.triggered.connect(lambda: webbrowser.open('https://github.com/Julian-Hochhaus/LG4X-V2'))
+        links_menu.addAction(github_link)
+        about_link = QtWidgets.QAction('&How to cite', self)
+        about_link.triggered.connect(self.show_citation_dialog)
+        links_menu.addAction(about_link)
 
+        # central widget layout
+        widget = QtWidgets.QWidget(self)
+        self.setCentralWidget(widget)
+        widget.setLayout(outer_layout)
+
+        # Home directory
+        self.filePath = QtCore.QDir.homePath()
+
+        self.figure, (self.ar, self.ax) = plt.subplots(2, sharex=True,
+                                                       gridspec_kw={'height_ratios': [1, 5], 'hspace': 0})
+        self.canvas = FigureCanvas(self.figure)
+        self.toolbar = NavigationToolbar(self.canvas, self)
+        self.toolbar.setMaximumHeight(20)
+        self.toolbar.setMinimumHeight(15)
+        self.toolbar.setStyleSheet("QToolBar { border: 0px }")
+
+        # layout top row
+        toprow_layout = QtWidgets.QHBoxLayout()
+        bottomrow_layout = QtWidgets.QHBoxLayout()
+        bottomrow_second_screen_layout = QtWidgets.QHBoxLayout()
+        # button layout
+
+        layout_top_left = QtWidgets.QVBoxLayout()
+        fitbuttons_layout = QtWidgets.QHBoxLayout()
+        # Fit Button
+        self.btn_fit = QtWidgets.QPushButton('Fit', self)
+        self.btn_fit.resize(self.btn_fit.sizeHint())
+        self.btn_fit.clicked.connect(self.fit)
+        fitbuttons_layout.addWidget(self.btn_fit)
+        # Evaluate Button
+        self.btn_eva = QtWidgets.QPushButton('Evaluate', self)
+        self.btn_eva.resize(self.btn_eva.sizeHint())
+        self.btn_eva.clicked.connect(self.eva)
+        fitbuttons_layout.addWidget(self.btn_eva)
+        # Undo Fit Button
+        self.btn_undoFit = QtWidgets.QPushButton('undo Fit', self)
+        self.btn_undoFit.resize(self.btn_undoFit.sizeHint())
+        self.btn_undoFit.clicked.connect(self.one_step_back_in_params_history)
+        fitbuttons_layout.addWidget(self.btn_undoFit)
+        # Interrupt fit Button
+        self.btn_interrupt = QtWidgets.QPushButton('Interrupt fitting', self)
+        self.btn_interrupt.resize(self.btn_interrupt.sizeHint())
+        self.btn_interrupt.clicked.connect(self.interrupt_fit)
+        fitbuttons_layout.addWidget(self.btn_interrupt)
+        layout_top_left.addLayout(fitbuttons_layout)
+
+        # lists of dropdown menus
+        self.list_file = ['File list', 'Clear list']
+        # DropDown file list
+        self.comboBox_file = QtWidgets.QComboBox(self)
+        self.comboBox_file.addItems(self.list_file)
+        self.comboBox_file.currentIndexChanged.connect(self.plot)
+        layout_top_left.addWidget(self.comboBox_file)
+        layout_top_left.addWidget(LayoutHline())
+        plottitle_form = QtWidgets.QFormLayout()
+        self.plottitle = QtWidgets.QLineEdit()
+        plottitle_form.addRow("Plot title: ", self.plottitle)
+        plot_settings_layout = QtWidgets.QHBoxLayout()
+        min_form = QtWidgets.QFormLayout()
+        self.xmin_item = DoubleLineEdit()
+        self.xmin = 270
+        self.xmin_item.setText(str(self.xmin))
+        self.xmin_item.textChanged.connect(self.update_com_vals)
+        min_form.addRow("x_min: ", self.xmin_item)
+        plot_settings_layout.addLayout(min_form)
+        max_form = QtWidgets.QFormLayout()
+        self.xmax_item = DoubleLineEdit()
+        self.xmax = 300
+        self.xmax_item.setText(str(self.xmax))
+        self.xmax_item.textChanged.connect(self.update_com_vals)
+        max_form.addRow("x_max: ", self.xmax_item)
+        plot_settings_layout.addLayout(max_form)
+        hv_form = QtWidgets.QFormLayout()
+        self.hv_item = DoubleLineEdit()
+        self.hv = 1486.6
+        self.hv_item.setText(str(self.hv))
+        self.hv_item.textChanged.connect(self.update_com_vals)
+        hv_form.addRow("hv: ", self.hv_item)
+        plot_settings_layout.addLayout(hv_form)
+        wf_form = QtWidgets.QFormLayout()
+        self.wf_item = DoubleLineEdit()
+        self.wf = 4
+        self.wf_item.setText(str(self.wf))
+        self.wf_item.textChanged.connect(self.update_com_vals)
+        wf_form.addRow("wf: ", self.wf_item)
+        plot_settings_layout.addLayout(wf_form)
+        correct_energy_form = QtWidgets.QFormLayout()
+        self.correct_energy_item = DoubleLineEdit()
+        self.correct_energy = 0
+        self.correct_energy_item.setText(str(self.correct_energy))
+        self.correct_energy_item.textChanged.connect(self.update_com_vals)
+        correct_energy_form.addRow("shift energy: ", self.correct_energy_item)
+        plot_settings_layout.addLayout(correct_energy_form)
+        layout_top_left.addLayout(plottitle_form)
+        layout_top_left.addLayout(plot_settings_layout)
+        layout_top_left.addStretch(1)
+
+        layout_bottom_left = QtWidgets.QVBoxLayout()
+        layout_bottom_left.addWidget(self.toolbar)
+        layout_bottom_left.addWidget(self.canvas)
+
+        toprow_layout.addLayout(layout_top_left, 4)
+        bottomrow_layout.addLayout(layout_bottom_left, 4)
+
+        layout_top_mid = QtWidgets.QVBoxLayout()
+        layout_bottom_mid = QtWidgets.QVBoxLayout()
+        # PolyBG Table
+        list_bg_col = ['bg_c0', 'bg_c1', 'bg_c2', 'bg_c3', 'bg_c4']
+        list_bg_row = ['Shirley (cv, it, k, c)', 'Tougaard(B, C, C*, D, extend)', 'Polynomial', 'Slope(k)',
+                       'arctan (amp, ctr, sig)', 'erf (amp, ctr, sig)', 'cutoff (ctr, d1-4)']
+        self.fitp0 = QtWidgets.QTableWidget(len(list_bg_row), len(list_bg_col) * 2)
+
+        self.fitp0.setItemDelegate(self.delegate)
+        list_bg_colh = ['', 'bg_c0', '', 'bg_c1', '', 'bg_c2', '', 'bg_c3', '', 'bg_c4']
+
+        self.fitp0.setHorizontalHeaderLabels(list_bg_colh)
+        self.fitp0.setVerticalHeaderLabels(list_bg_row)
+        # set BG table checkbox
+        for row in range(len(list_bg_row)):
+            for col in range(len(list_bg_colh)):
+                if (row == 2 or row > 3 or (row == 3 and col < 2) or (row == 0 and 8 > col >= 4) or (
+                        row == 1 and col == 0)) and col % 2 == 0:
+                    item = QtWidgets.QTableWidgetItem()
+                    item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
+                    item.setCheckState(QtCore.Qt.Unchecked)
+                    item.setToolTip('Check to keep fixed during fit procedure')
+                    self.fitp0.setItem(row, col, item)
+                else:
+                    item = QtWidgets.QTableWidgetItem()
+                    item.setText('')
+                    self.fitp0.setItem(row, col, item)
+        # set BG table default
+        pre_bg = [['', 1e-06, '', 10, 2, 0.0003, 2, 1000, '', ''],
+                  [2, 2866.0, '', 1643.0, '', 1.0, '', 1.0, '', 50],
+                  [2, 0, 2, 0, 2, 0, 2, 0, 2, 0],
+                  [2, 0.0, '', '', '', '', '', '', '', '', '']]
+        # self.setPreset([0], pre_bg, [])
+
+        bg_fixedLayout = QtWidgets.QHBoxLayout()
+        self.fixedBG = QtWidgets.QCheckBox('Keep background fixed')
+        self.displayChoosenBG.setText(
+            'Choosen Background: {}'.format('+ '.join([dictBG[str(idx)] for idx in self.idx_bg])))
+        self.displayChoosenBG.setStyleSheet("font-weight: bold")
+
+        bg_fixedLayout.addWidget(self.displayChoosenBG)
+        bg_fixedLayout.addWidget(self.fixedBG)
+
+        layout_top_mid.addWidget(self.fitp0)
+        layout_top_mid.addLayout(bg_fixedLayout)
+        # Add Button
+
+        componentbuttons_layout = QtWidgets.QHBoxLayout()
+        btn_add = QtWidgets.QPushButton('add component', self)
+        btn_add.resize(btn_add.sizeHint())
+        btn_add.clicked.connect(self.add_col)
+        componentbuttons_layout.addWidget(btn_add)
+
+        # Remove Button
+        btn_rem = QtWidgets.QPushButton('rem component', self)
+        btn_rem.resize(btn_rem.sizeHint())
+        btn_rem.clicked.connect(lambda: self.removeCol(idx=None, text=None))
+        componentbuttons_layout.addWidget(btn_rem)
+
+        btn_limit_set = QtWidgets.QPushButton('&Set/Show Limits', self)
+        btn_limit_set.resize(btn_limit_set.sizeHint())
+        btn_limit_set.clicked.connect(self.setLimits)
+        componentbuttons_layout.addWidget(btn_limit_set)
+
+        # indicator for limits
+        self.status_label = QtWidgets.QLabel()
+        self.status_label.setFixedSize(18, 18)
+        self.status_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.status_label.setStyleSheet("background-color: grey; border-radius: 9px")
+
+        # Create a QLabel for the status text
+        self.status_text = QtWidgets.QLabel("Limits not used")
+        self.status_text.setAlignment(QtCore.Qt.AlignLeft)
+        self.status_text.setAlignment(QtCore.Qt.AlignVCenter)
+
+        # Create a QVBoxLayout to hold the status widgets
+        status_layout = QtWidgets.QHBoxLayout()
+        status_layout.addWidget(self.status_label)
+        status_layout.addWidget(self.status_text)
+        status_layout.setAlignment(QtCore.Qt.AlignVCenter)
+        componentbuttons_layout.addLayout(status_layout)
+        componentbuttons_layout.setAlignment(QtCore.Qt.AlignVCenter)
+
+        layout_bottom_mid.addLayout(componentbuttons_layout)
+
+        # set Fit Table
+        list_col = ['C_1']
+        list_row = ['model', 'center', 'amplitude', 'lorentzian (sigma/gamma)', 'gaussian(sigma)', 'asymmetry(gamma)',
+                    'frac', 'skew', 'q', 'kt', 'soc',
+                    'height_ratio',
+                    'fct_coster_kronig', 'center_ref', 'ctr_diff', 'amp_ref', 'ratio', 'lorentzian_ref', 'ratio',
+                    'gaussian_ref', 'ratio',
+                    'asymmetry_ref', 'ratio', 'soc_ref', 'ratio', 'height_ref', 'ratio']
+
+        def comps_edit_condition(logicalIndex):
+            return logicalIndex % 2 != 0
+
+        self.fitp1 = RemoveAndEditTableWidget(len(list_row), len(list_col) * 2, comps_edit_condition)
+        self.fitp1.headerTextChanged.connect(self.updateHeader_lims)
+        self.fitp1.removeOptionChanged.connect(self.removeCol)
+        self.fitp1.setItemDelegate(self.delegate)
+        list_colh = ['', 'C_1']
+        self.fitp1.setHorizontalHeaderLabels(list_colh)
+        self.fitp1.setVerticalHeaderLabels(list_row)
+        self.list_row_limits = [
+            'center', 'amplitude', 'lorentzian (sigma/gamma)', 'gaussian(sigma)', 'asymmetry(gamma)', 'frac', 'skew',
+            'q', 'kt', 'soc',
+            'height', "fct_coster_kronig", 'ctr_diff', 'amp_ratio', 'lorentzian_ratio', 'gaussian_ratio',
+            'asymmetry_ratio', 'soc_ratio', 'height_ratio']
+        list_colh_limits = ['C_1', 'min', 'max']
+
+        def lims_edit_condition(logicalIndex):
+            return logicalIndex % 3 == 0
+
+        self.fitp1_lims = EditableHeaderTableWidget(len(self.list_row_limits), len(list_col) * 3, lims_edit_condition)
+        self.fitp1_lims.headerTextChanged.connect(self.updateHeader_comps)
+        self.fitp1_lims.setItemDelegate(self.delegate)
+
+        self.fitp1_lims.setHorizontalHeaderLabels(list_colh_limits)
+        self.fitp1_lims.setVerticalHeaderLabels(self.list_row_limits)
+        self.fitp1_lims.cellChanged.connect(self.lims_changed)
+
+        # self.list_shape = ['g', 'l', 'v', 'p']
+        self.list_shape = ['g: Gaussian', 'l: Lorentzian', 'v: Voigt', 'p: PseudoVoigt', 'e: ExponentialGaussian',
+                           's: SkewedGaussian', 'a: SkewedVoigt', 'b: BreitWigner', 'n: Lognormal', 'd: Doniach',
+                           'gdd: Convolution Gaussian/Doniach-Dublett', 'gds: Convolution Gaussian/Doniach-Singlett',
+                           'fe:Convolution FermiDirac/Gaussian']
+        self.list_component = ['', 'C_1']
+
+        # set DropDown component model
+        for col in range(len(list_col)):
+            comboBox = QtWidgets.QComboBox()
+            comboBox.addItems(self.list_shape)
+            # comboBox.setMaximumWidth(55)
+            self.fitp1.setCellWidget(0, 2 * col + 1, comboBox)
+        # set DropDown ctr_ref component selection
+        for i in range(7):
+            for col in range(len(list_col)):
+                comboBox = QtWidgets.QComboBox()
+                comboBox.addItems(self.list_component)
+                comboBox.setMaximumWidth(55)
+                self.fitp1.setCellWidget(13 + 2 * i, 2 * col + 1, comboBox)
+
+        # set checkbox and dropdown in fit table
+        for row in range(len(list_row)):
+            for col in range(len(list_colh)):
+                if col % 2 == 0:
+                    item = QtWidgets.QTableWidgetItem()
+                    item.setToolTip('Check to keep fixed during fit procedure')
+                    item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
+                    if 0 < row < 13:
+                        item.setCheckState(QtCore.Qt.Checked)
+                        self.fitp1.setItem(row, col, item)
+                    if 13 <= row:
+                        if row % 2 == 0:
+                            item.setCheckState(QtCore.Qt.Unchecked)
+                            self.fitp1.setItem(row, col, item)
+                        else:
+                            item = QtWidgets.QTableWidgetItem()
+                            item.setText('')
+                            self.fitp1.setItem(row, col, item)
+                elif col % 2 != 0 and (row == 0 or (12 <= row and row % 2 == 1)):
+                    comboBox = QtWidgets.QComboBox()
+                    if row == 0:
+                        comboBox.addItems(self.list_shape)
+                        comboBox.currentTextChanged.connect(self.activeParameters)
+                    else:
+                        comboBox.addItems(self.list_component)
+                    self.fitp1.setCellWidget(row, col, comboBox)
+                else:
+                    item = QtWidgets.QTableWidgetItem()
+                    item.setText('')
+                    self.fitp1.setItem(row, col, item)
+        # set checkbox in limits table
+        for row in range(len(self.list_row_limits)):
+            for col in range(len(list_colh_limits)):
+                item = QtWidgets.QTableWidgetItem()
+                if col % 3 == 0:
+                    item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
+                    item.setCheckState(QtCore.Qt.Unchecked)
+                    item.setToolTip('Check to use limit during fit procedure')
+                else:
+                    item.setText("")
+                self.fitp1_lims.setItem(row, col, item)
+        # load default preset
+        # pre_pk = [[0,0],[2,0],[2,0],[2,0],[2,0],[2,0],[2,0],[2,0]]
+        pre_pk = [[0, 0], [2, 284.6], [0, 20000], [2, 0.2], [2, 0.2], [2, 0.02], [2, 0], [2, 0], [2, 0.0], [2, 0.026],
+                  [2, 1], [2, 0.7], [2, 1], [0, 0], [2, 0.1], [0, 0], [2, 0.5], [0, 0], [2, 1], [0, 0], [2, 1],
+                  [0, 0], [2, 1], [0, 0], [2, 1], [0, 0], [2, 1]]
+        self.pre = [[self.idx_bg, self.xmin, self.xmax, self.hv, self.wf, self.correct_energy], pre_bg, pre_pk,
+                    [[0, '', '']] * 19]
+        self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
+        self.fitp1.setHeaderTooltips()
+        layout_bottom_mid.addWidget(self.fitp1)
+
+        toprow_layout.addLayout(layout_top_mid, 4)
+        bottomrow_second_screen_layout.addLayout(layout_bottom_mid, 3)
+        outer_layout.addLayout(toprow_layout, 1)
+
+        outer_layout.addWidget(LayoutHline())
+        outer_layout.addLayout(bottomrow_layout, 6)
+        # grid..addWidget(self.res_label, 7, 7, 1, 1)
+
+
+        self.second_window = QtWidgets.QMainWindow()
+        second_window_layout = QtWidgets.QVBoxLayout()
+        self.second_window.setGeometry(0, 0, self.resolution[0], self.resolution[1])
+        self.second_window.showNormal()
+        self.second_window.setWindowTitle(self.version+'-second screen-')
+        second_window_central_widget = QtWidgets.QWidget(self.second_window)
+        second_window_central_widget.setLayout(second_window_layout)
+        self.second_window.setCentralWidget(second_window_central_widget)
+        second_window_layout.addLayout(bottomrow_second_screen_layout, 6)
+        layout_top_right = QtWidgets.QVBoxLayout()
+        layout_bottom_right = QtWidgets.QVBoxLayout()
+        self.fitp1_lims.setHeaderTooltips()
+        list_res_row = ['gaussian_fwhm', 'lorentzian_fwhm_p1', 'lorentzian_fwhm_p2', 'fwhm_p1', 'fwhm_p2', 'height_p1',
+                        'height_p2', 'approx. area_p1', 'approx. area_p2', 'area_total']
+
+        def res_edit_condition(logicalIndex):
+            return logicalIndex % 1 == 0
+
+        self.res_tab = EditableHeaderTableWidget(len(list_res_row), len(list_col), res_edit_condition)
+        self.res_tab.setHorizontalHeaderLabels(list_col)
+        self.res_tab.setVerticalHeaderLabels(list_res_row)
+        self.res_tab.headerTextChanged.connect(self.updateHeader_res)
+        layout_bottom_right.addWidget(self.res_tab)
+        toprow_layout.addLayout(layout_top_right, 1)
+        bottomrow_second_screen_layout.addLayout(layout_bottom_right, 2)
+        list_stats_row = ['success?', 'message', 'nfev', 'nvary', 'ndata', 'nfree', 'chisqr', 'redchi', 'aic', 'bic']
+        list_stats_col = ['Fit stats']
+        self.stats_tab = QtWidgets.QTableWidget(len(list_stats_row), 1)
+        self.stats_tab.setHorizontalHeaderLabels(list_stats_col)
+        self.stats_tab.setVerticalHeaderLabels(list_stats_row)
+        layout_bottom_right.addWidget(self.stats_tab)
+        self.stats_label = QtWidgets.QLabel()
+        self.stats_label.setText("Fit statistics:")
+        self.stats_label.setStyleSheet("font-weight: bold; font-size:12pt")
+        # grid..addWidget(self.stats_label, 5, 7, 1, 1)
+        self.pars_label = QtWidgets.QLabel()
+        self.pars_label.setText("Peak parameters:")
+        self.pars_label.setStyleSheet("font-weight: bold; font-size:12pt")
+        # grid..addWidget(self.pars_label, 3, 3, 1, 1)
+        self.res_label = QtWidgets.QLabel()
+        self.res_label.setText("Fit results:")
+        self.res_label.setStyleSheet("font-weight: bold; font-size:12pt")
+        self.activeParameters()
+        self.resizeAllColumns()
+
+    def initSingleWindowUI(self):
+        self.setGeometry(0, 0, self.resolution[0], self.resolution[1])
+        self.showNormal()
+        self.center()
+        self.setWindowTitle(self.version)
+        self.statusBar().showMessage(
+            'Copyright (C) 2022, Julian Hochhaus, TU Dortmund University')
+        self.pt = PeriodicTable()
+        self.pt.setWindowTitle('Periodic Table')
+        # data template
+        self.df = []
+        self.result = pd.DataFrame()
+        outer_layout = QtWidgets.QVBoxLayout()
+        self.static_bg=int(0)
+        self.idx_imp = 0
+
+        self.idx_bg = [2]
+
+        self.idx_pres = 0
+        # Menu bar
+        menubar = self.menuBar()
+        ## Import sub menue
+        fileMenu = menubar.addMenu('&File')
+
+        btn_imp_csv = QtWidgets.QAction('Import &csv', self)
+        btn_imp_csv.setShortcut('Ctrl+Shift+X')
+        btn_imp_csv.triggered.connect(lambda: self.clickOnBtnImp(idx=1))
+
+        btn_imp_txt = QtWidgets.QAction('Import &txt', self)
+        btn_imp_txt.setShortcut('Ctrl+Shift+Y')
+        btn_imp_txt.triggered.connect(lambda: self.clickOnBtnImp(idx=2))
+
+        btn_imp_vms = QtWidgets.QAction('Import &vms', self)
+        btn_imp_vms.setShortcut('Ctrl+Shift+V')
+        btn_imp_vms.triggered.connect(lambda: self.clickOnBtnImp(idx=3))
+
+        btn_open_dir = QtWidgets.QAction('Open directory (.txt and .csv)', self)
+        btn_open_dir.setShortcut('Ctrl+Shift+D')
+        btn_open_dir.triggered.connect(lambda: self.clickOnBtnImp(idx=4))
+
+        btn_open_dir_csv = QtWidgets.QAction('Open directory (only .csv)', self)
+        btn_open_dir_csv.setShortcut('Ctrl+Shift+C')
+        btn_open_dir_csv.triggered.connect(lambda: self.clickOnBtnImp(idx=5))
+
+        btn_open_dir_txt = QtWidgets.QAction('Open directory (only .txt)', self)
+        btn_open_dir_txt.setShortcut('Ctrl+Shift+T')
+        btn_open_dir_txt.triggered.connect(lambda: self.clickOnBtnImp(idx=6))
+
+        importSubmenu = fileMenu.addMenu('&Import')
+        importSubmenu.addAction(btn_imp_csv)
+        importSubmenu.addAction(btn_imp_txt)
+        importSubmenu.addAction(btn_imp_vms)
+        importSubmenu.addAction(btn_open_dir)
+        importSubmenu.addAction(btn_open_dir_csv)
+        importSubmenu.addAction(btn_open_dir_txt)
+        ### Export submenu
+        btn_exp_results = QtWidgets.QAction('&Results', self)
+        btn_exp_results.setShortcut('Ctrl+Shift+R')
+        btn_exp_results.triggered.connect(self.exportResults)
+
+        btn_exp_all_results = QtWidgets.QAction('Re&sults + Data', self)
+        btn_exp_all_results.setShortcut('Ctrl+Shift+S')
+        btn_exp_all_results.triggered.connect(self.export_all)
+
+        exportSubmenu = fileMenu.addMenu('&Export')
+        exportSubmenu.addAction(btn_exp_results)
+        exportSubmenu.addAction(btn_exp_all_results)
+
+        # exit application
+        exitAction = QtWidgets.QAction('E&xit', self)
+        exitAction.setShortcut('Ctrl+Q')
+        exitAction.setStatusTip('Exit application')
+        exitAction.triggered.connect(QtWidgets.qApp.quit)
+
+        fileMenu.addAction(exitAction)
+
+        ## Preset sub menue
+        presetMenu = menubar.addMenu('&Preset')
+
+        btn_preset_new = QtWidgets.QAction('&New', self)
+        btn_preset_new.setShortcut('Ctrl+Shift+N')
+        btn_preset_new.triggered.connect(lambda: self.clickOnBtnPreset(idx=1))
+
+        btn_preset_load = QtWidgets.QAction('&Load', self)
+        btn_preset_load.setShortcut('Ctrl+Shift+L')
+        btn_preset_load.triggered.connect(lambda: self.clickOnBtnPreset(idx=2))
+
+        btn_preset_append = QtWidgets.QAction('&Append', self)
+        btn_preset_append.setShortcut('Ctrl+Shift+A')
+        btn_preset_append.triggered.connect(lambda: self.clickOnBtnPreset(idx=3))
+
+        btn_preset_save = QtWidgets.QAction('&Save', self)
+        # btn_preset_save.setShortcut('Ctrl+Shift+S')
+        btn_preset_save.triggered.connect(lambda: self.clickOnBtnPreset(idx=4))
+
+        btn_preset_c1s = QtWidgets.QAction('&C1s', self)
+        # btn_preset_c1s.setShortcut('Ctrl+Shift+')
+        btn_preset_c1s.triggered.connect(lambda: self.clickOnBtnPreset(idx=5))
+
+        btn_preset_ckedge = QtWidgets.QAction('C &K edge', self)
+        # btn_preset_ckedge.setShortcut('Ctrl+Shift+')
+        btn_preset_ckedge.triggered.connect(lambda: self.clickOnBtnPreset(idx=6))
+
+        btn_preset_ptable = QtWidgets.QAction('Periodic &Table', self)
+        # btn_preset_ptable.setShortcut('Ctrl+Shift+')
+        btn_preset_ptable.triggered.connect(lambda: self.clickOnBtnPreset(idx=7))
+
+        presetMenu.addAction(btn_preset_new)
+        presetMenu.addAction(btn_preset_load)
+        presetMenu.addAction(btn_preset_append)
+        presetMenu.addAction(btn_preset_save)
+        presetMenu.addAction(btn_preset_c1s)
+        presetMenu.addAction(btn_preset_ckedge)
+        menubar.addAction(btn_preset_ptable)
+
+        self.bgMenu = menubar.addMenu('&Choose BG')
+
+        self.btn_bg_shirley_act = QtWidgets.QAction('&Active &Shirley BG', self, checkable=True)
+        self.btn_bg_shirley_act.triggered.connect(self.clickOnBtnBG)
+
+        self.btn_bg_shirley_static = QtWidgets.QAction('&Static &Shirley BG', self, checkable=True)
+        self.btn_bg_shirley_static.triggered.connect(self.clickOnBtnBG)
+
+        self.btn_bg_tougaard_act = QtWidgets.QAction('&Active &Tougaard BG', self, checkable=True)
+        self.btn_bg_tougaard_act.triggered.connect(self.clickOnBtnBG)
+
+        self.btn_bg_tougaard_static = QtWidgets.QAction('&Static &Tougaard BG', self, checkable=True)
+        self.btn_bg_tougaard_static.triggered.connect(self.clickOnBtnBG)
+
+        self.btn_bg_polynomial = QtWidgets.QAction('&Polynomial BG', self, checkable=True)
+        self.btn_bg_polynomial.setShortcut('Ctrl+Alt+P')
+        self.btn_bg_polynomial.triggered.connect(self.clickOnBtnBG)
+
+        self.btn_bg_slope = QtWidgets.QAction('&Slope BG', self, checkable=True)
+        self.btn_bg_slope.setShortcut('Ctrl+Alt+S')
+        self.btn_bg_slope.triggered.connect(self.clickOnBtnBG)
+
+        self.btn_bg_arctan = QtWidgets.QAction('&Arctan BG', self, checkable=True)
+        self.btn_bg_arctan.triggered.connect(self.clickOnBtnBG)
+
+        self.btn_bg_erf = QtWidgets.QAction('&Erf BG', self, checkable=True)
+        self.btn_bg_erf.triggered.connect(self.clickOnBtnBG)
+
+        self.btn_bg_vbm = QtWidgets.QAction('&VBM/Cutoff BG', self, checkable=True)
+        self.btn_bg_vbm.triggered.connect(self.clickOnBtnBG)
+
+        # Add the checkable actions to the menu
+        self.bgMenu.addAction(self.btn_bg_shirley_act)
+        self.bgMenu.addAction(self.btn_bg_shirley_static)
+        self.bgMenu.addAction(self.btn_bg_tougaard_act)
+        self.bgMenu.addAction(self.btn_bg_tougaard_static)
+        self.bgMenu.addAction(self.btn_bg_polynomial)
+        self.bgMenu.addAction(self.btn_bg_slope)
+        self.bgMenu.addAction(self.btn_bg_arctan)
+        self.bgMenu.addAction(self.btn_bg_erf)
+        self.bgMenu.addAction(self.btn_bg_vbm)
+
+        btn_tougaard_cross_section = QtWidgets.QAction('Tougaard &Cross Section ', self)
+        btn_tougaard_cross_section.triggered.connect(self.clicked_cross_section)
+        self.bgMenu.addSeparator()
+        self.bgMenu.addAction(btn_tougaard_cross_section)
+        menubar.addSeparator()
+        settings_menu = menubar.addMenu('&Settings')
+        btn_settings = QtWidgets.QAction('&Settings', self)
+        btn_settings.triggered.connect(self.open_settings_window)
+        settings_menu.addAction(btn_settings)
         menubar.addSeparator()
         links_menu = menubar.addMenu('&Help/Info')
         # manual_link= QtWidgets.QAction('&Manual', self)
@@ -274,25 +852,25 @@ class PrettyWidget(QtWidgets.QMainWindow):
         layout_top_left = QtWidgets.QVBoxLayout()
         fitbuttons_layout = QtWidgets.QHBoxLayout()
         # Fit Button
-        btn_fit = QtWidgets.QPushButton('Fit', self)
-        btn_fit.resize(btn_fit.sizeHint())
-        btn_fit.clicked.connect(self.fit)
-        fitbuttons_layout.addWidget(btn_fit)
+        self.btn_fit = QtWidgets.QPushButton('Fit', self)
+        self.btn_fit.resize(self.btn_fit.sizeHint())
+        self.btn_fit.clicked.connect(self.fit)
+        fitbuttons_layout.addWidget(self.btn_fit)
         # Evaluate Button
-        btn_eva = QtWidgets.QPushButton('Evaluate', self)
-        btn_eva.resize(btn_eva.sizeHint())
-        btn_eva.clicked.connect(self.eva)
-        fitbuttons_layout.addWidget(btn_eva)
+        self.btn_eva = QtWidgets.QPushButton('Evaluate', self)
+        self.btn_eva.resize(self.btn_eva.sizeHint())
+        self.btn_eva.clicked.connect(self.eva)
+        fitbuttons_layout.addWidget(self.btn_eva)
         # Undo Fit Button
-        btn_undoFit = QtWidgets.QPushButton('undo Fit', self)
-        btn_undoFit.resize(btn_undoFit.sizeHint())
-        btn_undoFit.clicked.connect(self.one_step_back_in_params_history)
-        fitbuttons_layout.addWidget(btn_undoFit)
+        self.btn_undoFit = QtWidgets.QPushButton('undo Fit', self)
+        self.btn_undoFit.resize(self.btn_undoFit.sizeHint())
+        self.btn_undoFit.clicked.connect(self.one_step_back_in_params_history)
+        fitbuttons_layout.addWidget(self.btn_undoFit)
         # Interrupt fit Button
-        btn_interrupt = QtWidgets.QPushButton('Interrupt fitting', self)
-        btn_interrupt.resize(btn_interrupt.sizeHint())
-        btn_interrupt.clicked.connect(self.interrupt_fit)
-        fitbuttons_layout.addWidget(btn_interrupt)
+        self.btn_interrupt = QtWidgets.QPushButton('Interrupt fitting', self)
+        self.btn_interrupt.resize(self.btn_interrupt.sizeHint())
+        self.btn_interrupt.clicked.connect(self.interrupt_fit)
+        fitbuttons_layout.addWidget(self.btn_interrupt)
         layout_top_left.addLayout(fitbuttons_layout)
 
         # lists of dropdown menus
@@ -300,7 +878,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # DropDown file list
         self.comboBox_file = QtWidgets.QComboBox(self)
         self.comboBox_file.addItems(self.list_file)
-        self.comboBox_file.currentIndexChanged.connect(self.plot)
+        self.comboBox_file.currentIndexChanged.connect(self.value_change_filelist)
         layout_top_left.addWidget(self.comboBox_file)
         layout_top_left.addWidget(LayoutHline())
         plottitle_form = QtWidgets.QFormLayout()
@@ -585,7 +1163,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # grid..addWidget(self.res_label, 7, 7, 1, 1)
         self.activeParameters()
         self.resizeAllColumns()
-        self.show()
+
+    def open_settings_window(self):
+        self.settings_dialog = SettingsDialog(self,config, config_file_path)
+        self.settings_dialog.exec_()
+
+
     def duplicateComponentNames(self, new_label):
         if new_label in self.list_component:
             QtWidgets.QMessageBox.warning(self, "Duplicate Name", "Component name already exists.\n Defaulted to next free name in format 'C_xx' ")
@@ -755,12 +1338,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.fitp0.resizeRowsToContents()
         for column in range(self.fitp1.columnCount()):
             if column % 2 == 1:
-                self.fitp1.setColumnWidth(column, 60)
+                self.fitp1.setColumnWidth(column, self.column_width)
         for column in range(self.fitp1_lims.columnCount()):
             if column % 3 != 0:
-                self.fitp1_lims.setColumnWidth(column, 60)
+                self.fitp1_lims.setColumnWidth(column, self.column_width)
         for column in range(self.res_tab.columnCount()):
-            self.res_tab.setColumnWidth(column, 60)
+            self.res_tab.setColumnWidth(column, self.column_width)
     def clicked_cross_section(self):
         window_cross_section = Window_CrossSection()
 
@@ -1028,7 +1611,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             None
         """
         self.error_dialog.setWindowTitle(window_title)
-        error_message = error_message + r'\n *******************\n' + traceback.format_exc()
+        error_message = error_message + '\n *******************\n' + traceback.format_exc()
         self.error_dialog.showMessage(error_message)
         logging.error(error_message)
 
@@ -1230,9 +1813,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.removeCol(idx=None)
             # load default preset
             if self.comboBox_file.currentIndex() > 0:
-                # self.df = np.loadtxt(str(self.comboBox_file.currentText()),	delimiter=',', skiprows=1)
-                x0 = self.df[:, 0]
-                y0 = self.df[:, 1]
+                x0 = self.df.iloc[:, 0].to_numpy()
+                y0 = self.df.iloc[:, 1].to_numpy()
                 pre_pk = [[0, 0], [0, x0[abs(y0 - y0.max()).argmin()]], [0, y0[abs(y0 - y0.max()).argmin()]], [2, 0],
                           [0, abs(x0[0] - x0[-1]) / (0.2 * len(x0))], [2, 0], [2, 0], [2, 0], [2, 0], [2, 0], [2, 0],
                           [2, 0], [2, 0]]
@@ -1246,7 +1828,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
             except Exception as e:
                 return self.raise_error(window_title="Error: Could not load parameters!",
                                         error_message='Loading parameters failed. The following traceback may help to solve the issue:')
-            # print(self.df[0], self.df[1], self.df[2])
             if len(str(self.pre[0])) != 0 and len(self.pre[1]) != 0 and len(self.pre[2]) != 0 and len(self.pre) == 3:
                 # old format, reorder data!
                 self.reformat_pre()
@@ -1261,7 +1842,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
             except Exception as e:
                 return self.raise_error(window_title="Error: Could not add parameters!",
                                         error_message='Adding parameters failed. The following traceback may help to solve the issue:')
-            # print(self.df[0], self.df[1], self.df[2])
             if len(str(self.pre[0])) != 0 and len(self.pre[1]) != 0 and len(self.pre[2]) != 0 and len(self.pre) == 3:
                 # old format, reorder data!
                 self.reformat_pre()
@@ -1287,9 +1867,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                       ['B', 2866.0, 'C', 1643.0, 'C*', 1.0, 'D', 1.0, 'Keep fixed?', 0],
                       [2, 0, 2, 0, 2, 0, 2, 0, '', '']]
             if self.comboBox_file.currentIndex() > 0:
-                # self.df = np.loadtxt(str(self.comboBox_file.currentText()),	delimiter=',', skiprows=1)
-                # x0 = self.df[:, 0]
-                y0 = self.df[:, 1]
+                y0 = self.df.iloc[:, 1].to_numpy()
                 pre_pk = [[0, 0, 0, 0, 0, 0, 0, 0], [2, 284.6, 2, 286.5, 2, 288.0, 2, 291.0],
                           [2, 0.85, 2, 0.85, 2, 1.28, 2, 1.28], [2, 0.85, 2, 0.85, 2, 1.28, 2, 1.28],
                           [0, y0[abs(y0 - y0.max()).argmin()] * 2.5 * 0.85, 0,
@@ -1437,7 +2015,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         cfilePath, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open data file', self.filePath, "DAT Files (*.dat)")
         if cfilePath != "":
             print(cfilePath)
-            self.filePath = cfilePath
+            self.filePath = cfilePath.rsplit('/',1)[0]
             with open(cfilePath, 'r') as file:
                 temp_pre = file.read()
             file.close()
@@ -1474,7 +2052,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         cfilePath, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open data file', self.filePath, "DAT Files (*.dat)")
         if cfilePath != "":
             print(cfilePath)
-            self.filePath = cfilePath
+            self.filePath = cfilePath.rsplit('/',1)[0]
             with open(cfilePath, 'r') as file:
                 temp_pre = file.read()
             file.close()
@@ -1597,7 +2175,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             fileName = os.path.basename(str(self.comboBox_file.currentText()))
             fileName = os.path.splitext(fileName)[0] + '_pars'
         else:
-            cfilePath = self.filePath
+            cfilePath = self.filePath.rsplit('/',1)[0]
             fileName = 'sample_pars'
 
         # S_File will get the directory path and extension.
@@ -1605,7 +2183,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                                              cfilePath + os.sep + fileName + '.dat',
                                                              "DAT Files (*.dat)")
         if cfilePath != "":
-            self.filePath = cfilePath
+            self.filePath = cfilePath.rsplit('/',1)[0]
             # Finally, this will Save your file to the path selected.
             with open(cfilePath, 'w') as file:
                 file.write(str(self.parText))
@@ -1655,7 +2233,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 protocol=pickle.HIGHEST_PROTOCOL)
 
     def exportResults(self):
-        if not self.result.empty:
+        if self.result.empty:
+            self.raise_error(window_title="Error: No Results exported!",
+                             error_message='There is nothing to export here, results are empty.')
+        else:
             if self.comboBox_file.currentIndex() > 0:
                 # print(self.export_pars)
                 # print(self.export_out.fit_report(min_correl=0.5))
@@ -1664,7 +2245,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 fileName = os.path.basename(str(self.comboBox_file.currentText()))
                 fileName = os.path.splitext(fileName)[0]
             else:
-                cfilePath = self.filePath
+                cfilePath = self.filePath.rsplit('/',1)[0]
                 fileName = 'sample'
 
             # S_File will get the directory path and extension.
@@ -1672,60 +2253,62 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                                                  cfilePath + os.sep + fileName + '_fit.txt',
                                                                  "Text Files (*.txt)")
             if cfilePath != "":
-                self.filePath = cfilePath
+                self.filePath = cfilePath.rsplit('/',1)[0]
                 if self.comboBox_file.currentIndex() == 0:
                     strmode = 'simulation mode'
                 else:
                     strmode = self.comboBox_file.currentText()
                 Text = self.version + '\n\n[[Data file]]\n\n' + strmode + '\n\n[[Fit results]]\n\n'
-
-                # fit results to be checked
-                # for key in self.export_out.params:
-                # Text += str(key) + '\t' + str(self.export_out.params[key].value) + '\n'
-                indpk = 0
-                indpar = 0
-                strpk = ''
-                # strpar = ''
-                ncomponent = self.fitp1.columnCount()
-                ncomponent = int(ncomponent / 2)
-                pk_name = np.array([None] * int(ncomponent), dtype='U')
-                par_name = ['amplitude', 'center', 'sigma', 'gamma', 'fwhm', 'height', 'fraction', 'skew',
-                            'q']  # [bug] add new params
-                par_list = np.array([[None] * 9] * int(ncomponent), dtype='f')
-                for key in self.export_out.params:
-                    if str(key)[1] == 'g':
-                        Text += str(key) + '\t' + str(self.export_out.params[key].value) + '\n'
-                    else:
-                        if len(strpk) > 0:
-                            if str(key)[:int(str(key).find('_'))] == strpk:
-                                strpar = str(key)[int(str(key).find('_')) + 1:]
-                                for indpar in range(len(par_name)):
-                                    if strpar == par_name[indpar]:
-                                        par_list[indpk][indpar] = str(self.export_out.params[key].value)
-                                        strpk = str(key)[:int(str(key).find('_'))]
-                            else:
-                                indpk += 1
-                                indpar = 0
-                                par_list[indpk][indpar] = str(self.export_out.params[key].value)
-                                strpk = str(key)[:int(str(key).find('_'))]
-                                pk_name[indpk] = strpk
-                        else:
-                            par_list[indpk][indpar] = str(self.export_out.params[key].value)
-                            strpk = str(key)[:int(str(key).find('_'))]
-                            pk_name[indpk] = strpk
-
-                Text += '\n'
-                for indpk in range(ncomponent):
-                    Text += '\t' + pk_name[indpk]
-                for indpar in range(9):
-                    Text += '\n' + par_name[indpar] + '\t'
-                    for indpk in range(ncomponent):
-                        Text += str(par_list[indpk][indpar]) + '\t'
-
                 self.savePreset()
-                Text += '\n\n[[LG4X parameters]]\n\n' + str(self.parText) + '\n\n[[lmfit parameters]]\n\n' + str(
-                    self.export_pars) + '\n\n' + str(self.export_out.fit_report(min_correl=0.1))
+                Text += '\n\n[[LG4X parameters]]\n\n' + str(self.parText) +'\n\n' + str(self.export_out.fit_report(min_correl=0.1))
+                Text += '\n\n[[lmfit parameters]]\n\n' + str(
+                    self.export_pars)
+                Text += '\n\n[[Peak Metadata]]\n\n'
+                row_labels = list(
+                    dict.fromkeys([key.split('_', 1)[-1] for d in self.meta_result_export for key in d.keys()]))
 
+                column_titles = list(dict.fromkeys([key.split('_', 1)[0] for d in self.meta_result_export for key in d.keys()]))
+                column_widths = {"Property\\Component": max(len("Property\\Component"),
+                                                            max(len(row_label) for row_label in row_labels))}
+                for column_title in column_titles:
+                    column_widths[column_title] = max(len(column_title), 20)  # Set minimum width for readability
+
+                for d in self.meta_result_export:
+                    for key, value in d.items():
+                        component, property_name = key.split('_', 1)
+                        column_widths[property_name] = max(column_widths.get(property_name, 0), len(str(value)))
+
+                header = ["Property\\Component".ljust(column_widths["Property\\Component"])]
+                for column_title in column_titles:
+                    header.append(column_title.ljust(column_widths[column_title]))
+                Text += "\t".join(header) + "\n"
+
+                table_data = []
+                for row_label in row_labels:
+                    row = [row_label.ljust(column_widths["Property\\Component"])]
+                    for column_title in column_titles:
+                        value = None
+                        for d in self.meta_result_export:
+                            key = f"{column_title}_{row_label}"
+                            if key in d:
+                                value = d[key]
+                                break
+                        formatted_value = str(value).ljust(
+                            column_widths[column_title]) if value is not None else "N/A".ljust(
+                            column_widths[column_title])
+                        row.append(formatted_value)  # Ensure the value is aligned
+                    table_data.append(row)
+
+                for row in table_data:
+                    Text += "\t".join(row) + "\n"
+
+                Text += '\n\n[[Parameters and Metaparameters as dictionaries]]\n\n'
+                Text += '\n\n[[Fit parameters as dictionary]]\n\n' + str(self.export_pars.valuesdict())
+                Text += '\n\n[[Metadata/Values of the Components as dictionary ]]\n\n{\n'
+                for dic in self.meta_result_export:
+                    for key in dic.keys():
+                        Text +=  "'"+key +"' : "+ str(dic[key])+ ',\n'
+                Text += '}\n'
                 self.export_pickle(cfilePath)  # export las fit parameters as dict int po pickle file
 
                 with open(cfilePath, 'w') as file:
@@ -1748,7 +2331,52 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.plottitle.setText('')  # reset text in plot title QlineEdit, otherwise the old one will remain
         self.idx_imp = idx
         self.imp()
+    def imp_csv_or_txt(self, cfilePath, remember_settings=True):
+            ##exclude, that file was already added! [BUG]
+            df = pd.read_csv(cfilePath, comment='#')
+            num_columns = len(df.columns)
+            if not remember_settings:
+                preview_dialog = PreviewDialog(cfilePath, config, config_file_path)
 
+                if preview_dialog.exec_():
+                    df = preview_dialog.df
+                    filename = preview_dialog.fname
+                    if df.isna().any().any():
+                        print('automatic import failed, please select correct format!')
+                        self.imp_csv_or_txt(cfilePath, remember_settings=False)
+                    if df is not None:
+                        self.data_arr[filename] = DataSet(filepath=cfilePath, df=df, pe=None)
+            else:
+                if config.getboolean('Import', 'has_header'):
+                    temp_header = pd.read_csv(cfilePath, delimiter=config.get('Import', 'separator'),header=int(config.get('Import', 'header_row')), engine='python', nrows=0)
+                    if temp_header.columns.values.tolist()[0] == '#':
+                        cols = [col+1 for col in config.get('Import', 'columns')]
+                        df = pd.read_csv(cfilePath, delimiter=config.get('Import', 'separator'), engine="python",
+                                         names=temp_header.columns.values.tolist()[1:],
+                                         skiprows=int(config.get('Import', 'header_row')) + 1, comment='#')
+                    else:
+                        df = pd.read_csv(cfilePath, delimiter=config.get('Import', 'separator'), engine="python",
+                                         skiprows=int(config.get('Import', 'header_row')), comment='#')
+
+                else:
+                    df = pd.read_csv(cfilePath, delimiter=config.get('Import', 'separator'), engine="python",
+                                     skiprows=int(config.get('Import', 'header_row')), header=None, comment='#')
+                    df.columns = [f"col{i + 1}" for i in range(len(df.columns))]
+                if not num_columns == 2 and not remember_settings:
+                    print('automatic import failed, please select correct format!')
+                    self.imp_csv_or_txt(cfilePath, remember_settings=False)
+                df = df.iloc[:, eval(config.get('Import', 'columns'))]
+                if df.isna().any().any():
+                    print('automatic import failed, please select correct format')
+                    self.imp_csv_or_txt(cfilePath, remember_settings=False)
+                filename = os.path.basename(cfilePath)
+                self.data_arr[filename] = DataSet(filepath=cfilePath, df=df, pe=None)
+            self.comboBox_file.clear()
+            self.comboBox_file.addItems(self.list_file)
+            self.comboBox_file.addItems(self.data_arr.keys())
+            index = self.comboBox_file.findText(filename, QtCore.Qt.MatchFixedString)
+            if index >= 0:
+                self.comboBox_file.setCurrentIndex(index)
     def imp(self):
         index = self.idx_imp
         if index == 1 or index == 2:
@@ -1757,21 +2385,24 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                                                      'CSV Files (*.csv)')
             else:
                 cfilePath, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open tab-separated text file',
-                                                                     self.filePath, 'TXT Files (*.txt)')
+                                                                  self.filePath, 'TXT Files (*.txt)')
             if cfilePath != "":
-                # print (cfilePath)
-                self.filePath = cfilePath
-                self.list_file.append(str(cfilePath))
-                self.comboBox_file.clear()
-                self.comboBox_file.addItems(self.list_file)
-                index = self.comboBox_file.findText(str(cfilePath), QtCore.Qt.MatchFixedString)
-                if index >= 0:
-                    self.comboBox_file.setCurrentIndex(index)
+                self.filePath = cfilePath.rsplit('/',1)[0]
+                remember_settings = config.getboolean('Import', 'remember_settings')
+                try:
+                    self.imp_csv_or_txt(cfilePath, remember_settings=remember_settings)
+                except Exception as e:
+                    print(
+                        f"Error: could not auto-load file. Please select correct format!\n Traceback:\n ****************** \n  {e}")
+                    self.imp_csv_or_txt(cfilePath, remember_settings=False)
+            if self.comboBox_file.currentIndex() > 1:
                 self.plot()
+
         if index == 3:
             cfilePath, _ = QtWidgets.QFileDialog.getOpenFileName(self, 'Open VAMAS file', self.filePath,
                                                                  'VMS Files (*.vms *.npl)')
             if cfilePath != "":
+                self.filePath = cfilePath.rsplit('/',1)[0]
                 # print (cfilePath)
                 try:
                     self.list_vamas = vpy.list_vms(cfilePath)
@@ -1809,27 +2440,165 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     return self.raise_error(window_title="Error: could not load VAMAS source energy.",
                                             error_message=e.args[0])
 
-                self.list_file.extend(self.list_vamas)
+                for file in self.list_vamas:
+                    df = pd.read_csv(file, delimiter='\t', skiprows=1)
+                    strpe = np.loadtxt(file, dtype='str', delimiter='\t', usecols=1,
+                                       max_rows=1)
+                    strpe = (str(strpe).split())
 
-                # print (self.list_file)
+                    if strpe[0] == 'PE:' and strpe[2] == 'eV':
+                        pe = float(strpe[1])
+                        self.data_arr[os.path.basename(file)] = DataSet(filepath=file, df=df, pe=pe)
+                    else:
+                        self.data_arr[os.path.basename(file)] = DataSet(filepath=file, df=df, pe=None)
+
                 self.comboBox_file.clear()
                 self.comboBox_file.addItems(self.list_file)
-                index = self.comboBox_file.findText(str(self.list_vamas[0]), QtCore.Qt.MatchFixedString)
-                if index > 0:
+                self.comboBox_file.addItems(self.data_arr.keys())
+                index = self.comboBox_file.findText(os.path.basename(self.list_vamas[0]), QtCore.Qt.MatchFixedString)
+                if index >= 0:
                     self.comboBox_file.setCurrentIndex(index)
-                self.plot()
+                if self.comboBox_file.currentIndex() > 1:
+                    self.plot()
         if index == 4:
             directory = QtWidgets.QFileDialog.getExistingDirectory(self, "Open Directory", self.filePath,
                                                                    QtWidgets.QFileDialog.ShowDirsOnly)
             if directory != "":
+                self.filePath = directory
                 entries = os.listdir(directory)
-                entries.sort()
+                entries.sort(key=lambda x: (os.path.splitext(x)[1] != '.txt', x))
+                self.comboBox_file.blockSignals(True)
                 for entry in entries:
                     if os.path.splitext(entry)[1] == '.csv' or os.path.splitext(entry)[1] == '.txt':
-                        self.list_file.append(str(directory + os.sep + entry))
+                        cfilePath = os.path.join(directory, entry)
+                        try:
+                            self.imp_csv_or_txt(cfilePath, remember_settings=True)
+                        except Exception as e:
+                            print(f"Error: could not auto-load file. Please select correct format!\n Traceback:\n ****************** \n  {e}")
+                            self.imp_csv_or_txt(cfilePath, remember_settings=False)
+
                 self.comboBox_file.clear()
                 self.comboBox_file.addItems(self.list_file)
+                self.comboBox_file.addItems(self.data_arr.keys())
+                index = self.comboBox_file.findText(entries[0], QtCore.Qt.MatchFixedString)
+                self.comboBox_file.blockSignals(False)
+                if index >= 0:
+                    self.comboBox_file.setCurrentIndex(index)
+        if index== 5:
+            directory = QtWidgets.QFileDialog.getExistingDirectory(self, "Open Directory", self.filePath,
+                                                                   QtWidgets.QFileDialog.ShowDirsOnly)
+            if directory != "":
+                self.filePath = directory
+                csv_files = [entry for entry in os.listdir(directory) if os.path.splitext(entry)[1] == '.csv']
+                if csv_files:
+                    csv_files.sort()
+                    for entry in csv_files:
+                        self.comboBox_file.blockSignals(True)
+                        cfile_path = os.path.join(directory, entry)
+                        try:
+                            self.imp_csv_or_txt(cfile_path, remember_settings=True)
+                        except Exception as e:
+                            print(
+                                f"Error: could not auto-load file. Please select correct format!\n Traceback:\n ****************** \n  {e}")
+                            self.imp_csv_or_txt(cfile_path, remember_settings=False)
+
+                    self.comboBox_file.clear()
+                    self.comboBox_file.addItems(self.list_file)
+                    self.comboBox_file.addItems(self.data_arr.keys())
+                    index = self.comboBox_file.findText(csv_files[0], QtCore.Qt.MatchFixedString)
+                    self.comboBox_file.blockSignals(False)
+                    if index >= 0:
+                        self.comboBox_file.setCurrentIndex(index)
+        if index == 6:
+            directory = QtWidgets.QFileDialog.getExistingDirectory(self, "Open Directory", self.filePath,
+                                                                   QtWidgets.QFileDialog.ShowDirsOnly)
+
+            if directory != "":
+                self.filePath = directory
+                txt_files = [entry for entry in os.listdir(directory) if os.path.splitext(entry)[1] == '.txt']
+                if txt_files:
+                    txt_files.sort()
+                    for entry in txt_files:
+                        self.comboBox_file.blockSignals(True)
+                        cfile_path = os.path.join(directory, entry)
+                        try:
+                            self.imp_csv_or_txt(cfile_path, remember_settings=True)
+                        except Exception as e:
+                            print(
+                                f"Error: could not auto-load file. Please select correct format!\n Traceback:\n ****************** \n  {e}")
+                            self.imp_csv_or_txt(cfile_path, remember_settings=False)
+
+                    self.comboBox_file.clear()
+                    self.comboBox_file.addItems(self.list_file)
+                    self.comboBox_file.addItems(self.data_arr.keys())
+                    index = self.comboBox_file.findText(txt_files[0], QtCore.Qt.MatchFixedString)
+                    self.comboBox_file.blockSignals(False)
+                    if index >= 0:
+                        self.comboBox_file.setCurrentIndex(index)
         self.idx_imp = 0
+    def value_change_filelist(self):
+        if self.comboBox_file.currentIndex() == 1:
+            self.comboBox_file.clear()
+            self.list_file = ['File list', 'Clear list']
+            self.data_arr = {}
+            self.comboBox_file.addItems(self.list_file)
+            self.comboBox_file.setCurrentIndex(0)
+        elif self.comboBox_file.currentIndex() > 1:
+            self.plot()
+        if self.comboBox_file.currentIndex() == 0 and self.comboBox_file.count() > 1:
+            # plt.cla()
+            self.ar.cla()
+            self.ax.cla()
+            self.canvas.draw()
+    def plot(self):
+        plottitle = self.comboBox_file.currentText().split('/')[-1]
+        fileName=self.comboBox_file.currentText()
+        filePath = self.data_arr[str(self.comboBox_file.currentText())].filepath
+        f = open(filePath, 'r')
+        header_line = str(f.readline())
+        if 'rows_lightened' in header_line:
+            self.rows_lightened = int(header_line.split('=')[1])
+        else:
+            self.rows_lightened = 1
+
+        #get rid of self.df before here
+        self.df=self.data_arr[fileName].df
+
+        try:
+            x0 = self.df.iloc[:, 0].to_numpy()
+        except Exception as e:
+            return self.raise_error(window_title="Error: could not load .csv file.",
+                                        error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
+        try:
+            y0 = self.df.iloc[:, 1].to_numpy()
+        except Exception as e:
+            return self.raise_error(window_title="Error: could not load .csv file.",
+                                        error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
+        #strpe = (str(strpe).split())
+
+        pe=self.data_arr[fileName].pe
+        if pe is not None:
+            print('Current Pass energy is PE= ', pe, 'eV')
+        self.ar.cla()
+        self.ax.cla()
+        try:
+            self.ax.plot(x0, y0, linestyle='-', color="b", label="raw")
+        except:
+            return self.raise_error(window_title="Error: could not plot data.",
+                                    error_message='Plotting data failed. The following traceback may help to solve the issue:')
+        if x0[0] > x0[-1]:
+            self.ax.set_xlabel('Binding energy (eV)', fontsize=11)
+        else:
+            self.ax.set_xlabel('Energy (eV)', fontsize=11)
+
+        plt.xlim(x0[0], x0[-1])
+        self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
+        self.ax.grid(True)
+        self.ax.legend(loc=0)
+        self.canvas.draw()
+
+        # macOS's compatibility issue on pyqt5, add below to update window
+        self.repaint()
 
     def plot_pt(self):
         # component elements from periodic table window selection
@@ -1841,17 +2610,17 @@ class PrettyWidget(QtWidgets.QMainWindow):
             # self.ax.texts.remove()
         if self.pt.selected_elements:
             if self.pre[0][3] == None:
-                if len(self.hv)==0:
-                    self.pre[0][3]=1486.6
-                    self.hv=1486.6
+                if len(self.hv) == 0:
+                    self.pre[0][3] = 1486.6
+                    self.hv = 1486.6
                 else:
                     self.pre[0][3] = self.hv
             if self.pre[0][4] == None:
-                if len(self.wf)==0:
-                    self.pre[0][4]=4
-                    self.wf=4
+                if len(self.wf) == 0:
+                    self.pre[0][4] = 4
+                    self.wf = 4
                 else:
-                    self.pre[0][4]=self.wf
+                    self.pre[0][4] = self.wf
             if self.pre[0][5] == None:
                 if len(self.correct_energy) == 0:
                     self.pre[0][5] = 0
@@ -1861,8 +2630,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.hv_item.setText(str(self.hv))
             self.wf_item.setText(str(self.wf))
             self.correct_energy_item.setText(str(self.correct_energy))
-            hv=self.hv
-            wf=self.wf
+            hv = self.hv
+            wf = self.wf
 
             ymin, ymax = self.ax.get_ylim()
             xmin, xmax = self.ax.get_xlim()
@@ -1873,11 +2642,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         if xmin > xmax:
                             en = float(ast.literal_eval(alka['be'])[orb])
                         else:
-                            en = hv - wf - float(ast.literal_eval(alka['be'])[orb])-self.correct_energy
+                            en = hv - wf - float(ast.literal_eval(alka['be'])[orb]) - self.correct_energy
                         if (xmin > xmax and xmin > en > xmax) or (xmin < xmax and xmin < en < xmax):
                             elem_x = np.asarray([en])
                             elem_y = np.asarray([float(ast.literal_eval(alka['rsf'])[orb])])
-                            elem_z =ast.literal_eval(alka['trans'])[orb]
+                            elem_z = ast.literal_eval(alka['trans'])[orb]
                             # obj.symbol+elem_z, color="r", rotation="vertical")
                             self.ax.text(elem_x, ymin + (ymax - ymin) * math.log(elem_y + 1, 10) / 2,
                                          obj['symbol'].values[0] + elem_z, color="r", rotation="vertical")
@@ -1885,7 +2654,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if len(ast.literal_eval(aes['trans'])) > 0:
                     for orb in range(len(ast.literal_eval(aes['trans']))):
                         if xmin > xmax:
-                            en = hv - wf - float(ast.literal_eval(aes['ke'])[orb])-self.correct_energy
+                            en = hv - wf - float(ast.literal_eval(aes['ke'])[orb]) - self.correct_energy
                         else:
                             en = float(ast.literal_eval(aes['ke'])[orb])
                         if (xmin > xmax and xmin > en > xmax) or (xmin < xmax and xmin < en < xmax):
@@ -1899,113 +2668,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.canvas.draw()
             self.repaint()
 
-    def plot(self):
-        plottitle = self.comboBox_file.currentText().split('/')[-1]
-        # when file list is selected
-        if self.comboBox_file.currentIndex() == 1:
-            self.comboBox_file.clear()
-            self.list_file = ['File list', 'Clear list']
-            self.comboBox_file.addItems(self.list_file)
-            self.comboBox_file.setCurrentIndex(0)
-        elif self.comboBox_file.currentIndex() > 1:
-            # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
-            fileName = os.path.basename(self.comboBox_file.currentText())
-            if os.path.splitext(fileName)[1] == '.csv':
-                try:  # change import, so that export file is detected
-                    data = np.genfromtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter=',', max_rows=2)
-                    if all(elem in data for elem in ['raw_x', 'raw_y', 'sum_fit']):
-                        self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=2,
-                                             usecols=(0, 1))
-                    else:
-                        self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
-                    # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1,
-                    # header=None)
-                    strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter=',', usecols=1,
-                                       max_rows=1)
-                    f = open(str(self.comboBox_file.currentText()), 'r')
-                    header_line = str(f.readline())
-                    if 'rows_lightened' in header_line:
-                        self.rows_lightened = int(header_line.split('=')[1])
-                    else:
-                        self.rows_lightened = 1
-
-                except Exception as e:
-                    return self.raise_error(window_title="Error: could not load .csv file.",
-                                            error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
-
-
-            else:
-                try:
-                    self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter='\t', skiprows=1)
-                    # self.df = pd.read_csv(str(self.comboBox_file.currentText()), dtype = float,  skiprows=1,
-                    # header=None, delimiter = '\t')
-                    strpe = np.loadtxt(str(self.comboBox_file.currentText()), dtype='str', delimiter='\t', usecols=1,
-                                       max_rows=1)
-                    f = open(str(self.comboBox_file.currentText()), 'r')
-                    header_line = str(f.readline())
-                    if 'rows_lightened' in header_line:
-                        self.rows_lightened = int(header_line.split('=')[1])
-                    else:
-                        self.rows_lightened = 1
-                except Exception as e:
-                    return self.raise_error(window_title="Error: could not load input file.",
-                                            error_message='The input file is not in the correct format!. The following traceback may help to solve the issue:')
-
-            # I have moved the error handling here directly to the import, there may exist situations, where already the
-            # Import would fail. I still left the following error handling there, but I am not sure if there are cases
-            # where this second error handling still will be necessary. However, we should check, if x0 and y0 have same
-            # lenght I think
-
-            try:
-                x0 = self.df[:, 0]
-            except Exception as e:
-                return self.raise_error(window_title="Error: could not load .csv file.",
-                                        error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
-            try:
-                y0 = self.df[:, 1]
-            except Exception as e:
-                return self.raise_error(window_title="Error: could not load .csv file.",
-                                        error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
-            strpe = (str(strpe).split())
-
-            if strpe[0] == 'PE:' and strpe[2] == 'eV':
-                pe = float(strpe[1])
-                print('Current Pass energy is PE= ', pe, 'eV')
-                #item = QtWidgets.QTableWidgetItem(str(pe))
-                #self.fitp0.setItem(0, 9, item)
-                #self.fitp0.setItem(0, 8, QtWidgets.QTableWidgetItem('Pass energy (eV)'))
-            # plt.cla()
-            self.ar.cla()
-            self.ax.cla()
-            # ax = self.figure.add_subplot(221)
-            # self.ax.plot(x0, y0, 'o', color="b", label="raw")
-            self.ax.plot(x0, y0, linestyle='-', color="b", label="raw")
-            if x0[0] > x0[-1]:
-                # self.ax.invert_xaxis()
-                self.ax.set_xlabel('Binding energy (eV)', fontsize=11)
-            else:
-                self.ax.set_xlabel('Energy (eV)', fontsize=11)
-
-            plt.xlim(x0[0], x0[-1])
-            self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
-            self.ax.grid(True)
-            self.ax.legend(loc=0)
-            self.canvas.draw()
-
-            # item = QtWidgets.QTableWidgetItem(str(x0[0]))
-            # self.fitp0.setItem(0, 1, item)
-            # item = QtWidgets.QTableWidgetItem(str(x0[len(x0) - 1]))
-            # self.fitp0.setItem(0, 3, item)
-
-            # print(str(plt.get_fignums()))
-        # select file list index ==0 to clear figure for simulation
-        if self.comboBox_file.currentIndex() == 0 and self.comboBox_file.count() > 1:
-            # plt.cla()
-            self.ar.cla()
-            self.ax.cla()
-            self.canvas.draw()
-        # macOS's compatibility issue on pyqt5, add below to update window
-        self.repaint()
 
     def eva(self):
         # simulation mode if no data in file list, otherwise evaluation mode
@@ -2014,7 +2676,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 x1 = float(self.xmin)
                 x2 = float(self.xmax)
             points = 999
-            self.df = np.random.random_sample((points, 2)) + 0.01
+            self.df = np.zeros((points, 2))+0.01
             self.df[:, 0] = np.linspace(x1, x2, points)
             self.ana('sim')
         else:
@@ -2035,7 +2697,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 x1 = float(self.xmin)
                 x2 = float(self.xmax)
             points = 999
-            self.df = np.random.random_sample((points, 2)) + 0.01
+            self.df = np.zeros((points, 2))+0.01
             self.df[:, 0] = np.linspace(x1, x2, points)
             self.ana('sim')
     def interrupt_fit(self):
@@ -2050,8 +2712,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
     def history_manager(self, pars):
         """
-        Manages saving of the fit parameters and presets (e.g. how many components, aktive backgrounds and so on) in a list.
-        In this approach the insane function ana() must be extended. The ana() should be destroyd! and replaaced by couple of smaller methods for better readability
+        Manages saving of the fit parameters and presets (e.g. how many components, aktive backgrounds and so on) in
+        a list. In this approach the insane function ana() must be extended. The ana() should be destroyd! and
+        replaaced by couple of smaller methods for better readability
 
         Parameters
         ----------
@@ -2137,8 +2800,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                               'No background was choosen, a polynomial BG was set as default.')
             idx_bg.add(2)  # if no background was selected, a polynomial will be used
         self.idx_bg = sorted(idx_bg)
+        try:
+            self.pre[0][0] = self.idx_bg
+        except Exception as e:
+            logging.error('Loading of background failed, self.pre[0][0]={}, self.idx_bg={}'.format(self.pre[0][0], self.idx_bg))
+            return self.raise_error(window_title="Error while setting background!",
+                                    error_message='Error while loading/changing background!')
 
-        self.pre[0][0] = self.idx_bg
         self.displayChoosenBG.setText(
             'Choosen Background: {}'.format('+ '.join([dictBG[str(idx)] for idx in self.idx_bg])))
         self.activeParameters()
@@ -2297,6 +2965,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     pars['bg_poly_c' + str(index)].value = self.pre[1][2][2 * index + 1]
                     if self.pre[1][2][2 * index] == 2:
                         pars['bg_poly_c' + str(index)].vary = False
+                pars['bg_poly_c0'].max=np.mean(y[-5:])
+                pars['bg_poly_c0'].min = 0
         if idx_bg == 6:
             mod = SlopeBG(independent_vars=['y'], prefix='bg_slope_')
             bg_mod = 0
@@ -2468,7 +3138,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def ratio_setup(self, pars, index_pk, strind, index):
         if index == 2 or index == 6:  # unset default expression which sets sigma and gamma for the voigt and skewed-voigt always to the same value
             pars[strind + str(index_pk + 1) + '_gamma'].expr = ''
-            pars[strind + str(index_pk + 1) + '_gamma'].vary = True
+            if not self.pre[2][3][2 * index_pk] == 2: pars[strind + str(index_pk + 1) + '_gamma'].vary = True
         # amp ratio setup
         if self.pre[2][15][2 * index_pk + 1] > 0:
             pktar = self.pre[2][15][2 * index_pk + 1]
@@ -2766,7 +3436,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if idx_bg == 6:
                 self.pre[1][3][1] = out_params['bg_slope_k'].value
             if idx_bg == 100:
-                if mode != "eva":
+                if mode != "eva" and mode != "sim":
                     self.pre[1][0][5] = out_params['bg_shirley_k'].value
                     self.pre[1][0][7] = out_params['bg_shirley_const'].value
             if idx_bg == 101:
@@ -2843,10 +3513,24 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.peakResult2Pre(out_params, mode)
     def approx_fwhm(self,x, peak):
         peak_norm = peak / np.max(peak)
-        x_peak = [i for i, j in zip(x, peak_norm) if j >= 0.5]
-        return abs(x_peak[-1] - x_peak[0])
+        indices = np.where(peak_norm >= 0.5)[0]
+        i1 = indices[0]
+        if i1 > 0:
+            x1 = x[i1 - 1] + (0.5 - peak_norm[i1 - 1]) * (x[i1] - x[i1 - 1]) / (peak_norm[i1] - peak_norm[i1 - 1])
+        else:
+            x1 = x[i1]
+
+        i2 = indices[-1]
+        if i2 < len(peak_norm) - 1:
+            x2 = x[i2] + (0.5 - peak_norm[i2]) * (x[i2 + 1] - x[i2]) / (peak_norm[i2 + 1] - peak_norm[i2])
+        else:
+            x2 = x[i2]
+        return abs(x2 - x1)
     def fillTabResults(self, x, y, out):
+        self.meta_result_export=[]
+        precision=int(self.floating.split('.')[1].split('f')[0])+2
         y_components = [0 for idx in range(len(y))]
+        x_interpolate=np.linspace(x[0],x[-1],10*len(x))
         nrows = len(self.pre[2])
         ncols = int(len(self.pre[2][0]) / 2)
         for index_pk in range(int(len(self.pre[2][0]) / 2)):
@@ -2855,50 +3539,73 @@ class PrettyWidget(QtWidgets.QMainWindow):
             strind = strind.split(":", 1)[0]
             y_components += out.eval_components()[strind + str(index_pk + 1) + '_']
         if self.binding_ener:
-            area_components = integrate.simps([y for y, x in zip(y_components, x[::-1])],x[::-1])
+            area_components = integrate.simpson(y_components, x=x[::-1])
         else:
-            area_components = integrate.simps([y for y, x in zip(y_components, x)], x)
+            area_components = integrate.simpson(y_components, x=x)
         for index_pk in range(int(len(self.pre[2][0]) / 2)):
             index = self.pre[2][0][2 * index_pk + 1]
             strind = self.list_shape[index]
             strind = strind.split(":", 1)[0]
+            temp_result_export={
+                strind + str(index_pk + 1) +'_gaussian_fwhm':None,
+                strind + str(index_pk + 1) +'_lorentzian_fwhm_p1':None,
+                strind + str(index_pk + 1) +'_lorentzian_fwhm_p2':None,
+                strind + str(index_pk + 1) +'_fwhm_p1':None,
+                strind + str(index_pk + 1) +'_fwhm_p2':None,
+                strind + str(index_pk + 1) +'_height_p1':None,
+                strind + str(index_pk + 1) +'_height_p2':None,
+                strind + str(index_pk + 1) +'_approx_area_p1':None,
+                strind + str(index_pk + 1) +'_approx_area_p2':None,
+                strind + str(index_pk + 1) +'_area_total':None
+            }
             if index == 0 :
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_fwhm'].value, self.floating)))
                 self.res_tab.setItem(0, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_gaussian_fwhm']=np.round(out.params[strind + str(index_pk + 1) + '_fwhm'].value, precision)
                 item = QtWidgets.QTableWidgetItem('')
+                temp_result_export[strind + str(index_pk + 1) +'_lorentzian_fwhm_p1'] = None
                 self.res_tab.setItem(1, index_pk, item)
             if index == 1:
                 item = QtWidgets.QTableWidgetItem('')
                 self.res_tab.setItem(0, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_gaussian_fwhm'] = None
                 item = QtWidgets.QTableWidgetItem(
-                    str(format(out.params[strind + str(index_pk + 1) + '_fwhm'].value, self.floating)))
+                    str(format(2*out.params[strind + str(index_pk + 1) + '_fwhm'].value, self.floating)))
                 self.res_tab.setItem(1, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_lorentzian_fwhm_p1'] = np.round(out.params[strind + str(index_pk + 1) + '_fwhm'].value, precision)
             if index == 0 or index == 1 or index == 2 or index == 3:
                 item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk + 1) + '_fwhm'].value, self.floating)))
                 self.res_tab.setItem(3, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_fwhm_p1'] = np.round(out.params[strind + str(index_pk + 1) + '_fwhm'].value, precision)
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_height'].value, self.floating)))
                 self.res_tab.setItem(5, index_pk, item)
-            if index == 0 or index == 1 or index == 2 or index == 3 or index==4:
-
-                y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
+                temp_result_export[strind + str(index_pk + 1) +'_height_p1'] = np.round(out.params[strind + str(index_pk + 1) + '_height'].value, precision)
+            if index == 0 or index == 1 or index == 2 or index == 3 or index == 4:
+                y_area = out.eval_components(x=x_interpolate)[strind + str(index_pk + 1) + '_']
                 if self.binding_ener:
-                    area = abs(integrate.simps([y for y, x in zip(y_area, x[::-1])], x[::-1]))
+                    area = abs(integrate.simpson(y_area, x=x_interpolate[::-1]))
                 else:
-                    area= abs(integrate.simps([y for y, x in zip(y_area, x)], x))
+                    area= abs(integrate.simpson(y_area, x=x_interpolate))
                 item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                 self.res_tab.setItem(7, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_approx_area_p1'] = str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f')))
                 item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                 self.res_tab.setItem(9, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_area_total'] = str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f')))
                 item = QtWidgets.QTableWidgetItem('')
                 self.res_tab.setItem(2, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_lorentzian_fwhm_p2'] = None
                 item = QtWidgets.QTableWidgetItem('')
                 self.res_tab.setItem(4, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_fwhm_p2'] = None
                 item = QtWidgets.QTableWidgetItem('')
                 self.res_tab.setItem(6, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_height_p2'] = None
                 item = QtWidgets.QTableWidgetItem('')
                 self.res_tab.setItem(8, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_approx_area_p2'] = None
             if index == 4 or index == 5 or index == 6 or index == 7 or index == 8 or index == 9 or index == 12:
                 rows = self.res_tab.rowCount()
                 for row in range(rows):
@@ -2906,81 +3613,114 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         item = QtWidgets.QTableWidgetItem('')
                         self.res_tab.setItem(row, index_pk, item)
                     # included area
-                    y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
+                    y_area = out.eval_components(x=x_interpolate)[strind + str(index_pk + 1) + '_']
                     if self.binding_ener:
-                        area = abs(integrate.simps([y for y, x in zip(y_area, x[::-1])], x[::-1]))
+                        area = abs(integrate.simpson(y_area, x=x_interpolate[::-1]))
                     else:
-                        area = abs(integrate.simps([y for y, x in zip(y_area, x)], x))
+                        area = abs(integrate.simpson(y_area, x=x_interpolate))
                     item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                     self.res_tab.setItem(7, index_pk, item)
+                    temp_result_export[strind + str(index_pk + 1) +'_approx_area_p1'] = str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f')))
                     item = QtWidgets.QTableWidgetItem(str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f'))))
                     self.res_tab.setItem(9, index_pk, item)
+                    temp_result_export[strind + str(index_pk + 1) +'_area_total'] = str(format(area, '.1f') + r' ({}%)'.format(format(100, '.2f')))
             if index == 2:
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_sigma'].value, self.floating)))
                 self.res_tab.setItem(0, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_gaussian_fwhm'] = np.round(out.params[strind + str(index_pk + 1) + '_sigma'].value , precision)
                 item = QtWidgets.QTableWidgetItem(
-                    str(format(out.params[strind + str(index_pk + 1) + '_gamma'].value, self.floating)))
+                    str(format(2*out.params[strind + str(index_pk + 1) + '_gamma'].value, self.floating)))
                 self.res_tab.setItem(1, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_lorentzian_fwhm_p1'] = np.round(2*out.params[strind + str(index_pk + 1) + '_gamma'].value, precision)
             if index == 3:
                 item = QtWidgets.QTableWidgetItem(
-                    str(format(out.params[strind + str(index_pk + 1) + '_sigma'].value, self.floating)))
+                    str(format(out.params[strind + str(index_pk + 1) + '_sigma'].value/np.sqrt(2*np.log(2)), self.floating)))
                 self.res_tab.setItem(0, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_gaussian_fwhm'] = np.round(out.params[strind + str(index_pk + 1) + '_sigma'].value/np.sqrt(2*np.log(2)), precision)
                 item = QtWidgets.QTableWidgetItem(
-                    str(format(out.params[strind + str(index_pk + 1) + '_sigma'].value, self.floating)))
+                    str(format(2*out.params[strind + str(index_pk + 1) + '_sigma'].value, self.floating)))
                 self.res_tab.setItem(1, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_lorentzian_fwhm_p1'] = np.round(2*out.params[strind + str(index_pk + 1) + '_sigma'].value, precision)
+            if index == 9:
+                item = QtWidgets.QTableWidgetItem(
+                    str(format(2*out.params[strind + str(index_pk + 1) + '_sigma'].value, self.floating)))
+                self.res_tab.setItem(1, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_lorentzian_fwhm_p1'] = np.round(2*out.params[strind + str(index_pk + 1) + '_sigma'].value, precision)
+                item = QtWidgets.QTableWidgetItem(
+                    str(format(out.params[strind + str(index_pk + 1) + '_amplitude'].value, self.floating)))
+                self.res_tab.setItem(5, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_height_p1'] = np.round(out.params[strind + str(index_pk + 1) + '_amplitude'].value, precision)
+                y_area = out.eval_components(x=x_interpolate)[strind + str(index_pk + 1) + '_']
+                fwhm_temp = self.approx_fwhm(x_interpolate, y_area)
+                item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp, self.floating)))
+                self.res_tab.setItem(3, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_fwhm_p1'] = np.round(fwhm_temp, precision)
             if index == 11:
                 item = QtWidgets.QTableWidgetItem(
-                    str(format(out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm'].value, self.floating)))
+                    str(format(2*out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm'].value, self.floating)))
                 self.res_tab.setItem(1, index_pk, item)
-                y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
+                temp_result_export[strind + str(index_pk + 1) +'_lorentzian_fwhm_p1'] = np.round(2*out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm'].value, precision)
+                y_area = out.eval_components(x=x_interpolate)[strind + str(index_pk + 1) + '_']
                 if np.max(y_area) != 0:
-                    fwhm_temp = self.approx_fwhm(x, y_area)
+                    fwhm_temp = self.approx_fwhm(x_interpolate, y_area)
                     item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp, self.floating)))
                     self.res_tab.setItem(3, index_pk, item)
+                    temp_result_export[strind + str(index_pk + 1) +'_fwhm_p1'] = np.round(fwhm_temp, precision)
                 else:
                     print("WARNING: Invalid value encountered in true division: Probably one of the amplitudes is "
                           "set to 0.")
                     item = QtWidgets.QTableWidgetItem("Error in calculation")
                     self.res_tab.setItem(3, index_pk, item)
+                    temp_result_export[strind + str(index_pk + 1) +'_fwhm_p1'] = "Error in calculation"
                 # included area
                 if self.binding_ener:
-                    area= abs(integrate.simps([y for y, x in zip(y_area, x[::-1])], x[::-1]))
+                    area= abs(integrate.simpson(y_area, x=x[::-1]))
                 else:
-                    area = abs(integrate.simps([y for y, x in zip(y_area, x)], x))
+                    area = abs(integrate.simpson(y_area, x=x))
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f'))))
                 self.res_tab.setItem(7, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_approx_area_p1'] = str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f')))
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f'))))
                 self.res_tab.setItem(9, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_area_total'] = str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f')))
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_amplitude'].value, self.floating)))
                 self.res_tab.setItem(5, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_height_p1'] = np.round(out.params[strind + str(index_pk + 1) + '_amplitude'].value, precision)
                 item = QtWidgets.QTableWidgetItem('')
                 self.res_tab.setItem(2, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_lorentzian_fwhm_p2'] = None
                 item = QtWidgets.QTableWidgetItem('')
                 self.res_tab.setItem(4, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_fwhm_p2'] = None
                 item = QtWidgets.QTableWidgetItem('')
                 self.res_tab.setItem(6, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_height_p2'] = None
                 item = QtWidgets.QTableWidgetItem('')
                 self.res_tab.setItem(8, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_approx_area_p2'] = None
             if index == 10:
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm_p1'].value, self.floating)))
                 self.res_tab.setItem(1, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_lorentzian_fwhm_p1'] = np.round(out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm_p1'].value, precision)
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm_p2'].value, self.floating)))
                 self.res_tab.setItem(2, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_lorentzian_fwhm_p2'] = np.round(out.params[strind + str(index_pk + 1) + '_lorentzian_fwhm_p2'].value, precision)
                 # included fwhm
-                y_area_p1 = singlett(x,
+                x_interpol=np.linspace(x[0], x[-1], 10*len(x))
+                y_area_p1 = singlett(x_interpol,
                                      amplitude=out.params[strind + str(index_pk + 1) + '_amplitude'].value,
                                      sigma=out.params[strind + str(index_pk + 1) + '_sigma'].value,
                                      gamma=out.params[strind + str(index_pk + 1) + '_gamma'].value,
                                      gaussian_sigma=out.params[
                                          strind + str(index_pk + 1) + '_gaussian_sigma'].value,
                                      center=out.params[strind + str(index_pk + 1) + '_center'].value)
-                y_area_p2 = singlett(x, amplitude=out.params[strind + str(index_pk + 1) + '_amplitude'].value
+                y_area_p2 = singlett(x_interpol, amplitude=out.params[strind + str(index_pk + 1) + '_amplitude'].value
                                                   * out.params[strind + str(index_pk + 1) + '_height_ratio'].value,
                                      sigma=out.params[strind + str(index_pk + 1) + '_sigma'].value
                                            * out.params[strind + str(index_pk + 1) + '_fct_coster_kronig'].value,
@@ -2990,50 +3730,69 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                      center=out.params[strind + str(index_pk + 1) + '_center'].value
                                             - out.params[strind + str(index_pk + 1) + '_soc'].value)
                 if np.max(y_area_p1) != 0 and np.max(y_area_p2) != 0:
-                    fwhm_temp_p1 = self.approx_fwhm(x, y_area_p1)
+                    fwhm_temp_p1 = self.approx_fwhm(x_interpol, y_area_p1)
                     item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp_p1, self.floating)))
                     self.res_tab.setItem(3, index_pk, item)
-                    y_temp_p2 = y_area_p2 / np.max(y_area_p2)
-                    x_p2 = [i for i, j in zip(x, y_temp_p2) if j >= 0.5]
-                    fwhm_temp_p2 = abs(x_p2[-1] - x_p2[0])
+                    temp_result_export[strind + str(index_pk + 1) +'_fwhm_p1'] = np.round(fwhm_temp_p1, precision)
+                    fwhm_temp_p2 = self.approx_fwhm(x_interpol, y_area_p2)
                     item = QtWidgets.QTableWidgetItem(str(format(fwhm_temp_p2, self.floating)))
                     self.res_tab.setItem(4, index_pk, item)
+                    temp_result_export[strind + str(index_pk + 1) +'_fwhm_p2'] = np.round(fwhm_temp_p2, precision)
                 else:
                     print("WARNING: Invalid value encountered in true division: Probably one of the amplitudes is "
                           "set to 0.")
                     item = QtWidgets.QTableWidgetItem("Error in calculation")
                     self.res_tab.setItem(3, index_pk, item)
-                    item = QtWidgets.QTableWidgetItem("Error in calculation")
+                    temp_result_export[strind + str(index_pk + 1) +'_fwhm_p1'] = "Error in calculation"
                     self.res_tab.setItem(4, index_pk, item)
-
+                    temp_result_export[strind + str(index_pk + 1) +'_fwhm_p2'] = "Error in calculation"
                     # included area
 
                 if self.binding_ener:
-                    area_p1 = abs(integrate.simps([y for y, x in zip(y_area_p1, x[::-1])], x[::-1]))
-                    area_p2 = abs(integrate.simps([y for y, x in zip(y_area_p2, x[::-1])], x[::-1]))
+                    area_p1 = abs(integrate.simpson(y_area_p1, x=x_interpol[::-1]))
+                    area_p2 = abs(integrate.simpson(y_area_p2, x=x_interpol[::-1]))
                 else:
-                    area_p1 = integrate.simps([y for y, x in zip(y_area_p1, x)])
-                    area_p2 = integrate.simps([y for y, x in zip(y_area_p2, x)])
+                    area_p1 = integrate.simpson(y_area_p1, x=x_interpol)
+                    area_p2 = integrate.simpson(y_area_p2, x=x_interpol)
                 area_ges = area_p1 + area_p2
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area_p1, '.1f') + r' ({}%)'.format(format(area_p1 / area_ges * 100, '.2f'))))
                 self.res_tab.setItem(7, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_approx_area_p1'] = str(format(area_p1, '.1f') + r' ({}%)'.format(format(area_p1 / area_ges * 100, '.2f')))
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area_p2, '.1f') + r' ({}%)'.format(format(area_p2 / area_ges * 100, '.2f'))))
                 self.res_tab.setItem(8, index_pk, item)
-                y_area = out.eval_components()[strind + str(index_pk + 1) + '_']
-                area = abs(integrate.simps([y for y, x in zip(y_area, x)], x))
+                temp_result_export[strind + str(index_pk + 1) +'_approx_area_p2'] = str(format(area_p2, '.1f') + r' ({}%)'.format(format(area_p2 / area_ges * 100, '.2f')))
+                y_area = out.eval_components(x=x_interpolate)[strind + str(index_pk + 1) + '_']
+                area = abs(integrate.simpson(y_area, x=x_interpolate))
                 item = QtWidgets.QTableWidgetItem(
                     str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f'))))
                 self.res_tab.setItem(9, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_area_total'] = str(format(area, '.1f') + r' ({}%)'.format(format(area / area_components * 100, '.2f')))
                 h_p1_expr = "{pre:s}amplitude"
                 h_p2_expr = "{pre:s}amplitude*{pre:s}height_ratio"
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_amplitude'].value, self.floating)))
                 self.res_tab.setItem(5, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_height_p1'] = np.round(out.params[strind + str(index_pk + 1) + '_amplitude'].value, precision)
                 item = QtWidgets.QTableWidgetItem(
                     str(format(out.params[strind + str(index_pk + 1) + '_amplitude'].value*out.params[strind + str(index_pk + 1) + '_height_ratio'].value, self.floating)))
                 self.res_tab.setItem(6, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_height_p2'] = np.round(out.params[strind + str(index_pk + 1) + '_amplitude'].value*out.params[strind + str(index_pk + 1) + '_height_ratio'].value, precision)
+            if index == 10 or index == 11:
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk + 1) + '_sigma'].value*2*np.sqrt(2*np.log(2)), self.floating)))
+                self.res_tab.setItem(0, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_gaussian_fwhm'] = np.round(out.params[strind + str(index_pk + 1) + '_sigma'].value*2*np.sqrt(2*np.log(2)), precision)
+            if index == 12:
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk + 1) + '_amplitude'].value, self.floating)))
+                self.res_tab.setItem(5, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_height_p1'] = np.round(out.params[strind + str(index_pk + 1) + '_amplitude'].value,precision)
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk + 1) + '_sigma'].value*2*np.sqrt(2*np.log(2)), self.floating)))
+                self.res_tab.setItem(0, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_gaussian_fwhm'] = np.round(out.params[strind + str(index_pk + 1) + '_sigma'].value*2*np.sqrt(2*np.log(2)), precision)
+                self.res_tab.setItem(3, index_pk, item)
+                temp_result_export[strind + str(index_pk + 1) +'_fwhm_p1'] = np.round(out.params[strind + str(index_pk + 1) + '_sigma'].value*2*np.sqrt(2*np.log(2)), precision)
+            self.meta_result_export.append(temp_result_export)
 
 
     def BGModCreator(self, x, y, mode):
@@ -3062,30 +3821,38 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def ana(self, mode):
         self.savePreset()
         plottitle = self.plottitle.text()
-        # self.df = np.loadtxt(str(self.comboBox_file.currentText()), delimiter=',', skiprows=1)
-        x0 = self.df[:, 0]
-        if x0[-1] < x0[0]:
-            self.binding_ener=True
-        x0_corrected=np.copy(x0)
-        if self.correct_energy is not None:
-            x0_corrected -= self.correct_energy
-        y0 = self.df[:, 1]
-        # print(x0[0], x0[len(x0)-1])
-
-        # plot graph after selection data from popup
-        # plt.clf()
-        # plt.cla()
         self.ax.cla()
         self.ar.cla()
         # ax = self.figure.add_subplot(211)
         if mode == 'fit':
+            x0 = self.df.iloc[:, 0].to_numpy()
+            if x0[-1] < x0[0]:
+                self.binding_ener = True
+            x0_corrected = np.copy(x0)
+            if self.correct_energy is not None:
+                x0_corrected -= self.correct_energy
+            y0 = self.df.iloc[:, 1].to_numpy()
             self.ax.plot(x0_corrected, y0, 'o', color='b', label='raw')
         else:
             # simulation mode
             if mode == 'sim':
+                x0 = self.df[:,0]
+                if x0[-1] < x0[0]:
+                    self.binding_ener = True
+                x0_corrected = np.copy(x0)
+                if self.correct_energy is not None:
+                    x0_corrected -= self.correct_energy
+                y0 = self.df[:,1]
                 self.ax.plot(x0_corrected, y0, ',', color='b', label='raw')
             # evaluation mode
             else:
+                x0 = self.df.iloc[:, 0].to_numpy()
+                if x0[-1] < x0[0]:
+                    self.binding_ener = True
+                x0_corrected = np.copy(x0)
+                if self.correct_energy is not None:
+                    x0_corrected -= self.correct_energy
+                y0 = self.df.iloc[:, 1].to_numpy()
                 self.ax.plot(x0_corrected, y0, 'o', mfc='none', color='b', label='raw')
 
         if x0_corrected[0] > x0_corrected[-1]:
@@ -3167,41 +3934,59 @@ class PrettyWidget(QtWidgets.QMainWindow):
         if np.any(raw_y == 0):
             zeros_in_data=True
             print('There were 0\'s in your data. The residuals are therefore not weighted by sqrt(data)!')
-        try:
-            if mode == 'eva' or mode== 'sim':
-                if zeros_in_data:
-                    out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)), y=y)
-                else:
-                    out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=y)
-                self.fitting_finished(out, strmode=strmode, mode=mode, x=x,y=y, zeros_in_data=zeros_in_data, raw_x=raw_x, raw_y=raw_y, pars=pars)
+        if mode == 'eva' or mode== 'sim':
+            if zeros_in_data:
+                out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)), y=y)
             else:
-                try_me_out = self.history_manager(pars)
-                if try_me_out is not None:
-                    pars, pre = try_me_out
-                    self.pre = pre
-                    self.setPreset(pre[0], pre[1], pre[2], pre[3])
-                if zeros_in_data:
-                    self.fit_thread=FitThread(model=mod,data=y, params=pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)),y=raw_y)
-                    self.fit_thread.fitting_finished.connect(
-                        lambda out: self.fitting_finished(out, x=x,y=y, strmode=strmode, mode=mode,
-                                                          zeros_in_data=zeros_in_data, raw_x=raw_x, raw_y=raw_y,
-                                                          pars=pars))
+                out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=y)
+            self.fitting_finished(out, strmode=strmode, mode=mode, x=x,y=y, zeros_in_data=zeros_in_data, raw_x=raw_x, raw_y=raw_y, pars=pars)
+        else:
+            try_me_out = self.history_manager(pars)
+            if try_me_out is not None:
+                pars, pre = try_me_out
+                self.pre = pre
+                self.setPreset(pre[0], pre[1], pre[2], pre[3])
+            if zeros_in_data:
+                self.fit_thread=FitThread(model=mod,data=y, params=pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)),y=raw_y)
+                self.fit_thread.fitting_finished.connect(
+                    lambda out: self.fitting_finished(out, x=x,y=y, strmode=strmode, mode=mode,
+                                                      zeros_in_data=zeros_in_data, raw_x=raw_x, raw_y=raw_y,
+                                                      pars=pars))
+                self.fit_thread.start()
+                #out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)), y=raw_y)
+            else:
+                self.fit_thread = FitThread(model=mod, data=y, params=pars, x=x,
+                                       weights=1 /(np.sqrt(raw_y) * np.sqrt(self.rows_lightened)),
+                                       y=raw_y)
+                self.fit_thread.fitting_finished.connect(lambda out: self.fitting_finished(out, x=x,y=y, strmode=strmode, mode=mode, zeros_in_data=zeros_in_data, raw_x=raw_x, raw_y=raw_y, pars=pars))
+                self.fit_thread.start()
+                #out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=raw_y)
+            self.fit_thread.thread_started.connect(self.fit_thread_started)
+            self.fit_thread.error_occurred.connect(self.handle_thread_exception)
 
-                    self.fit_thread.start()
-                    #out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)), y=raw_y)
 
-                else:
-                    self.fit_thread = FitThread(model=mod, data=y, params=pars, x=x,
-                                           weights=1 /(np.sqrt(raw_y) * np.sqrt(self.rows_lightened)),
-                                           y=raw_y)
-                    self.fit_thread.fitting_finished.connect(lambda out: self.fitting_finished(out, x=x,y=y, strmode=strmode, mode=mode, zeros_in_data=zeros_in_data, raw_x=raw_x, raw_y=raw_y, pars=pars))
-
-                    self.fit_thread.start()
-                    #out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=raw_y)
-
-        except Exception as e:
-            return self.raise_error(window_title="Error: NaN in Model/data!.",
-                                error_message=e.args[0])
+    def handle_thread_exception(self, error_message):
+        self.raise_error("Error in FitThread", error_message)
+        self.statusBar().showMessage("Fitting failed! NaN in data/fit-model occured!")
+        self.enable_buttons_after_fit_thread()
+    def fit_thread_started(self):
+        self.btn_fit.setEnabled(False)
+        self.btn_fit.setStyleSheet("QPushButton:disabled { background-color: rgba(200, 200, 200, 128); }");
+        self.btn_eva.setEnabled(False)
+        self.btn_eva.setStyleSheet("QPushButton:disabled { background-color: rgba(200, 200, 200, 128); }");
+        self.btn_interrupt.setEnabled(True)
+        self.btn_interrupt.setStyleSheet('')
+        self.btn_undoFit.setEnabled(False)
+        self.btn_undoFit.setStyleSheet("QPushButton:disabled { background-color: rgba(200, 200, 200, 128); }");
+    def enable_buttons_after_fit_thread(self):
+        self.btn_fit.setEnabled(True)
+        self.btn_fit.setStyleSheet('')
+        self.btn_eva.setEnabled(True)
+        self.btn_eva.setStyleSheet('')
+        self.btn_interrupt.setEnabled(True)
+        self.btn_interrupt.setStyleSheet('')
+        self.btn_undoFit.setEnabled(True)
+        self.btn_undoFit.setStyleSheet('')
 
     def get_attr(self,obj, attr):
         """Format an attribute of an object for printing."""
@@ -3215,6 +4000,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         return repr(val)
 
     def fitting_finished(self, out, x, y, strmode, mode, zeros_in_data, pars, raw_x,raw_y):
+        self.enable_buttons_after_fit_thread()
         comps = out.eval_components(x=x)
         # fit results to be checked
         for key in out.params:
@@ -3357,13 +4143,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
         df_corrected_x = pd.DataFrame(x, columns=['corrected x'])
         df_y = pd.DataFrame(raw_y - sum_background - self.static_bg, columns=['data-bg'])
         df_pks = pd.DataFrame(out.best_fit - sum_background, columns=['sum_components'])
-        df_sum = pd.DataFrame(out.best_fit, columns=['sum_fit'])
         df_b = pd.DataFrame(sum_background + self.static_bg, columns=['bg'])
+        df_residual = pd.DataFrame(out.residual, columns=['residual'])
         if isinstance(self.static_bg, int):
             df_b_static = pd.DataFrame([0] * len(sum_background), columns=['bg_static (not used)'])
+            df_sum = pd.DataFrame(out.best_fit, columns=['sum_fit'])
         else:
             df_b_static = pd.DataFrame(self.static_bg, columns=['bg_static'])
-        self.result = pd.concat([df_raw_x, df_raw_y, df_corrected_x, df_y, df_pks, df_b, df_b_static, df_sum], axis=1)
+            df_sum = pd.DataFrame(out.best_fit+self.static_bg, columns=['sum_fit'])
+        self.result = pd.concat([df_raw_x, df_raw_y, df_corrected_x, df_y, df_pks, df_b, df_b_static, df_sum, df_residual], axis=1)
         df_bg_comps = pd.DataFrame.from_dict(self.bg_comps, orient='columns')
         self.result = pd.concat([self.result, df_bg_comps], axis=1)
         for index_pk in range(int(self.fitp1.columnCount() / 2)):
@@ -3373,6 +4161,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                                 columns=[self.fitp1.horizontalHeaderItem(2 * index_pk + 1).text()])
             self.result = pd.concat([self.result, df_c], axis=1)
         print(out.fit_report())
+        logging.info(out.fit_report())
         lim_reached = False
         at_zero = False
         for key in out.params:

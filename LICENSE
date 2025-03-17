@@ -1,4 +1,3 @@
-
 MIT License
 
 Copyright 2022 Julian Hochhaus
@@ -7,14 +6,20 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE,
+ARISING FROM OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE/OTHER DEALINGS IN THE SOFTWARE.
 
+---
 
-This software is based on the great work of Hideki NAKAJIMA and can be found here: https://github.com/hidecode221b/LG4X. LG4X was originally published under the MIT License. 
+This software is based on the great work of Hideki NAKAJIMA and can be found here: https://github.com/hidecode221b/LG4X. LG4X was originally published under the MIT License.
 
-----
-LG4X License
-----
+### LG4X License
 
 Copyright (c) 2020 Hideki NAKAJIMA
 
@@ -66,3 +71,67 @@ Some codes in elementdata.py, element.py, periodictable.py, and periodictableui.
 Copyright Brendan Sweeny 2019 https://github.com/BrendanSweeny/clusterid
 
 
+---
+
+### Third-Party Licenses:
+
+#### 1. lmfit Library:
+Some code has been taken from the lmfit library whose license is below.
+
+BSD-3 License
+
+Copyright 2022 Matthew Newville, The University of Chicago  
+               Renee Otten, Brandeis University  
+               Till Stensitzki, Freie Universitat Berlin  
+               A. R. J. Nelson, Australian Nuclear Science and Technology Organisation  
+               Antonino Ingargiola, University of California, Los Angeles  
+               Daniel B. Allen, Johns Hopkins University  
+               Michal Rawlik, Eidgenossische Technische Hochschule Zurich  
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice,
+   this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation 
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors 
+   may be used to endorse or promote products derived from this software 
+   without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES ARE DISCLAIMED.
+
+---
+
+#### 2. Matplotlib:
+This project uses Matplotlib for data visualization purposes.
+
+Matplotlib is licensed under a custom permissive license with attribution requirements:  
+Copyright © 2012– Matplotlib Development Team; All Rights Reserved  
+
+For versions prior to 1.3:  
+Copyright © 2002–2011 John D. Hunter; All Rights Reserved  
+
+The full license text for Matplotlib can be found at:  
+https://matplotlib.org/stable/users/license.html  
+
+If you modify or redistribute parts of Matplotlib as part of this project,
+you must comply with its licensing terms by retaining copyright notices from its source code 
+and documenting any modifications made.
+
+---
+
+#### 3. Anti-Grain Geometry (AGG):
+This project includes portions of Anti-Grain Geometry (AGG), which is used internally by Matplotlib for rendering purposes.
+
+Anti-Grain Geometry is licensed under a permissive license:  
+Copyright © 2002–2005 Maxim Shemanarev (http://www.antigrain.com)  
+
+Permission to copy/use/modify/sell/distribute AGG is granted provided that 
+this copyright notice appears in all copies.
+
+This software is provided "as is," without express or implied warranty.
