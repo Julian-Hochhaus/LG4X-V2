@@ -3780,9 +3780,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self.res_tab.setItem(6, index_pk, item)
                 temp_result_export[strind + str(index_pk + 1) +'_height_p2'] = np.round(out.params[strind + str(index_pk + 1) + '_amplitude'].value*out.params[strind + str(index_pk + 1) + '_height_ratio'].value, precision)
             if index == 10 or index == 11:
-                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk + 1) + '_sigma'].value*2*np.sqrt(2*np.log(2)), self.floating)))
+                item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk + 1) + '_gaussian_sigma'].value*2*np.sqrt(2*np.log(2)), self.floating)))
                 self.res_tab.setItem(0, index_pk, item)
-                temp_result_export[strind + str(index_pk + 1) +'_gaussian_fwhm'] = np.round(out.params[strind + str(index_pk + 1) + '_sigma'].value*2*np.sqrt(2*np.log(2)), precision)
+                temp_result_export[strind + str(index_pk + 1) +'_gaussian_fwhm'] = np.round(out.params[strind + str(index_pk + 1) + '_gaussian_sigma'].value*2*np.sqrt(2*np.log(2)), precision)
             if index == 12:
                 item = QtWidgets.QTableWidgetItem(str(format(out.params[strind + str(index_pk + 1) + '_amplitude'].value, self.floating)))
                 self.res_tab.setItem(5, index_pk, item)
