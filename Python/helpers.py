@@ -567,6 +567,7 @@ class PreviewDialog(QtWidgets.QDialog):
         self.config = config
         config.read(config_file_path)
         self.config_file_path= config_file_path
+        self.is_accepted = False
         self.initUI()
 
     def read_config(self):
@@ -654,7 +655,7 @@ class PreviewDialog(QtWidgets.QDialog):
         layout.addWidget(self.message_label)
         button_box = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
         button_box.accepted.connect(self.accept_inputs)
-        button_box.rejected.connect(self.reject)
+        button_box.rejected.connect(self.reject_dialog)
 
         layout.addWidget(button_box)
         self.setLayout(layout)
@@ -737,11 +738,18 @@ class PreviewDialog(QtWidgets.QDialog):
                     self.config.set('Import', 'remember_settings', str(self.remember_settings_checkbox.isChecked()))
                     with open(self.config_file_path, 'w') as configfile:
                         self.config.write(configfile)
+                self.is_accepted = True
                 self.accept()
             else:
                 self.message_label.setText("Data not in correct format. Please select exactly 2 columns.")
         else:
             self.message_label.setText("Data not in correct format. Please select correct separator and columns.")
+
+    def get_is_accepted(self):
+        return self.is_accepted
+    def reject_dialog(self):
+        self.is_accepted = False
+        self.reject()
     def get_options(self):
         if self.data is None:
             return None, None

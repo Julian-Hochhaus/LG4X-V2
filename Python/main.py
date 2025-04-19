@@ -124,6 +124,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.data_arr={}
         self.initUI()
     def initUI(self):
+        logging.info("Application started.")
+        logging.info(f"Version: {__version__}")
         if self.two_window_mode:
             self.initTwoWindowUI()
         else:
@@ -2332,51 +2334,60 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.idx_imp = idx
         self.imp()
     def imp_csv_or_txt(self, cfilePath, remember_settings=True):
-            ##exclude, that file was already added! [BUG]
-            df = pd.read_csv(cfilePath, comment='#')
-            num_columns = len(df.columns)
-            if not remember_settings:
-                preview_dialog = PreviewDialog(cfilePath, config, config_file_path)
-
-                if preview_dialog.exec_():
-                    df = preview_dialog.df
-                    filename = preview_dialog.fname
-                    if df.isna().any().any():
-                        print('automatic import failed, please select correct format!')
-                        self.imp_csv_or_txt(cfilePath, remember_settings=False)
-                    if df is not None:
-                        self.data_arr[filename] = DataSet(filepath=cfilePath, df=df, pe=None)
-            else:
-                if config.getboolean('Import', 'has_header'):
-                    temp_header = pd.read_csv(cfilePath, delimiter=config.get('Import', 'separator'),header=int(config.get('Import', 'header_row')), engine='python', nrows=0)
-                    if temp_header.columns.values.tolist()[0] == '#':
-                        cols = [col+1 for col in config.get('Import', 'columns')]
-                        df = pd.read_csv(cfilePath, delimiter=config.get('Import', 'separator'), engine="python",
-                                         names=temp_header.columns.values.tolist()[1:],
-                                         skiprows=int(config.get('Import', 'header_row')) + 1, comment='#')
-                    else:
-                        df = pd.read_csv(cfilePath, delimiter=config.get('Import', 'separator'), engine="python",
-                                         skiprows=int(config.get('Import', 'header_row')), comment='#')
-
-                else:
-                    df = pd.read_csv(cfilePath, delimiter=config.get('Import', 'separator'), engine="python",
-                                     skiprows=int(config.get('Import', 'header_row')), header=None, comment='#')
-                    df.columns = [f"col{i + 1}" for i in range(len(df.columns))]
-                if not num_columns == 2 and not remember_settings:
+        if os.path.basename(cfilePath) in self.data_arr.keys():
+            print(f'The file "{cfilePath}" has already been loaded. Skipping')
+            QtWidgets.QMessageBox.information(self, "Filename already used", f'The file "{cfilePath}" has already been loaded. Skipping')
+            return  # Skip further processing
+        df = pd.read_csv(cfilePath, comment='#', usecols=[0, 1])
+        num_columns = len(df.columns)
+        if not num_columns == 2 and not remember_settings:
+            remember_settings=False
+        if not remember_settings:
+            preview_dialog = PreviewDialog(cfilePath, config, config_file_path)
+            if preview_dialog.exec_():
+                df = preview_dialog.df
+                filename = preview_dialog.fname
+                if df.isna().any().any():
                     print('automatic import failed, please select correct format!')
                     self.imp_csv_or_txt(cfilePath, remember_settings=False)
-                df = df.iloc[:, eval(config.get('Import', 'columns'))]
-                if df.isna().any().any():
-                    print('automatic import failed, please select correct format')
-                    self.imp_csv_or_txt(cfilePath, remember_settings=False)
-                filename = os.path.basename(cfilePath)
-                self.data_arr[filename] = DataSet(filepath=cfilePath, df=df, pe=None)
-            self.comboBox_file.clear()
-            self.comboBox_file.addItems(self.list_file)
-            self.comboBox_file.addItems(self.data_arr.keys())
+                if df is not None:
+                    self.data_arr[filename] = DataSet(filepath=cfilePath, df=df, pe=None)
+            else:
+                filename=None
+        elif not num_columns == 2:
+            if config.getboolean('Import', 'has_header'):
+                temp_header = pd.read_csv(cfilePath, delimiter=config.get('Import', 'separator'),header=int(config.get('Import', 'header_row')), engine='python', nrows=0)
+                if temp_header.columns.values.tolist()[0] == '#':
+                    cols = [col+1 for col in config.get('Import', 'columns')]
+                    df = pd.read_csv(cfilePath, delimiter=config.get('Import', 'separator'), engine="python",
+                                     names=temp_header.columns.values.tolist()[1:],
+                                         skiprows=int(config.get('Import', 'header_row')) + 1, comment='#')
+                else:
+                    df = pd.read_csv(cfilePath, delimiter=config.get('Import', 'separator'), engine="python",
+                                     skiprows=int(config.get('Import', 'header_row')), comment='#')
+            else:
+                df = pd.read_csv(cfilePath, delimiter=config.get('Import', 'separator'), engine="python",
+                                     skiprows=int(config.get('Import', 'header_row')), header=None, comment='#')
+                df.columns = [f"col{i + 1}" for i in range(len(df.columns))]
+            df = df.iloc[:, eval(config.get('Import', 'columns'))]
+            if df.isna().any().any():
+                print('automatic import failed, please select correct format')
+                self.imp_csv_or_txt(cfilePath, remember_settings=False)
+            filename = os.path.basename(cfilePath)
+            self.data_arr[filename] = DataSet(filepath=cfilePath, df=df, pe=None)
+        else:
+            filename = os.path.basename(cfilePath)
+            self.data_arr[filename] = DataSet(filepath=cfilePath, df=df, pe=None)
+
+        self.comboBox_file.clear()
+        self.comboBox_file.addItems(self.list_file)
+        self.comboBox_file.addItems(self.data_arr.keys())
+        if filename:
             index = self.comboBox_file.findText(filename, QtCore.Qt.MatchFixedString)
-            if index >= 0:
-                self.comboBox_file.setCurrentIndex(index)
+        else:
+            index=-1
+        if index >= 0:
+            self.comboBox_file.setCurrentIndex(index)
     def imp(self):
         index = self.idx_imp
         if index == 1 or index == 2:
