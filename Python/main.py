@@ -2977,7 +2977,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     if self.pre[1][2][2 * index] == 2:
                         pars['bg_poly_c' + str(index)].vary = False
                 pars['bg_poly_c0'].max=np.mean(y[-5:])
-                pars['bg_poly_c0'].min = 0
+                #pars['bg_poly_c0'].min = 0
         if idx_bg == 6:
             mod = SlopeBG(independent_vars=['y'], prefix='bg_slope_')
             bg_mod = 0
