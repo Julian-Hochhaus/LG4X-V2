@@ -126,13 +126,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def initUI(self):
         logging.info("Application started.")
         logging.info(f"Version: {__version__}")
-        menubar=createMenuBar(self)
         if self.two_window_mode:
-            self.initTwoWindowUI(menubar=menubar)
+            self.initTwoWindowUI()
         else:
-            self.initSingleWindowUI(menubar=menubar)
+            self.initSingleWindowUI()
 
-    def initTwoWindowUI(self, menubar=None):
+    def initTwoWindowUI(self):
         self.setGeometry(0, 0, self.resolution[0], self.resolution[1])
         self.showNormal()
         self.center()
@@ -151,6 +150,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.idx_bg = [2]
 
         self.idx_pres = 0
+
+        menubar=createMenuBar(self)
         # central widget layout
         widget = QtWidgets.QWidget(self)
         self.setCentralWidget(widget)
@@ -174,27 +175,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # button layout
 
         layout_top_left = QtWidgets.QVBoxLayout()
-        fitbuttons_layout = QtWidgets.QHBoxLayout()
-        # Fit Button
-        self.btn_fit = QtWidgets.QPushButton('Fit', self)
-        self.btn_fit.resize(self.btn_fit.sizeHint())
-        self.btn_fit.clicked.connect(self.fit)
-        fitbuttons_layout.addWidget(self.btn_fit)
-        # Evaluate Button
-        self.btn_eva = QtWidgets.QPushButton('Evaluate', self)
-        self.btn_eva.resize(self.btn_eva.sizeHint())
-        self.btn_eva.clicked.connect(self.eva)
-        fitbuttons_layout.addWidget(self.btn_eva)
-        # Undo Fit Button
-        self.btn_undoFit = QtWidgets.QPushButton('undo Fit', self)
-        self.btn_undoFit.resize(self.btn_undoFit.sizeHint())
-        self.btn_undoFit.clicked.connect(self.one_step_back_in_params_history)
-        fitbuttons_layout.addWidget(self.btn_undoFit)
-        # Interrupt fit Button
-        self.btn_interrupt = QtWidgets.QPushButton('Interrupt fitting', self)
-        self.btn_interrupt.resize(self.btn_interrupt.sizeHint())
-        self.btn_interrupt.clicked.connect(self.interrupt_fit)
-        fitbuttons_layout.addWidget(self.btn_interrupt)
+        fitbuttons_layout, self.fit_buttons = createFitButtons(self)
         layout_top_left.addLayout(fitbuttons_layout)
 
         # lists of dropdown menus
@@ -504,7 +485,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.activeParameters()
         self.resizeAllColumns()
 
-    def initSingleWindowUI(self, menubar=None):
+    def initSingleWindowUI(self):
         self.setGeometry(0, 0, self.resolution[0], self.resolution[1])
         self.showNormal()
         self.center()
@@ -523,6 +504,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.idx_bg = [2]
 
         self.idx_pres = 0
+
+        menubar=createMenuBar(self)
         # central widget layout
         widget = QtWidgets.QWidget(self)
         self.setCentralWidget(widget)
@@ -545,27 +528,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # button layout
 
         layout_top_left = QtWidgets.QVBoxLayout()
-        fitbuttons_layout = QtWidgets.QHBoxLayout()
-        # Fit Button
-        self.btn_fit = QtWidgets.QPushButton('Fit', self)
-        self.btn_fit.resize(self.btn_fit.sizeHint())
-        self.btn_fit.clicked.connect(self.fit)
-        fitbuttons_layout.addWidget(self.btn_fit)
-        # Evaluate Button
-        self.btn_eva = QtWidgets.QPushButton('Evaluate', self)
-        self.btn_eva.resize(self.btn_eva.sizeHint())
-        self.btn_eva.clicked.connect(self.eva)
-        fitbuttons_layout.addWidget(self.btn_eva)
-        # Undo Fit Button
-        self.btn_undoFit = QtWidgets.QPushButton('undo Fit', self)
-        self.btn_undoFit.resize(self.btn_undoFit.sizeHint())
-        self.btn_undoFit.clicked.connect(self.one_step_back_in_params_history)
-        fitbuttons_layout.addWidget(self.btn_undoFit)
-        # Interrupt fit Button
-        self.btn_interrupt = QtWidgets.QPushButton('Interrupt fitting', self)
-        self.btn_interrupt.resize(self.btn_interrupt.sizeHint())
-        self.btn_interrupt.clicked.connect(self.interrupt_fit)
-        fitbuttons_layout.addWidget(self.btn_interrupt)
+        fitbuttons_layout, self.fit_buttons = createFitButtons(self)
         layout_top_left.addLayout(fitbuttons_layout)
 
         # lists of dropdown menus
@@ -3673,24 +3636,37 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.raise_error("Error in FitThread", error_message)
         self.statusBar().showMessage("Fitting failed! NaN in data/fit-model occured!")
         self.enable_buttons_after_fit_thread()
+
     def fit_thread_started(self):
-        self.btn_fit.setEnabled(False)
-        self.btn_fit.setStyleSheet("QPushButton:disabled { background-color: rgba(200, 200, 200, 128); }");
-        self.btn_eva.setEnabled(False)
-        self.btn_eva.setStyleSheet("QPushButton:disabled { background-color: rgba(200, 200, 200, 128); }");
-        self.btn_interrupt.setEnabled(True)
-        self.btn_interrupt.setStyleSheet('')
-        self.btn_undoFit.setEnabled(False)
-        self.btn_undoFit.setStyleSheet("QPushButton:disabled { background-color: rgba(200, 200, 200, 128); }");
+        """Update button states when the fit thread starts."""
+        self.fit_buttons['btn_fit'].setEnabled(False)
+        self.fit_buttons['btn_fit'].setStyleSheet(
+            "QPushButton:disabled { background-color: rgba(200, 200, 200, 128); }")
+
+        self.fit_buttons['btn_eva'].setEnabled(False)
+        self.fit_buttons['btn_eva'].setStyleSheet(
+            "QPushButton:disabled { background-color: rgba(200, 200, 200, 128); }")
+
+        self.fit_buttons['btn_interrupt'].setEnabled(True)
+        self.fit_buttons['btn_interrupt'].setStyleSheet('')
+
+        self.fit_buttons['btn_undoFit'].setEnabled(False)
+        self.fit_buttons['btn_undoFit'].setStyleSheet(
+            "QPushButton:disabled { background-color: rgba(200, 200, 200, 128); }")
+
     def enable_buttons_after_fit_thread(self):
-        self.btn_fit.setEnabled(True)
-        self.btn_fit.setStyleSheet('')
-        self.btn_eva.setEnabled(True)
-        self.btn_eva.setStyleSheet('')
-        self.btn_interrupt.setEnabled(True)
-        self.btn_interrupt.setStyleSheet('')
-        self.btn_undoFit.setEnabled(True)
-        self.btn_undoFit.setStyleSheet('')
+        """Enable buttons after the fit thread finishes."""
+        self.fit_buttons['btn_fit'].setEnabled(True)
+        self.fit_buttons['btn_fit'].setStyleSheet('')
+
+        self.fit_buttons['btn_eva'].setEnabled(True)
+        self.fit_buttons['btn_eva'].setStyleSheet('')
+
+        self.fit_buttons['btn_interrupt'].setEnabled(True)
+        self.fit_buttons['btn_interrupt'].setStyleSheet('')
+
+        self.fit_buttons['btn_undoFit'].setEnabled(True)
+        self.fit_buttons['btn_undoFit'].setStyleSheet('')
 
     def get_attr(self,obj, attr):
         """Format an attribute of an object for printing."""
