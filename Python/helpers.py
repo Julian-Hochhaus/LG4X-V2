@@ -13,6 +13,7 @@ import traceback
 import logging
 import pandas as pd
 import configparser
+import webbrowser
 config = configparser.ConfigParser()
 def autoscale_y(ax, margin=0.1):
     """Rescales the y-axis based on the visible data given the current xlim of the axis.
@@ -927,3 +928,125 @@ class DataSet():
         self.filepath = filepath
         self.filename= os.path.basename(filepath)
         self.pe = pe
+
+
+def createMenuBar(parent):
+    """Create a reusable menu bar and return it."""
+    menubar = parent.menuBar()
+
+    # File Menu
+    # File Menu
+    fileMenu = menubar.addMenu('&File')
+
+    # Import Submenu
+    importSubmenu = fileMenu.addMenu('&Import')
+    actions_import = [
+        ('Import &csv', 'Ctrl+Shift+X', lambda: parent.clickOnBtnImp(idx=1)),
+        ('Import &txt', 'Ctrl+Shift+Y', lambda: parent.clickOnBtnImp(idx=2)),
+        ('Import &vms', 'Ctrl+Shift+V', lambda: parent.clickOnBtnImp(idx=3)),
+        ('Open directory (.txt and .csv)', 'Ctrl+Shift+D', lambda: parent.clickOnBtnImp(idx=4)),
+        ('Open directory (only .csv)', 'Ctrl+Shift+C', lambda: parent.clickOnBtnImp(idx=5)),
+        ('Open directory (only .txt)', 'Ctrl+Shift+T', lambda: parent.clickOnBtnImp(idx=6))
+    ]
+
+    for name, shortcut, func in actions_import:
+        action = QtWidgets.QAction(name, parent)
+        action.setShortcut(shortcut)
+        action.triggered.connect(func)
+        importSubmenu.addAction(action)
+
+    # Export Submenu
+    exportSubmenu = fileMenu.addMenu('&Export')
+    actions_export = [
+        ('&Results', 'Ctrl+Shift+R', parent.exportResults),
+        ('Re&sults + Data', 'Ctrl+Shift+A', parent.export_all)
+    ]
+
+    for name, shortcut, func in actions_export:
+        action = QtWidgets.QAction(name, parent)
+        action.setShortcut(shortcut)
+        action.triggered.connect(func)
+        exportSubmenu.addAction(action)
+
+    # Exit Application Action
+    exitAction = QtWidgets.QAction('E&xit', parent)
+    exitAction.setShortcut('Ctrl+Q')
+    exitAction.setStatusTip('Exit application')
+    exitAction.triggered.connect(QtWidgets.qApp.quit)
+
+    fileMenu.addSeparator()
+    fileMenu.addAction(exitAction)
+
+    # Preset Menu
+    presetMenu = menubar.addMenu('&Preset')
+
+    actions_preset = [
+        ('&New', 'Ctrl+Shift+N', lambda: parent.clickOnBtnPreset(idx=1)),
+        ('&Load', 'Ctrl+Shift+L', lambda: parent.clickOnBtnPreset(idx=2)),
+        ('&Append', 'Ctrl+Shift+A', lambda: parent.clickOnBtnPreset(idx=3)),
+        ('&Save', None, lambda: parent.clickOnBtnPreset(idx=4)),
+        ('&C1s', None, lambda: parent.clickOnBtnPreset(idx=5)),
+        ('C &K edge', None, lambda: parent.clickOnBtnPreset(idx=6)),
+        ('Periodic &Table', None, lambda: parent.clickOnBtnPreset(idx=7))
+    ]
+
+    for name, shortcut, func in actions_preset:
+        action = QtWidgets.QAction(name, parent)
+
+        if shortcut:
+            action.setShortcut(shortcut)  # Add shortcuts only if defined
+
+        action.triggered.connect(func)
+        presetMenu.addAction(action)
+
+    # Background Menu
+    bgMenu = menubar.addMenu('&Choose BG')
+
+    # Define actions for background menu
+    bg_actions = [
+        ('&Active &Shirley BG', None, parent.clickOnBtnBG, True),
+        ('&Static &Shirley BG', None, parent.clickOnBtnBG, True),
+        ('&Active &Tougaard BG', None, parent.clickOnBtnBG, True),
+        ('&Static &Tougaard BG', None, parent.clickOnBtnBG, True),
+        ('&Polynomial BG', 'Ctrl+Alt+P', parent.clickOnBtnBG, True),
+        ('&Slope BG', 'Ctrl+Alt+S', parent.clickOnBtnBG, True),
+        ('&Arctan BG', None, parent.clickOnBtnBG, True),
+        ('&Erf BG', None, parent.clickOnBtnBG, True),
+        ('&VBM/Cutoff BG', None, parent.clickOnBtnBG, True)
+    ]
+
+    # Add actions to background menu
+    for name, shortcut, func, checkable in bg_actions:
+        action = QtWidgets.QAction(name, parent)
+        if shortcut:
+            action.setShortcut(shortcut)
+        action.setCheckable(checkable)
+        action.triggered.connect(func)
+        bgMenu.addAction(action)
+
+    # Tougaard Cross Section Action
+    btn_tougaard_cross_section = QtWidgets.QAction('Tougaard &Cross Section ', parent)
+    btn_tougaard_cross_section.triggered.connect(parent.clicked_cross_section)
+
+    bgMenu.addSeparator()
+    bgMenu.addAction(btn_tougaard_cross_section)
+
+    # Settings Menu
+    settings_menu = menubar.addMenu('&Settings')
+
+    btn_settings = QtWidgets.QAction('&Open Settings', parent)
+    btn_settings.triggered.connect(parent.open_settings_window)
+
+    settings_menu.addAction(btn_settings)
+
+    # Help/Info Menu
+    links_menu = menubar.addMenu('&Help/Info')
+
+    github_link = QtWidgets.QAction('See on &Github', parent)
+    github_link.triggered.connect(lambda: webbrowser.open('https://github.com/Julian-Hochhaus/LG4X-V2'))
+
+    about_link = QtWidgets.QAction('&How to cite?', parent)
+    about_link.triggered.connect(parent.show_citation_dialog)
+
+    links_menu.addAction(github_link)
+    links_menu.addAction(about_link)

@@ -126,12 +126,13 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def initUI(self):
         logging.info("Application started.")
         logging.info(f"Version: {__version__}")
+        menubar=createMenuBar(self)
         if self.two_window_mode:
-            self.initTwoWindowUI()
+            self.initTwoWindowUI(menubar=menubar)
         else:
-            self.initSingleWindowUI()
+            self.initSingleWindowUI(menubar=menubar)
 
-    def initTwoWindowUI(self):
+    def initTwoWindowUI(self, menubar=None):
         self.setGeometry(0, 0, self.resolution[0], self.resolution[1])
         self.showNormal()
         self.center()
@@ -150,155 +151,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.idx_bg = [2]
 
         self.idx_pres = 0
-        # Menu bar
-        menubar = self.menuBar()
-        ## Import sub menue
-        fileMenu = menubar.addMenu('&File')
-
-        btn_imp_csv = QtWidgets.QAction('Import &csv', self)
-        btn_imp_csv.setShortcut('Ctrl+Shift+C')
-        btn_imp_csv.triggered.connect(lambda: self.clickOnBtnImp(idx=1))
-
-        btn_imp_txt = QtWidgets.QAction('Import &txt', self)
-        btn_imp_txt.setShortcut('Ctrl+Shift+T')
-        btn_imp_txt.triggered.connect(lambda: self.clickOnBtnImp(idx=2))
-
-        btn_imp_vms = QtWidgets.QAction('Import &vms', self)
-        btn_imp_vms.setShortcut('Ctrl+Shift+V')
-        btn_imp_vms.triggered.connect(lambda: self.clickOnBtnImp(idx=3))
-
-        btn_open_dir = QtWidgets.QAction('Open directory', self)
-        btn_open_dir.setShortcut('Ctrl+Shift+D')
-        btn_open_dir.triggered.connect(lambda: self.clickOnBtnImp(idx=4))
-
-        importSubmenu = fileMenu.addMenu('&Import')
-        importSubmenu.addAction(btn_imp_csv)
-        importSubmenu.addAction(btn_imp_txt)
-        importSubmenu.addAction(btn_imp_vms)
-        importSubmenu.addAction(btn_open_dir)
-        ### Export submenu
-        btn_exp_results = QtWidgets.QAction('&Results', self)
-        btn_exp_results.setShortcut('Ctrl+Shift+R')
-        btn_exp_results.triggered.connect(self.exportResults)
-
-        btn_exp_all_results = QtWidgets.QAction('Re&sults + Data', self)
-        btn_exp_all_results.setShortcut('Ctrl+Shift+S')
-        btn_exp_all_results.triggered.connect(self.export_all)
-
-        exportSubmenu = fileMenu.addMenu('&Export')
-        exportSubmenu.addAction(btn_exp_results)
-        exportSubmenu.addAction(btn_exp_all_results)
-
-        # exit application
-        exitAction = QtWidgets.QAction('E&xit', self)
-        exitAction.setShortcut('Ctrl+Q')
-        exitAction.setStatusTip('Exit application')
-        exitAction.triggered.connect(QtWidgets.qApp.quit)
-
-        fileMenu.addAction(exitAction)
-
-        ## Preset sub menue
-        presetMenu = menubar.addMenu('&Preset')
-
-        btn_preset_new = QtWidgets.QAction('&New', self)
-        btn_preset_new.setShortcut('Ctrl+Shift+N')
-        btn_preset_new.triggered.connect(lambda: self.clickOnBtnPreset(idx=1))
-
-        btn_preset_load = QtWidgets.QAction('&Load', self)
-        btn_preset_load.setShortcut('Ctrl+Shift+L')
-        btn_preset_load.triggered.connect(lambda: self.clickOnBtnPreset(idx=2))
-
-        btn_preset_append = QtWidgets.QAction('&Append', self)
-        btn_preset_append.setShortcut('Ctrl+Shift+A')
-        btn_preset_append.triggered.connect(lambda: self.clickOnBtnPreset(idx=3))
-
-        btn_preset_save = QtWidgets.QAction('&Save', self)
-        # btn_preset_save.setShortcut('Ctrl+Shift+S')
-        btn_preset_save.triggered.connect(lambda: self.clickOnBtnPreset(idx=4))
-
-        btn_preset_c1s = QtWidgets.QAction('&C1s', self)
-        # btn_preset_c1s.setShortcut('Ctrl+Shift+')
-        btn_preset_c1s.triggered.connect(lambda: self.clickOnBtnPreset(idx=5))
-
-        btn_preset_ckedge = QtWidgets.QAction('C &K edge', self)
-        # btn_preset_ckedge.setShortcut('Ctrl+Shift+')
-        btn_preset_ckedge.triggered.connect(lambda: self.clickOnBtnPreset(idx=6))
-
-        btn_preset_ptable = QtWidgets.QAction('Periodic &Table', self)
-        # btn_preset_ptable.setShortcut('Ctrl+Shift+')
-        btn_preset_ptable.triggered.connect(lambda: self.clickOnBtnPreset(idx=7))
-
-        presetMenu.addAction(btn_preset_new)
-        presetMenu.addAction(btn_preset_load)
-        presetMenu.addAction(btn_preset_append)
-        presetMenu.addAction(btn_preset_save)
-        presetMenu.addAction(btn_preset_c1s)
-        presetMenu.addAction(btn_preset_ckedge)
-        menubar.addAction(btn_preset_ptable)
-
-        self.bgMenu = menubar.addMenu('&Choose BG')
-
-        self.btn_bg_shirley_act = QtWidgets.QAction('&Active &Shirley BG', self, checkable=True)
-        self.btn_bg_shirley_act.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_shirley_static = QtWidgets.QAction('&Static &Shirley BG', self, checkable=True)
-        self.btn_bg_shirley_static.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_tougaard_act = QtWidgets.QAction('&Active &Tougaard BG', self, checkable=True)
-        self.btn_bg_tougaard_act.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_tougaard_static = QtWidgets.QAction('&Static &Tougaard BG', self, checkable=True)
-        self.btn_bg_tougaard_static.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_polynomial = QtWidgets.QAction('&Polynomial BG', self, checkable=True)
-        self.btn_bg_polynomial.setShortcut('Ctrl+Alt+P')
-        self.btn_bg_polynomial.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_slope = QtWidgets.QAction('&Slope BG', self, checkable=True)
-        self.btn_bg_slope.setShortcut('Ctrl+Alt+S')
-        self.btn_bg_slope.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_arctan = QtWidgets.QAction('&Arctan BG', self, checkable=True)
-        self.btn_bg_arctan.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_erf = QtWidgets.QAction('&Erf BG', self, checkable=True)
-        self.btn_bg_erf.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_vbm = QtWidgets.QAction('&VBM/Cutoff BG', self, checkable=True)
-        self.btn_bg_vbm.triggered.connect(self.clickOnBtnBG)
-
-        # Add the checkable actions to the menu
-        self.bgMenu.addAction(self.btn_bg_shirley_act)
-        self.bgMenu.addAction(self.btn_bg_shirley_static)
-        self.bgMenu.addAction(self.btn_bg_tougaard_act)
-        self.bgMenu.addAction(self.btn_bg_tougaard_static)
-        self.bgMenu.addAction(self.btn_bg_polynomial)
-        self.bgMenu.addAction(self.btn_bg_slope)
-        self.bgMenu.addAction(self.btn_bg_arctan)
-        self.bgMenu.addAction(self.btn_bg_erf)
-        self.bgMenu.addAction(self.btn_bg_vbm)
-
-        btn_tougaard_cross_section = QtWidgets.QAction('Tougaard &Cross Section ', self)
-        btn_tougaard_cross_section.triggered.connect(self.clicked_cross_section)
-        self.bgMenu.addSeparator()
-        self.bgMenu.addAction(btn_tougaard_cross_section)
-        menubar.addSeparator()
-        settings_menu = menubar.addMenu('&Settings')
-        btn_settings = QtWidgets.QAction('& Open Settings', self)
-        btn_settings.triggered.connect(self.open_settings_window)
-        settings_menu.addAction(btn_settings)
-        menubar.addSeparator()
-        links_menu = menubar.addMenu('&Help/Info')
-        # manual_link= QtWidgets.QAction('&Manual', self)
-        # manual_link.triggered.connect(lambda: webbrowser.open('https://julian-hochhaus.github.io/LG4X-V2/'))
-        # links_menu.addAction(manual_link)
-        github_link = QtWidgets.QAction('See on &Github', self)
-        github_link.triggered.connect(lambda: webbrowser.open('https://github.com/Julian-Hochhaus/LG4X-V2'))
-        links_menu.addAction(github_link)
-        about_link = QtWidgets.QAction('&How to cite', self)
-        about_link.triggered.connect(self.show_citation_dialog)
-        links_menu.addAction(about_link)
-
         # central widget layout
         widget = QtWidgets.QWidget(self)
         self.setCentralWidget(widget)
@@ -652,7 +504,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.activeParameters()
         self.resizeAllColumns()
 
-    def initSingleWindowUI(self):
+    def initSingleWindowUI(self, menubar=None):
         self.setGeometry(0, 0, self.resolution[0], self.resolution[1])
         self.showNormal()
         self.center()
@@ -671,165 +523,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.idx_bg = [2]
 
         self.idx_pres = 0
-        # Menu bar
-        menubar = self.menuBar()
-        ## Import sub menue
-        fileMenu = menubar.addMenu('&File')
-
-        btn_imp_csv = QtWidgets.QAction('Import &csv', self)
-        btn_imp_csv.setShortcut('Ctrl+Shift+X')
-        btn_imp_csv.triggered.connect(lambda: self.clickOnBtnImp(idx=1))
-
-        btn_imp_txt = QtWidgets.QAction('Import &txt', self)
-        btn_imp_txt.setShortcut('Ctrl+Shift+Y')
-        btn_imp_txt.triggered.connect(lambda: self.clickOnBtnImp(idx=2))
-
-        btn_imp_vms = QtWidgets.QAction('Import &vms', self)
-        btn_imp_vms.setShortcut('Ctrl+Shift+V')
-        btn_imp_vms.triggered.connect(lambda: self.clickOnBtnImp(idx=3))
-
-        btn_open_dir = QtWidgets.QAction('Open directory (.txt and .csv)', self)
-        btn_open_dir.setShortcut('Ctrl+Shift+D')
-        btn_open_dir.triggered.connect(lambda: self.clickOnBtnImp(idx=4))
-
-        btn_open_dir_csv = QtWidgets.QAction('Open directory (only .csv)', self)
-        btn_open_dir_csv.setShortcut('Ctrl+Shift+C')
-        btn_open_dir_csv.triggered.connect(lambda: self.clickOnBtnImp(idx=5))
-
-        btn_open_dir_txt = QtWidgets.QAction('Open directory (only .txt)', self)
-        btn_open_dir_txt.setShortcut('Ctrl+Shift+T')
-        btn_open_dir_txt.triggered.connect(lambda: self.clickOnBtnImp(idx=6))
-
-        importSubmenu = fileMenu.addMenu('&Import')
-        importSubmenu.addAction(btn_imp_csv)
-        importSubmenu.addAction(btn_imp_txt)
-        importSubmenu.addAction(btn_imp_vms)
-        importSubmenu.addAction(btn_open_dir)
-        importSubmenu.addAction(btn_open_dir_csv)
-        importSubmenu.addAction(btn_open_dir_txt)
-        ### Export submenu
-        btn_exp_results = QtWidgets.QAction('&Results', self)
-        btn_exp_results.setShortcut('Ctrl+Shift+R')
-        btn_exp_results.triggered.connect(self.exportResults)
-
-        btn_exp_all_results = QtWidgets.QAction('Re&sults + Data', self)
-        btn_exp_all_results.setShortcut('Ctrl+Shift+S')
-        btn_exp_all_results.triggered.connect(self.export_all)
-
-        exportSubmenu = fileMenu.addMenu('&Export')
-        exportSubmenu.addAction(btn_exp_results)
-        exportSubmenu.addAction(btn_exp_all_results)
-
-        # exit application
-        exitAction = QtWidgets.QAction('E&xit', self)
-        exitAction.setShortcut('Ctrl+Q')
-        exitAction.setStatusTip('Exit application')
-        exitAction.triggered.connect(QtWidgets.qApp.quit)
-
-        fileMenu.addAction(exitAction)
-
-        ## Preset sub menue
-        presetMenu = menubar.addMenu('&Preset')
-
-        btn_preset_new = QtWidgets.QAction('&New', self)
-        btn_preset_new.setShortcut('Ctrl+Shift+N')
-        btn_preset_new.triggered.connect(lambda: self.clickOnBtnPreset(idx=1))
-
-        btn_preset_load = QtWidgets.QAction('&Load', self)
-        btn_preset_load.setShortcut('Ctrl+Shift+L')
-        btn_preset_load.triggered.connect(lambda: self.clickOnBtnPreset(idx=2))
-
-        btn_preset_append = QtWidgets.QAction('&Append', self)
-        btn_preset_append.setShortcut('Ctrl+Shift+A')
-        btn_preset_append.triggered.connect(lambda: self.clickOnBtnPreset(idx=3))
-
-        btn_preset_save = QtWidgets.QAction('&Save', self)
-        # btn_preset_save.setShortcut('Ctrl+Shift+S')
-        btn_preset_save.triggered.connect(lambda: self.clickOnBtnPreset(idx=4))
-
-        btn_preset_c1s = QtWidgets.QAction('&C1s', self)
-        # btn_preset_c1s.setShortcut('Ctrl+Shift+')
-        btn_preset_c1s.triggered.connect(lambda: self.clickOnBtnPreset(idx=5))
-
-        btn_preset_ckedge = QtWidgets.QAction('C &K edge', self)
-        # btn_preset_ckedge.setShortcut('Ctrl+Shift+')
-        btn_preset_ckedge.triggered.connect(lambda: self.clickOnBtnPreset(idx=6))
-
-        btn_preset_ptable = QtWidgets.QAction('Periodic &Table', self)
-        # btn_preset_ptable.setShortcut('Ctrl+Shift+')
-        btn_preset_ptable.triggered.connect(lambda: self.clickOnBtnPreset(idx=7))
-
-        presetMenu.addAction(btn_preset_new)
-        presetMenu.addAction(btn_preset_load)
-        presetMenu.addAction(btn_preset_append)
-        presetMenu.addAction(btn_preset_save)
-        presetMenu.addAction(btn_preset_c1s)
-        presetMenu.addAction(btn_preset_ckedge)
-        menubar.addAction(btn_preset_ptable)
-
-        self.bgMenu = menubar.addMenu('&Choose BG')
-
-        self.btn_bg_shirley_act = QtWidgets.QAction('&Active &Shirley BG', self, checkable=True)
-        self.btn_bg_shirley_act.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_shirley_static = QtWidgets.QAction('&Static &Shirley BG', self, checkable=True)
-        self.btn_bg_shirley_static.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_tougaard_act = QtWidgets.QAction('&Active &Tougaard BG', self, checkable=True)
-        self.btn_bg_tougaard_act.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_tougaard_static = QtWidgets.QAction('&Static &Tougaard BG', self, checkable=True)
-        self.btn_bg_tougaard_static.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_polynomial = QtWidgets.QAction('&Polynomial BG', self, checkable=True)
-        self.btn_bg_polynomial.setShortcut('Ctrl+Alt+P')
-        self.btn_bg_polynomial.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_slope = QtWidgets.QAction('&Slope BG', self, checkable=True)
-        self.btn_bg_slope.setShortcut('Ctrl+Alt+S')
-        self.btn_bg_slope.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_arctan = QtWidgets.QAction('&Arctan BG', self, checkable=True)
-        self.btn_bg_arctan.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_erf = QtWidgets.QAction('&Erf BG', self, checkable=True)
-        self.btn_bg_erf.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_vbm = QtWidgets.QAction('&VBM/Cutoff BG', self, checkable=True)
-        self.btn_bg_vbm.triggered.connect(self.clickOnBtnBG)
-
-        # Add the checkable actions to the menu
-        self.bgMenu.addAction(self.btn_bg_shirley_act)
-        self.bgMenu.addAction(self.btn_bg_shirley_static)
-        self.bgMenu.addAction(self.btn_bg_tougaard_act)
-        self.bgMenu.addAction(self.btn_bg_tougaard_static)
-        self.bgMenu.addAction(self.btn_bg_polynomial)
-        self.bgMenu.addAction(self.btn_bg_slope)
-        self.bgMenu.addAction(self.btn_bg_arctan)
-        self.bgMenu.addAction(self.btn_bg_erf)
-        self.bgMenu.addAction(self.btn_bg_vbm)
-
-        btn_tougaard_cross_section = QtWidgets.QAction('Tougaard &Cross Section ', self)
-        btn_tougaard_cross_section.triggered.connect(self.clicked_cross_section)
-        self.bgMenu.addSeparator()
-        self.bgMenu.addAction(btn_tougaard_cross_section)
-        menubar.addSeparator()
-        settings_menu = menubar.addMenu('&Settings')
-        btn_settings = QtWidgets.QAction('&Settings', self)
-        btn_settings.triggered.connect(self.open_settings_window)
-        settings_menu.addAction(btn_settings)
-        menubar.addSeparator()
-        links_menu = menubar.addMenu('&Help/Info')
-        # manual_link= QtWidgets.QAction('&Manual', self)
-        # manual_link.triggered.connect(lambda: webbrowser.open('https://julian-hochhaus.github.io/LG4X-V2/'))
-        # links_menu.addAction(manual_link)
-        github_link = QtWidgets.QAction('See on &Github', self)
-        github_link.triggered.connect(lambda: webbrowser.open('https://github.com/Julian-Hochhaus/LG4X-V2'))
-        links_menu.addAction(github_link)
-        about_link = QtWidgets.QAction('&How to cite', self)
-        about_link.triggered.connect(self.show_citation_dialog)
-        links_menu.addAction(about_link)
-
         # central widget layout
         widget = QtWidgets.QWidget(self)
         self.setCentralWidget(widget)
