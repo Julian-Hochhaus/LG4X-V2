@@ -279,16 +279,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         second_window_layout.addLayout(bottomrow_second_screen_layout, 6)
         layout_top_right = QtWidgets.QVBoxLayout()
         layout_bottom_right = QtWidgets.QVBoxLayout()
-        list_res_row = ['gaussian_fwhm', 'lorentzian_fwhm_p1', 'lorentzian_fwhm_p2', 'fwhm_p1', 'fwhm_p2', 'height_p1',
-                        'height_p2', 'approx. area_p1', 'approx. area_p2', 'area_total']
-
-        def res_edit_condition(logicalIndex):
-            return logicalIndex % 1 == 0
-
-        self.res_tab = EditableHeaderTableWidget(len(list_res_row), len(list_col), res_edit_condition)
-        self.res_tab.setHorizontalHeaderLabels(list_col)
-        self.res_tab.setVerticalHeaderLabels(list_res_row)
-        self.res_tab.headerTextChanged.connect(self.updateHeader_res)
+        self.res_tab=createResultTable(self,list_col)
         layout_bottom_right.addWidget(self.res_tab)
         toprow_layout.addLayout(layout_top_right, 1)
         bottomrow_second_screen_layout.addLayout(layout_bottom_right, 2)
@@ -447,16 +438,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         outer_layout.addLayout(bottomrow_layout, 6)
         layout_top_right = QtWidgets.QVBoxLayout()
         layout_bottom_right = QtWidgets.QVBoxLayout()
-
-        list_res_row = ['gaussian_fwhm', 'lorentzian_fwhm_p1', 'lorentzian_fwhm_p2', 'fwhm_p1', 'fwhm_p2', 'height_p1',
-                        'height_p2', 'approx. area_p1', 'approx. area_p2', 'area_total']
-
-        def res_edit_condition(logicalIndex):
-            return logicalIndex % 1 == 0
-        self.res_tab = EditableHeaderTableWidget(len(list_res_row), len(list_col) , res_edit_condition)
-        self.res_tab.setHorizontalHeaderLabels(list_col)
-        self.res_tab.setVerticalHeaderLabels(list_res_row)
-        self.res_tab.headerTextChanged.connect(self.updateHeader_res)
+        self.res_tab=createResultTable(self,list_col)
         layout_bottom_right.addWidget(self.res_tab)
         toprow_layout.addLayout(layout_top_right, 1)
         bottomrow_layout.addLayout(layout_bottom_right, 2)

@@ -237,3 +237,21 @@ def createFitTables(parent):
     return fitp1, list_shape, list_component, fitp1_lims, list_col
 
 
+def createResultTable(parent, list_col):
+    """Create the results table (res_tab)."""
+    list_res_row = ['gaussian_fwhm', 'lorentzian_fwhm_p1', 'lorentzian_fwhm_p2', 'fwhm_p1', 'fwhm_p2', 'height_p1',
+                    'height_p2', 'approx. area_p1', 'approx. area_p2', 'area_total']
+    def res_edit_condition(logicalIndex):
+        return logicalIndex % 1 == 0  # Editable condition for rows/columns
+
+    # Create the EditableHeaderTableWidget for results
+    res_tab = EditableHeaderTableWidget(len(list_res_row), len(list_col), res_edit_condition)
+
+    # Set headers
+    res_tab.setHorizontalHeaderLabels(list_col)
+    res_tab.setVerticalHeaderLabels(list_res_row)
+
+    # Connect signals if needed
+    res_tab.headerTextChanged.connect(parent.updateHeader_res)
+
+    return res_tab
