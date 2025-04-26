@@ -1051,33 +1051,3 @@ def createMenuBar(parent):
     links_menu.addAction(github_link)
     links_menu.addAction(about_link)
 
-
-def createFitButtons(parent):
-    """Create fit-related buttons and return both layout and button references."""
-    layout = QtWidgets.QHBoxLayout()
-
-    # Create buttons
-    btn_fit = QtWidgets.QPushButton('Fit', parent)
-    btn_fit.clicked.connect(parent.fit)
-
-    btn_eva = QtWidgets.QPushButton('Evaluate', parent)
-    btn_eva.clicked.connect(parent.eva)
-
-    btn_undoFit = QtWidgets.QPushButton('Undo Fit', parent)
-    btn_undoFit.clicked.connect(parent.one_step_back_in_params_history)
-
-    btn_interrupt = QtWidgets.QPushButton('Interrupt fitting', parent)
-    btn_interrupt.clicked.connect(parent.interrupt_fit)
-
-    # Add buttons to layout
-    for button in [btn_fit, btn_eva, btn_undoFit, btn_interrupt]:
-        button.resize(button.sizeHint())
-        layout.addWidget(button)
-
-    # Return both layout and button references
-    return layout, {
-        'btn_fit': btn_fit,
-        'btn_eva': btn_eva,
-        'btn_undoFit': btn_undoFit,
-        'btn_interrupt': btn_interrupt,
-    }

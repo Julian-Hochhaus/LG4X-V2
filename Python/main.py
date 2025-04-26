@@ -23,6 +23,7 @@ import vamas_export as vpy
 from periodictable import PeriodicTable
 from scipy import integrate
 from helpers import *
+from gui_helpers import *
 import threading
 
 import traceback  # error handling
@@ -189,42 +190,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         plottitle_form = QtWidgets.QFormLayout()
         self.plottitle = QtWidgets.QLineEdit()
         plottitle_form.addRow("Plot title: ", self.plottitle)
-        plot_settings_layout = QtWidgets.QHBoxLayout()
-        min_form = QtWidgets.QFormLayout()
-        self.xmin_item = DoubleLineEdit()
-        self.xmin = 270
-        self.xmin_item.setText(str(self.xmin))
-        self.xmin_item.textChanged.connect(self.update_com_vals)
-        min_form.addRow("x_min: ", self.xmin_item)
-        plot_settings_layout.addLayout(min_form)
-        max_form = QtWidgets.QFormLayout()
-        self.xmax_item = DoubleLineEdit()
-        self.xmax = 300
-        self.xmax_item.setText(str(self.xmax))
-        self.xmax_item.textChanged.connect(self.update_com_vals)
-        max_form.addRow("x_max: ", self.xmax_item)
-        plot_settings_layout.addLayout(max_form)
-        hv_form = QtWidgets.QFormLayout()
-        self.hv_item = DoubleLineEdit()
-        self.hv = 1486.6
-        self.hv_item.setText(str(self.hv))
-        self.hv_item.textChanged.connect(self.update_com_vals)
-        hv_form.addRow("hv: ", self.hv_item)
-        plot_settings_layout.addLayout(hv_form)
-        wf_form = QtWidgets.QFormLayout()
-        self.wf_item = DoubleLineEdit()
-        self.wf = 4
-        self.wf_item.setText(str(self.wf))
-        self.wf_item.textChanged.connect(self.update_com_vals)
-        wf_form.addRow("wf: ", self.wf_item)
-        plot_settings_layout.addLayout(wf_form)
-        correct_energy_form = QtWidgets.QFormLayout()
-        self.correct_energy_item = DoubleLineEdit()
-        self.correct_energy = 0
-        self.correct_energy_item.setText(str(self.correct_energy))
-        self.correct_energy_item.textChanged.connect(self.update_com_vals)
-        correct_energy_form.addRow("shift energy: ", self.correct_energy_item)
-        plot_settings_layout.addLayout(correct_energy_form)
+        plot_settings_layout = createPlotSettingsForm(parent=self)
         layout_top_left.addLayout(plottitle_form)
         layout_top_left.addLayout(plot_settings_layout)
         layout_top_left.addStretch(1)
@@ -238,49 +204,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         layout_top_mid = QtWidgets.QVBoxLayout()
         layout_bottom_mid = QtWidgets.QVBoxLayout()
-        # PolyBG Table
-        list_bg_col = ['bg_c0', 'bg_c1', 'bg_c2', 'bg_c3', 'bg_c4']
-        list_bg_row = ['Shirley (cv, it, k, c)', 'Tougaard(B, C, C*, D, extend)', 'Polynomial', 'Slope(k)',
-                       'arctan (amp, ctr, sig)', 'erf (amp, ctr, sig)', 'cutoff (ctr, d1-4)']
-        self.fitp0 = QtWidgets.QTableWidget(len(list_bg_row), len(list_bg_col) * 2)
-
-        self.fitp0.setItemDelegate(self.delegate)
-        list_bg_colh = ['', 'bg_c0', '', 'bg_c1', '', 'bg_c2', '', 'bg_c3', '', 'bg_c4']
-
-        self.fitp0.setHorizontalHeaderLabels(list_bg_colh)
-        self.fitp0.setVerticalHeaderLabels(list_bg_row)
-        # set BG table checkbox
-        for row in range(len(list_bg_row)):
-            for col in range(len(list_bg_colh)):
-                if (row == 2 or row > 3 or (row == 3 and col < 2) or (row == 0 and 8 > col >= 4) or (
-                        row == 1 and col == 0)) and col % 2 == 0:
-                    item = QtWidgets.QTableWidgetItem()
-                    item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
-                    item.setCheckState(QtCore.Qt.Unchecked)
-                    item.setToolTip('Check to keep fixed during fit procedure')
-                    self.fitp0.setItem(row, col, item)
-                else:
-                    item = QtWidgets.QTableWidgetItem()
-                    item.setText('')
-                    self.fitp0.setItem(row, col, item)
-        # set BG table default
-        pre_bg = [['', 1e-06, '', 10, 2, 0.0003, 2, 1000, '', ''],
-                  [2, 2866.0, '', 1643.0, '', 1.0, '', 1.0, '', 50],
-                  [2, 0, 2, 0, 2, 0, 2, 0, 2, 0],
-                  [2, 0.0, '', '', '', '', '', '', '', '', '']]
-        # self.setPreset([0], pre_bg, [])
-
-        bg_fixedLayout = QtWidgets.QHBoxLayout()
-        self.fixedBG = QtWidgets.QCheckBox('Keep background fixed')
-        self.displayChoosenBG.setText(
-            'Choosen Background: {}'.format('+ '.join([dictBG[str(idx)] for idx in self.idx_bg])))
-        self.displayChoosenBG.setStyleSheet("font-weight: bold")
-
-        bg_fixedLayout.addWidget(self.displayChoosenBG)
-        bg_fixedLayout.addWidget(self.fixedBG)
-
+        self.fitp0, bg_fixed_layout, pre_bg = createBGTable(self, dictBG)
         layout_top_mid.addWidget(self.fitp0)
-        layout_top_mid.addLayout(bg_fixedLayout)
+        layout_top_mid.addLayout(bg_fixed_layout)
         # Add Button
 
         componentbuttons_layout = QtWidgets.QHBoxLayout()
@@ -321,105 +247,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         layout_bottom_mid.addLayout(componentbuttons_layout)
 
-        # set Fit Table
-        list_col = ['C_1']
-        list_row = ['model', 'center', 'amplitude', 'lorentzian (sigma/gamma)', 'gaussian(sigma)', 'asymmetry(gamma)',
-                    'frac', 'skew', 'q', 'kt', 'soc',
-                    'height_ratio',
-                    'fct_coster_kronig', 'center_ref', 'ctr_diff', 'amp_ref', 'ratio', 'lorentzian_ref', 'ratio',
-                    'gaussian_ref', 'ratio',
-                    'asymmetry_ref', 'ratio', 'soc_ref', 'ratio', 'height_ref', 'ratio']
+        self.fitp1, self.list_shape, self.list_component, self.fitp1_lims, list_col = createFitTables(self)
 
-        def comps_edit_condition(logicalIndex):
-            return logicalIndex % 2 != 0
-
-        self.fitp1 = RemoveAndEditTableWidget(len(list_row), len(list_col) * 2, comps_edit_condition)
-        self.fitp1.headerTextChanged.connect(self.updateHeader_lims)
-        self.fitp1.removeOptionChanged.connect(self.removeCol)
-        self.fitp1.setItemDelegate(self.delegate)
-        list_colh = ['', 'C_1']
-        self.fitp1.setHorizontalHeaderLabels(list_colh)
-        self.fitp1.setVerticalHeaderLabels(list_row)
-        self.list_row_limits = [
-            'center', 'amplitude', 'lorentzian (sigma/gamma)', 'gaussian(sigma)', 'asymmetry(gamma)', 'frac', 'skew',
-            'q', 'kt', 'soc',
-            'height', "fct_coster_kronig", 'ctr_diff', 'amp_ratio', 'lorentzian_ratio', 'gaussian_ratio',
-            'asymmetry_ratio', 'soc_ratio', 'height_ratio']
-        list_colh_limits = ['C_1', 'min', 'max']
-
-        def lims_edit_condition(logicalIndex):
-            return logicalIndex % 3 == 0
-
-        self.fitp1_lims = EditableHeaderTableWidget(len(self.list_row_limits), len(list_col) * 3, lims_edit_condition)
-        self.fitp1_lims.headerTextChanged.connect(self.updateHeader_comps)
-        self.fitp1_lims.setItemDelegate(self.delegate)
-
-        self.fitp1_lims.setHorizontalHeaderLabels(list_colh_limits)
-        self.fitp1_lims.setVerticalHeaderLabels(self.list_row_limits)
-        self.fitp1_lims.cellChanged.connect(self.lims_changed)
-
-        # self.list_shape = ['g', 'l', 'v', 'p']
-        self.list_shape = ['g: Gaussian', 'l: Lorentzian', 'v: Voigt', 'p: PseudoVoigt', 'e: ExponentialGaussian',
-                           's: SkewedGaussian', 'a: SkewedVoigt', 'b: BreitWigner', 'n: Lognormal', 'd: Doniach',
-                           'gdd: Convolution Gaussian/Doniach-Dublett', 'gds: Convolution Gaussian/Doniach-Singlett',
-                           'fe:Convolution FermiDirac/Gaussian']
-        self.list_component = ['', 'C_1']
-
-        # set DropDown component model
-        for col in range(len(list_col)):
-            comboBox = QtWidgets.QComboBox()
-            comboBox.addItems(self.list_shape)
-            # comboBox.setMaximumWidth(55)
-            self.fitp1.setCellWidget(0, 2 * col + 1, comboBox)
-        # set DropDown ctr_ref component selection
-        for i in range(7):
-            for col in range(len(list_col)):
-                comboBox = QtWidgets.QComboBox()
-                comboBox.addItems(self.list_component)
-                comboBox.setMaximumWidth(55)
-                self.fitp1.setCellWidget(13 + 2 * i, 2 * col + 1, comboBox)
-
-        # set checkbox and dropdown in fit table
-        for row in range(len(list_row)):
-            for col in range(len(list_colh)):
-                if col % 2 == 0:
-                    item = QtWidgets.QTableWidgetItem()
-                    item.setToolTip('Check to keep fixed during fit procedure')
-                    item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
-                    if 0 < row < 13:
-                        item.setCheckState(QtCore.Qt.Checked)
-                        self.fitp1.setItem(row, col, item)
-                    if 13 <= row:
-                        if row % 2 == 0:
-                            item.setCheckState(QtCore.Qt.Unchecked)
-                            self.fitp1.setItem(row, col, item)
-                        else:
-                            item = QtWidgets.QTableWidgetItem()
-                            item.setText('')
-                            self.fitp1.setItem(row, col, item)
-                elif col % 2 != 0 and (row == 0 or (12 <= row and row % 2 == 1)):
-                    comboBox = QtWidgets.QComboBox()
-                    if row == 0:
-                        comboBox.addItems(self.list_shape)
-                        comboBox.currentTextChanged.connect(self.activeParameters)
-                    else:
-                        comboBox.addItems(self.list_component)
-                    self.fitp1.setCellWidget(row, col, comboBox)
-                else:
-                    item = QtWidgets.QTableWidgetItem()
-                    item.setText('')
-                    self.fitp1.setItem(row, col, item)
-        # set checkbox in limits table
-        for row in range(len(self.list_row_limits)):
-            for col in range(len(list_colh_limits)):
-                item = QtWidgets.QTableWidgetItem()
-                if col % 3 == 0:
-                    item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
-                    item.setCheckState(QtCore.Qt.Unchecked)
-                    item.setToolTip('Check to use limit during fit procedure')
-                else:
-                    item.setText("")
-                self.fitp1_lims.setItem(row, col, item)
         # load default preset
         # pre_pk = [[0,0],[2,0],[2,0],[2,0],[2,0],[2,0],[2,0],[2,0]]
         pre_pk = [[0, 0], [2, 284.6], [0, 20000], [2, 0.2], [2, 0.2], [2, 0.02], [2, 0], [2, 0], [2, 0.0], [2, 0.026],
@@ -428,7 +257,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.pre = [[self.idx_bg, self.xmin, self.xmax, self.hv, self.wf, self.correct_energy], pre_bg, pre_pk,
                     [[0, '', '']] * 19]
         self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
-        self.fitp1.setHeaderTooltips()
         layout_bottom_mid.addWidget(self.fitp1)
 
         toprow_layout.addLayout(layout_top_mid, 4)
@@ -451,7 +279,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
         second_window_layout.addLayout(bottomrow_second_screen_layout, 6)
         layout_top_right = QtWidgets.QVBoxLayout()
         layout_bottom_right = QtWidgets.QVBoxLayout()
-        self.fitp1_lims.setHeaderTooltips()
         list_res_row = ['gaussian_fwhm', 'lorentzian_fwhm_p1', 'lorentzian_fwhm_p2', 'fwhm_p1', 'fwhm_p2', 'height_p1',
                         'height_p2', 'approx. area_p1', 'approx. area_p2', 'area_total']
 
@@ -542,42 +369,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         plottitle_form = QtWidgets.QFormLayout()
         self.plottitle = QtWidgets.QLineEdit()
         plottitle_form.addRow("Plot title: ", self.plottitle)
-        plot_settings_layout = QtWidgets.QHBoxLayout()
-        min_form = QtWidgets.QFormLayout()
-        self.xmin_item = DoubleLineEdit()
-        self.xmin = 270
-        self.xmin_item.setText(str(self.xmin))
-        self.xmin_item.textChanged.connect(self.update_com_vals)
-        min_form.addRow("x_min: ", self.xmin_item)
-        plot_settings_layout.addLayout(min_form)
-        max_form = QtWidgets.QFormLayout()
-        self.xmax_item = DoubleLineEdit()
-        self.xmax = 300
-        self.xmax_item.setText(str(self.xmax))
-        self.xmax_item.textChanged.connect(self.update_com_vals)
-        max_form.addRow("x_max: ", self.xmax_item)
-        plot_settings_layout.addLayout(max_form)
-        hv_form = QtWidgets.QFormLayout()
-        self.hv_item = DoubleLineEdit()
-        self.hv = 1486.6
-        self.hv_item.setText(str(self.hv))
-        self.hv_item.textChanged.connect(self.update_com_vals)
-        hv_form.addRow("hv: ", self.hv_item)
-        plot_settings_layout.addLayout(hv_form)
-        wf_form = QtWidgets.QFormLayout()
-        self.wf_item = DoubleLineEdit()
-        self.wf = 4
-        self.wf_item.setText(str(self.wf))
-        self.wf_item.textChanged.connect(self.update_com_vals)
-        wf_form.addRow("wf: ", self.wf_item)
-        plot_settings_layout.addLayout(wf_form)
-        correct_energy_form = QtWidgets.QFormLayout()
-        self.correct_energy_item = DoubleLineEdit()
-        self.correct_energy = 0
-        self.correct_energy_item.setText(str(self.correct_energy))
-        self.correct_energy_item.textChanged.connect(self.update_com_vals)
-        correct_energy_form.addRow("shift energy: ", self.correct_energy_item)
-        plot_settings_layout.addLayout(correct_energy_form)
+        plot_settings_layout = createPlotSettingsForm(parent=self)
         layout_top_left.addLayout(plottitle_form)
         layout_top_left.addLayout(plot_settings_layout)
         layout_top_left.addStretch(1)
@@ -591,49 +383,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         layout_top_mid = QtWidgets.QVBoxLayout()
         layout_bottom_mid = QtWidgets.QVBoxLayout()
-        # PolyBG Table
-        list_bg_col = ['bg_c0', 'bg_c1', 'bg_c2', 'bg_c3', 'bg_c4']
-        list_bg_row = ['Shirley (cv, it, k, c)', 'Tougaard(B, C, C*, D, extend)', 'Polynomial', 'Slope(k)',
-                       'arctan (amp, ctr, sig)', 'erf (amp, ctr, sig)', 'cutoff (ctr, d1-4)']
-        self.fitp0 = QtWidgets.QTableWidget(len(list_bg_row), len(list_bg_col) * 2)
-
-        self.fitp0.setItemDelegate(self.delegate)
-        list_bg_colh = ['', 'bg_c0', '', 'bg_c1', '', 'bg_c2', '', 'bg_c3', '', 'bg_c4']
-
-        self.fitp0.setHorizontalHeaderLabels(list_bg_colh)
-        self.fitp0.setVerticalHeaderLabels(list_bg_row)
-        # set BG table checkbox
-        for row in range(len(list_bg_row)):
-            for col in range(len(list_bg_colh)):
-                if (row == 2 or row > 3 or (row == 3 and col < 2) or (row == 0 and 8 > col >= 4) or (
-                        row == 1 and col == 0)) and col % 2 == 0:
-                    item = QtWidgets.QTableWidgetItem()
-                    item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
-                    item.setCheckState(QtCore.Qt.Unchecked)
-                    item.setToolTip('Check to keep fixed during fit procedure')
-                    self.fitp0.setItem(row, col, item)
-                else:
-                    item = QtWidgets.QTableWidgetItem()
-                    item.setText('')
-                    self.fitp0.setItem(row, col, item)
-        # set BG table default
-        pre_bg = [['', 1e-06, '', 10, 2, 0.0003, 2, 1000, '', ''],
-                  [2, 2866.0, '', 1643.0, '', 1.0, '', 1.0, '', 50],
-                  [2, 0, 2, 0, 2, 0, 2, 0, 2, 0],
-                  [2, 0.0, '', '', '', '', '', '', '', '', '']]
-        # self.setPreset([0], pre_bg, [])
-
-        bg_fixedLayout = QtWidgets.QHBoxLayout()
-        self.fixedBG = QtWidgets.QCheckBox('Keep background fixed')
-        self.displayChoosenBG.setText(
-            'Choosen Background: {}'.format('+ '.join([dictBG[str(idx)] for idx in self.idx_bg])))
-        self.displayChoosenBG.setStyleSheet("font-weight: bold")
-
-        bg_fixedLayout.addWidget(self.displayChoosenBG)
-        bg_fixedLayout.addWidget(self.fixedBG)
-
+        self.fitp0, bg_fixed_layout , pre_bg= createBGTable(self, dictBG)
         layout_top_mid.addWidget(self.fitp0)
-        layout_top_mid.addLayout(bg_fixedLayout)
+        layout_top_mid.addLayout(bg_fixed_layout)
         # Add Button
 
         componentbuttons_layout = QtWidgets.QHBoxLayout()
@@ -675,109 +427,16 @@ class PrettyWidget(QtWidgets.QMainWindow):
         layout_bottom_mid.addLayout(componentbuttons_layout)
 
         # set Fit Table
-        list_col = ['C_1']
-        list_row = ['model', 'center', 'amplitude', 'lorentzian (sigma/gamma)', 'gaussian(sigma)', 'asymmetry(gamma)',
-                    'frac', 'skew', 'q', 'kt', 'soc',
-                    'height_ratio',
-                    'fct_coster_kronig', 'center_ref', 'ctr_diff', 'amp_ref', 'ratio', 'lorentzian_ref', 'ratio',
-                    'gaussian_ref', 'ratio',
-                    'asymmetry_ref', 'ratio', 'soc_ref', 'ratio', 'height_ref', 'ratio']
-        def comps_edit_condition(logicalIndex):
-            return logicalIndex % 2 != 0
-        self.fitp1=RemoveAndEditTableWidget(len(list_row), len(list_col) * 2, comps_edit_condition)
-        self.fitp1.headerTextChanged.connect(self.updateHeader_lims)
-        self.fitp1.removeOptionChanged.connect(self.removeCol)
-        self.fitp1.setItemDelegate(self.delegate)
-        list_colh = ['', 'C_1']
-        self.fitp1.setHorizontalHeaderLabels(list_colh)
-        self.fitp1.setVerticalHeaderLabels(list_row)
-        self.list_row_limits = [
-            'center', 'amplitude', 'lorentzian (sigma/gamma)', 'gaussian(sigma)', 'asymmetry(gamma)', 'frac', 'skew',
-            'q', 'kt', 'soc',
-            'height', "fct_coster_kronig", 'ctr_diff', 'amp_ratio', 'lorentzian_ratio', 'gaussian_ratio',
-            'asymmetry_ratio', 'soc_ratio', 'height_ratio']
-        list_colh_limits = ['C_1', 'min', 'max']
-
-        def lims_edit_condition(logicalIndex):
-            return logicalIndex % 3 == 0
-        self.fitp1_lims = EditableHeaderTableWidget(len(self.list_row_limits), len(list_col) * 3, lims_edit_condition)
-        self.fitp1_lims.headerTextChanged.connect(self.updateHeader_comps)
-        self.fitp1_lims.setItemDelegate(self.delegate)
-
-        self.fitp1_lims.setHorizontalHeaderLabels(list_colh_limits)
-        self.fitp1_lims.setVerticalHeaderLabels(self.list_row_limits)
-        self.fitp1_lims.cellChanged.connect(self.lims_changed)
-
-        # self.list_shape = ['g', 'l', 'v', 'p']
-        self.list_shape = ['g: Gaussian', 'l: Lorentzian', 'v: Voigt', 'p: PseudoVoigt', 'e: ExponentialGaussian',
-                           's: SkewedGaussian', 'a: SkewedVoigt', 'b: BreitWigner', 'n: Lognormal', 'd: Doniach',
-                           'gdd: Convolution Gaussian/Doniach-Dublett', 'gds: Convolution Gaussian/Doniach-Singlett',
-                           'fe:Convolution FermiDirac/Gaussian']
-        self.list_component = ['', 'C_1']
-
-        # set DropDown component model
-        for col in range(len(list_col)):
-            comboBox = QtWidgets.QComboBox()
-            comboBox.addItems(self.list_shape)
-            # comboBox.setMaximumWidth(55)
-            self.fitp1.setCellWidget(0, 2 * col + 1, comboBox)
-        # set DropDown ctr_ref component selection
-        for i in range(7):
-            for col in range(len(list_col)):
-                comboBox = QtWidgets.QComboBox()
-                comboBox.addItems(self.list_component)
-                comboBox.setMaximumWidth(55)
-                self.fitp1.setCellWidget(13 + 2 * i, 2 * col + 1, comboBox)
-
-        # set checkbox and dropdown in fit table
-        for row in range(len(list_row)):
-            for col in range(len(list_colh)):
-                if col % 2 == 0:
-                    item = QtWidgets.QTableWidgetItem()
-                    item.setToolTip('Check to keep fixed during fit procedure')
-                    item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
-                    if 0 < row < 13:
-                        item.setCheckState(QtCore.Qt.Checked)
-                        self.fitp1.setItem(row, col, item)
-                    if 13 <= row:
-                        if row % 2 == 0:
-                            item.setCheckState(QtCore.Qt.Unchecked)
-                            self.fitp1.setItem(row, col, item)
-                        else:
-                            item = QtWidgets.QTableWidgetItem()
-                            item.setText('')
-                            self.fitp1.setItem(row, col, item)
-                elif col % 2 != 0 and (row == 0 or (12 <= row and row % 2 == 1)):
-                    comboBox = QtWidgets.QComboBox()
-                    if row == 0:
-                        comboBox.addItems(self.list_shape)
-                        comboBox.currentTextChanged.connect(self.activeParameters)
-                    else:
-                        comboBox.addItems(self.list_component)
-                    self.fitp1.setCellWidget(row, col, comboBox)
-                else:
-                    item = QtWidgets.QTableWidgetItem()
-                    item.setText('')
-                    self.fitp1.setItem(row, col, item)
-        # set checkbox in limits table
-        for row in range(len(self.list_row_limits)):
-            for col in range(len(list_colh_limits)):
-                item = QtWidgets.QTableWidgetItem()
-                if col % 3 == 0:
-                    item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
-                    item.setCheckState(QtCore.Qt.Unchecked)
-                    item.setToolTip('Check to use limit during fit procedure')
-                else:
-                    item.setText("")
-                self.fitp1_lims.setItem(row, col, item)
+        self.fitp1, self.list_shape, self.list_component, self.fitp1_lims, list_col = createFitTables(self)
         # load default preset
         # pre_pk = [[0,0],[2,0],[2,0],[2,0],[2,0],[2,0],[2,0],[2,0]]
         pre_pk = [[0, 0], [2, 284.6], [0, 20000], [2, 0.2], [2, 0.2], [2, 0.02], [2, 0], [2, 0], [2, 0.0], [2, 0.026],
                   [2, 1], [2, 0.7], [2, 1], [0, 0], [2, 0.1], [0, 0], [2, 0.5], [0, 0], [2, 1], [0, 0], [2, 1],
                   [0, 0], [2, 1], [0, 0], [2, 1], [0, 0], [2, 1]]
         self.pre = [[self.idx_bg, self.xmin, self.xmax, self.hv, self.wf, self.correct_energy], pre_bg, pre_pk, [[0, '', '']] * 19]
+
         self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
-        self.fitp1.setHeaderTooltips()
+
         layout_bottom_mid.addWidget(self.fitp1)
 
         toprow_layout.addLayout(layout_top_mid, 4)
@@ -788,7 +447,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         outer_layout.addLayout(bottomrow_layout, 6)
         layout_top_right = QtWidgets.QVBoxLayout()
         layout_bottom_right = QtWidgets.QVBoxLayout()
-        self.fitp1_lims.setHeaderTooltips()
+
         list_res_row = ['gaussian_fwhm', 'lorentzian_fwhm_p1', 'lorentzian_fwhm_p2', 'fwhm_p1', 'fwhm_p2', 'height_p1',
                         'height_p2', 'approx. area_p1', 'approx. area_p2', 'area_total']
 
