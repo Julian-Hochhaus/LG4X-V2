@@ -283,11 +283,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         layout_bottom_right.addWidget(self.res_tab)
         toprow_layout.addLayout(layout_top_right, 1)
         bottomrow_second_screen_layout.addLayout(layout_bottom_right, 2)
-        list_stats_row = ['success?', 'message', 'nfev', 'nvary', 'ndata', 'nfree', 'chisqr', 'redchi', 'aic', 'bic']
-        list_stats_col = ['Fit stats']
-        self.stats_tab = QtWidgets.QTableWidget(len(list_stats_row), 1)
-        self.stats_tab.setHorizontalHeaderLabels(list_stats_col)
-        self.stats_tab.setVerticalHeaderLabels(list_stats_row)
+        self.stats_tab=createStatsTable()
         layout_bottom_right.addWidget(self.stats_tab)
         self.stats_label = QtWidgets.QLabel()
         self.stats_label.setText("Fit statistics:")
@@ -442,11 +438,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         layout_bottom_right.addWidget(self.res_tab)
         toprow_layout.addLayout(layout_top_right, 1)
         bottomrow_layout.addLayout(layout_bottom_right, 2)
-        list_stats_row = ['success?', 'message', 'nfev', 'nvary', 'ndata', 'nfree', 'chisqr', 'redchi', 'aic', 'bic']
-        list_stats_col = ['Fit stats']
-        self.stats_tab = QtWidgets.QTableWidget(len(list_stats_row), 1)
-        self.stats_tab.setHorizontalHeaderLabels(list_stats_col)
-        self.stats_tab.setVerticalHeaderLabels(list_stats_row)
+        self.stats_tab=createStatsTable()
         layout_bottom_right.addWidget(self.stats_tab)
         self.stats_label = QtWidgets.QLabel()
         self.stats_label.setText("Fit statistics:")

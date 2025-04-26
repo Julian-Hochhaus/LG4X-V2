@@ -255,3 +255,16 @@ def createResultTable(parent, list_col):
     res_tab.headerTextChanged.connect(parent.updateHeader_res)
 
     return res_tab
+
+
+def createStatsTable():
+    """Create the statistics table (stats_tab)."""
+    list_stats_row = ['success?', 'message', 'nfev', 'nvary', 'ndata', 'nfree', 'chisqr', 'redchi', 'aic', 'bic']
+    list_stats_col = ['Fit stats']
+    stats_tab = QtWidgets.QTableWidget(len(list_stats_row), len(list_stats_col))
+
+    # Set headers
+    stats_tab.setHorizontalHeaderLabels(list_stats_col)
+    stats_tab.setVerticalHeaderLabels(list_stats_row)
+
+    return stats_tab
