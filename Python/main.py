@@ -142,6 +142,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         widget = QtWidgets.QWidget(self)
         widget.setLayout(outer_layout)
         self.setCentralWidget(widget)
+        createMenuBar(self)
 
         # --- Home directory and canvas ---
         self.filePath = QtCore.QDir.homePath()
@@ -186,6 +187,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         widget = QtWidgets.QWidget(self)
         widget.setLayout(outer_layout)
         self.setCentralWidget(widget)
+        createMenuBar(self)
 
         # --- Home directory and canvas ---
         self.filePath = QtCore.QDir.homePath()
