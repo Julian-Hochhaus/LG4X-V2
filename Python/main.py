@@ -104,6 +104,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.stats_tab = None
         self.fitp1 = None
         self.result = None
+        self.xmin=270
+        self.xmax=300
+        self.hv = 1486.6
+        self.wf = 4
+        self.correct_energy=0
         self.canvas = None
         self.figure = None
         self.df = None
@@ -127,6 +132,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def initUI(self):
         logging.info("Application started.")
         logging.info(f"Version: {__version__}")
+        dark_mode_enabled = config.getboolean('GUI', 'dark_mode', fallback=False)
+        toggleDarkMode(self,dark_mode_enabled)
         if self.two_window_mode:
             self.initTwoWindowUI()
         else:
@@ -135,7 +142,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def initTwoWindowUI(self):
         # --- Setup main window ---
         setupMainWindow(self)
-        initializeData(self)
+
 
         # --- Setup central widget and layout ---
         outer_layout = QtWidgets.QVBoxLayout()
@@ -146,7 +153,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         # --- Home directory and canvas ---
         self.filePath = QtCore.QDir.homePath()
-        self.figure, self.ar, self.ax, self.canvas, self.toolbar = setupCanvas(self)
+        self.figure, self.ar, self.ax, self.canvas, self.toolbar = setupCanvas(self,
+                                                                               is_dark_mode=self.isDarkModeEnabled)
 
         # --- Top row layout ---
         toprow_layout = createTopRowLayout(self, dictBG)
@@ -191,7 +199,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         # --- Home directory and canvas ---
         self.filePath = QtCore.QDir.homePath()
-        self.figure, self.ar, self.ax, self.canvas, self.toolbar = setupCanvas(self)
+        self.figure, self.ar, self.ax, self.canvas, self.toolbar = setupCanvas(self,
+                                                                               is_dark_mode=self.isDarkModeEnabled)
 
         # --- Top row layout ---
         toprow_layout = createTopRowLayout(self, dictBG)
@@ -3268,5 +3277,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
+    if config.getboolean('GUI', 'dark_mode', fallback=False):
+        enableDarkMode(app)
     w = PrettyWidget()
     sys.exit(app.exec_())

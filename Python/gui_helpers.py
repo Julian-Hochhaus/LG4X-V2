@@ -1,7 +1,8 @@
 from PyQt5 import QtWidgets
 from helpers import *
-from matplotlib.backends.backend_qt5agg import FigureCanvas, NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from periodictable import PeriodicTable
 
 def setupWindow(parent):
@@ -42,7 +43,7 @@ def createMiddleLayout(parent):
     layout.addLayout(componentbuttons_layout)
     parent.pars_label = QtWidgets.QLabel()
     parent.pars_label.setText("Peak parameters:")
-    parent.pars_label.setStyleSheet("font-weight: bold; font-size:12pt")
+    parent.pars_label.setStyleSheet("font-weight: bold")
     layout.addWidget(parent.pars_label)
 
     parent.fitp1, parent.list_shape, parent.list_component, parent.fitp1_lims, list_col = createFitTables(parent)
@@ -108,7 +109,7 @@ def createBottomRightLayout(parent, list_col):
 
     # Result Table Section
     parent.res_label = QtWidgets.QLabel("Fit results:")
-    parent.res_label.setStyleSheet("font-weight: bold; font-size:12pt")
+    parent.res_label.setStyleSheet("font-weight: bold")
     parent.res_tab = createResultTable(parent, list_col)
 
     # Add result label and table to layout
@@ -117,7 +118,7 @@ def createBottomRightLayout(parent, list_col):
 
     # Statistics Table Section
     parent.stats_label = QtWidgets.QLabel("Fit statistics:")
-    parent.stats_label.setStyleSheet("font-weight: bold; font-size:12pt")
+    parent.stats_label.setStyleSheet("font-weight: bold")
     parent.stats_tab = createStatsTable()
 
     # Add stats label and table to layout
@@ -172,16 +173,49 @@ def createTopRowLayout(parent, dictBG):
     toprow_layout.addLayout(layout_top_mid, 4)  # Add top-mid section
 
     return toprow_layout
-def setupCanvas(parent):
-    ##Set up the matplotlib canvas and navigation toolbar.
+def setupCanvas(parent, is_dark_mode=False):
+
+    # Create the figure and axes
     figure, (ar, ax) = plt.subplots(
         2,
         sharex=True,
         gridspec_kw={'height_ratios': [1, 5], 'hspace': 0}
     )
 
-    # Create the canvas for displaying the figure
+    # Set up the canvas for displaying the figure
     canvas = FigureCanvas(figure)
+
+    # Apply dark mode styling if enabled
+    if is_dark_mode:
+        # Dark mode styling for figure and axes
+        figure.patch.set_facecolor('#2e2e2e')  # Dark background for the figure
+        ax.set_facecolor('#2e2e2e')  # Dark background for axes
+        ax.tick_params(axis='both', colors='white')  # Change tick color to white
+        ax.spines['top'].set_color('white')
+        ax.spines['right'].set_color('white')
+        ax.spines['left'].set_color('white')
+        ax.spines['bottom'].set_color('white')
+        ax.xaxis.label.set_color('white')  # X-axis label text color
+        ax.yaxis.label.set_color('white')  # Y-axis label text color
+        ax.title.set_color('white')  # Title text color
+        ax.grid(True, color='white')  # White gridlines
+        plt.setp(ax.get_xticklabels(), color='white')
+        plt.setp(ax.get_yticklabels(), color='white')
+    else:
+        # Light mode default settings (if needed)
+        figure.patch.set_facecolor('white')
+        ax.set_facecolor('white')
+        ax.tick_params(axis='both', colors='black')
+        ax.spines['top'].set_color('black')
+        ax.spines['right'].set_color('black')
+        ax.spines['left'].set_color('black')
+        ax.spines['bottom'].set_color('black')
+        ax.xaxis.label.set_color('black')
+        ax.yaxis.label.set_color('black')
+        ax.title.set_color('black')
+        ax.grid(True, color='black')
+        plt.setp(ax.get_xticklabels(), color='black')
+        plt.setp(ax.get_yticklabels(), color='black')
 
     # Create the navigation toolbar to interact with the plot
     toolbar = NavigationToolbar(canvas, parent)
@@ -192,6 +226,7 @@ def setupCanvas(parent):
     toolbar.setStyleSheet("QToolBar { border: 0px }")
 
     return figure, ar, ax, canvas, toolbar
+
 def createFitButtons(parent):
     """Create fit-related buttons and returns both layout and button references."""
     layout = QtWidgets.QHBoxLayout()
@@ -518,6 +553,7 @@ class SettingsDialog(QtWidgets.QDialog):
         self.checkbox_dark_mode = QtWidgets.QCheckBox("Enable Dark Mode")
         self.checkbox_dark_mode.setChecked(config.getboolean('GUI', 'dark_mode', fallback=False))
         self.checkbox_dark_mode.setStyleSheet('color:blue')
+        self.checkbox_dark_mode.toggled.connect(self.onDarkModeToggle)
 
         # GUI settings
         label_gui_settings_static = QtWidgets.QLabel("The following GUI settings in blue are \n only applied after restarting the application.")
@@ -643,6 +679,11 @@ class SettingsDialog(QtWidgets.QDialog):
         except ValueError as e:
             QtWidgets.QMessageBox.warning(self, "Saving settings failed: \n ", str(e))
 
+    def onDarkModeToggle(self, checked):
+        if checked:
+            toggleDarkMode(self.main_gui,True)  # Enable dark mode
+        else:
+            toggleDarkMode(self.main_gui,False)  # Disable dark mode
     def apply_to_main(self):
         self.main_gui.column_width = int(self.line_edit_column_width.text())
         # apply changes to the main GUI
@@ -674,3 +715,64 @@ def enableDarkMode(app):
     dark_palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
     dark_palette.setColor(QPalette.HighlightedText, Qt.black)
     app.setPalette(dark_palette)
+
+
+def updateLabelColors(self):
+    is_dark_mode = self.isDarkModeEnabled
+    label_color = 'white' if is_dark_mode else 'black'
+
+    for widget in self.findChildren(QtWidgets.QWidget):
+        if isinstance(widget, QtWidgets.QLabel):
+            widget.setStyleSheet(f"color: {label_color};font-weight: bold")
+        # If you want, you can also handle other widgets here
+        # elif isinstance(widget, QtWidgets.QLineEdit):
+        #     widget.setStyleSheet(f"color: {label_color};")
+
+
+def toggleDarkMode(self, enable: bool):
+    app = QtWidgets.QApplication.instance()
+
+    if enable:
+        enableDarkMode(app)  # Apply dark mode palette
+        self.isDarkModeEnabled = True
+    else:
+        app.setPalette(app.style().standardPalette())  # Revert to default palette
+        self.isDarkModeEnabled = False
+
+    # Update the canvas and plot to reflect the new theme
+    print(self.isDarkModeEnabled)
+    if hasattr(self, 'canvas') and self.canvas is not None:
+        self.canvas.deleteLater()
+    if hasattr(self, 'toolbar') and self.toolbar is not None:
+        self.toolbar.deleteLater()
+    self.figure, self.ar, self.ax, self.canvas, self.toolbar = setupCanvas(self, is_dark_mode=self.isDarkModeEnabled)
+
+    # --- First screen bottom layout --- (Re-create the layout with the new canvas)
+    bottomrow_layout = QtWidgets.QHBoxLayout()
+
+    # Left layout (including toolbar and canvas)
+    layout_bottom_left = createBottomLeftLayout(self)
+    bottomrow_layout.addLayout(layout_bottom_left, 4)
+
+    # Middle layout (includes fit tables, parameters, etc.)
+    layout_bottom_mid, list_col = createMiddleLayout(self)
+    bottomrow_layout.addLayout(layout_bottom_mid, 3)
+
+    # Right layout (for additional content)
+    layout_bottom_right = createBottomRightLayout(self, list_col)
+    bottomrow_layout.addLayout(layout_bottom_right, 2)
+
+    # Add the newly created layout to the main outer layout
+    outer_layout = self.findChild(QtWidgets.QVBoxLayout)  # Or get reference to the main layout
+    if outer_layout:
+        # Remove the old bottom row layout (if necessary)
+        for i in range(outer_layout.count()):
+            item = outer_layout.itemAt(i)
+            if item and item.layout() == bottomrow_layout:
+                outer_layout.removeItem(item)
+
+        # Add the new bottom row layout to the outer layout
+        outer_layout.addLayout(bottomrow_layout, 6)
+
+    updateLabelColors(self)  # Update label colors and other UI elements
+
