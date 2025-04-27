@@ -49,7 +49,7 @@ handler = RotatingFileHandler(log_file_path, maxBytes=max_log_size, backupCount=
 handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 logger.addHandler(handler)
 
 config = configparser.ConfigParser()
@@ -133,12 +133,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.initSingleWindowUI()
 
     def initTwoWindowUI(self):
-        self.setGeometry(0, 0, self.resolution[0], self.resolution[1])
-        self.showNormal()
-        self.center()
-        self.setWindowTitle(self.version)
-        self.statusBar().showMessage(
-            'Copyright (C) 2022, Julian Hochhaus, TU Dortmund University')
+        setupWindow(parent=self)
         self.pt = PeriodicTable()
         self.pt.setWindowTitle('Periodic Table')
         # data template
@@ -160,15 +155,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         # Home directory
         self.filePath = QtCore.QDir.homePath()
-
-        self.figure, (self.ar, self.ax) = plt.subplots(2, sharex=True,
-                                                       gridspec_kw={'height_ratios': [1, 5], 'hspace': 0})
-        self.canvas = FigureCanvas(self.figure)
-        self.toolbar = NavigationToolbar(self.canvas, self)
-        self.toolbar.setMaximumHeight(20)
-        self.toolbar.setMinimumHeight(15)
-        self.toolbar.setStyleSheet("QToolBar { border: 0px }")
-
+        self.figure, self.ar, self.ax, self.canvas, self.toolbar=setupCanvas(self)
         # layout top row
         toprow_layout = QtWidgets.QHBoxLayout()
         bottomrow_layout = QtWidgets.QHBoxLayout()
@@ -204,59 +191,33 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         layout_top_mid = QtWidgets.QVBoxLayout()
         layout_bottom_mid = QtWidgets.QVBoxLayout()
-        self.fitp0, bg_fixed_layout, pre_bg = createBGTable(self, dictBG)
+        self.fitp0= createBGTable(self, dictBG)
+        # Fixed background layout
+        bg_fixed_layout = QtWidgets.QHBoxLayout()
+
+        # Create checkbox for "Keep background fixed"
+        fixedBG_checkbox = QtWidgets.QCheckBox('Keep background fixed')
+        self.fixedBG = fixedBG_checkbox  # Assign to parent for later use
+
+        # Create label to display chosen backgrounds
+        displayChosenBG_label = QtWidgets.QLabel()
+        displayChosenBG_label.setText(
+            'Choosen Background: {}'.format('+ '.join([dictBG[str(idx)] for idx in self.idx_bg]))
+        )
+        displayChosenBG_label.setStyleSheet("font-weight: bold")
+        self.displayChoosenBG = displayChosenBG_label  # Assign to parent for later use
+
+        # Add widgets to the layout
+        bg_fixed_layout.addWidget(displayChosenBG_label)
+        bg_fixed_layout.addWidget(fixedBG_checkbox)
         layout_top_mid.addWidget(self.fitp0)
         layout_top_mid.addLayout(bg_fixed_layout)
-        # Add Button
-
-        componentbuttons_layout = QtWidgets.QHBoxLayout()
-        btn_add = QtWidgets.QPushButton('add component', self)
-        btn_add.resize(btn_add.sizeHint())
-        btn_add.clicked.connect(self.add_col)
-        componentbuttons_layout.addWidget(btn_add)
-
-        # Remove Button
-        btn_rem = QtWidgets.QPushButton('rem component', self)
-        btn_rem.resize(btn_rem.sizeHint())
-        btn_rem.clicked.connect(lambda: self.removeCol(idx=None, text=None))
-        componentbuttons_layout.addWidget(btn_rem)
-
-        btn_limit_set = QtWidgets.QPushButton('&Set/Show Limits', self)
-        btn_limit_set.resize(btn_limit_set.sizeHint())
-        btn_limit_set.clicked.connect(self.setLimits)
-        componentbuttons_layout.addWidget(btn_limit_set)
-
-        # indicator for limits
-        self.status_label = QtWidgets.QLabel()
-        self.status_label.setFixedSize(18, 18)
-        self.status_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.status_label.setStyleSheet("background-color: grey; border-radius: 9px")
-
-        # Create a QLabel for the status text
-        self.status_text = QtWidgets.QLabel("Limits not used")
-        self.status_text.setAlignment(QtCore.Qt.AlignLeft)
-        self.status_text.setAlignment(QtCore.Qt.AlignVCenter)
-
-        # Create a QVBoxLayout to hold the status widgets
-        status_layout = QtWidgets.QHBoxLayout()
-        status_layout.addWidget(self.status_label)
-        status_layout.addWidget(self.status_text)
-        status_layout.setAlignment(QtCore.Qt.AlignVCenter)
-        componentbuttons_layout.addLayout(status_layout)
-        componentbuttons_layout.setAlignment(QtCore.Qt.AlignVCenter)
+        componentbuttons_layout, self.status_label, self.status_text = createComponentButtons(self)
 
         layout_bottom_mid.addLayout(componentbuttons_layout)
-
+        initializePresets(self)
         self.fitp1, self.list_shape, self.list_component, self.fitp1_lims, list_col = createFitTables(self)
 
-        # load default preset
-        # pre_pk = [[0,0],[2,0],[2,0],[2,0],[2,0],[2,0],[2,0],[2,0]]
-        pre_pk = [[0, 0], [2, 284.6], [0, 20000], [2, 0.2], [2, 0.2], [2, 0.02], [2, 0], [2, 0], [2, 0.0], [2, 0.026],
-                  [2, 1], [2, 0.7], [2, 1], [0, 0], [2, 0.1], [0, 0], [2, 0.5], [0, 0], [2, 1], [0, 0], [2, 1],
-                  [0, 0], [2, 1], [0, 0], [2, 1], [0, 0], [2, 1]]
-        self.pre = [[self.idx_bg, self.xmin, self.xmax, self.hv, self.wf, self.correct_energy], pre_bg, pre_pk,
-                    [[0, '', '']] * 19]
-        self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
         layout_bottom_mid.addWidget(self.fitp1)
 
         toprow_layout.addLayout(layout_top_mid, 4)
@@ -300,12 +261,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.resizeAllColumns()
 
     def initSingleWindowUI(self):
-        self.setGeometry(0, 0, self.resolution[0], self.resolution[1])
-        self.showNormal()
-        self.center()
-        self.setWindowTitle(self.version)
-        self.statusBar().showMessage(
-            'Copyright (C) 2022, Julian Hochhaus, TU Dortmund University')
+        setupWindow(parent=self)
         self.pt = PeriodicTable()
         self.pt.setWindowTitle('Periodic Table')
         # data template
@@ -327,15 +283,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         # Home directory
         self.filePath = QtCore.QDir.homePath()
-
-        self.figure, (self.ar, self.ax) = plt.subplots(2, sharex=True,
-                                                       gridspec_kw={'height_ratios': [1, 5], 'hspace': 0})
-        self.canvas = FigureCanvas(self.figure)
-        self.toolbar = NavigationToolbar(self.canvas, self)
-        self.toolbar.setMaximumHeight(20)
-        self.toolbar.setMinimumHeight(15)
-        self.toolbar.setStyleSheet("QToolBar { border: 0px }")
-
+        self.figure, self.ar, self.ax, self.canvas, self.toolbar=setupCanvas(self)
         # layout top row
         toprow_layout = QtWidgets.QHBoxLayout()
         bottomrow_layout = QtWidgets.QHBoxLayout()
@@ -370,60 +318,37 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         layout_top_mid = QtWidgets.QVBoxLayout()
         layout_bottom_mid = QtWidgets.QVBoxLayout()
-        self.fitp0, bg_fixed_layout , pre_bg= createBGTable(self, dictBG)
+        self.fitp0 = createBGTable(self, dictBG)
+
+        # Fixed background layout
+        bg_fixed_layout = QtWidgets.QHBoxLayout()
+
+        # Create checkbox for "Keep background fixed"
+        fixedBG_checkbox = QtWidgets.QCheckBox('Keep background fixed')
+        self.fixedBG = fixedBG_checkbox  # Assign to parent for later use
+
+        # Create label to display chosen backgrounds
+        displayChosenBG_label = QtWidgets.QLabel()
+        displayChosenBG_label.setText(
+            'Choosen Background: {}'.format('+ '.join([dictBG[str(idx)] for idx in self.idx_bg]))
+        )
+        displayChosenBG_label.setStyleSheet("font-weight: bold")
+        self.displayChoosenBG = displayChosenBG_label  # Assign to parent for later use
+
+        # Add widgets to the layout
+        bg_fixed_layout.addWidget(displayChosenBG_label)
+        bg_fixed_layout.addWidget(fixedBG_checkbox)
         layout_top_mid.addWidget(self.fitp0)
         layout_top_mid.addLayout(bg_fixed_layout)
-        # Add Button
-
-        componentbuttons_layout = QtWidgets.QHBoxLayout()
-        btn_add = QtWidgets.QPushButton('add component', self)
-        btn_add.resize(btn_add.sizeHint())
-        btn_add.clicked.connect(self.add_col)
-        componentbuttons_layout.addWidget(btn_add)
-
-        # Remove Button
-        btn_rem = QtWidgets.QPushButton('rem component', self)
-        btn_rem.resize(btn_rem.sizeHint())
-        btn_rem.clicked.connect(lambda: self.removeCol(idx=None,text=None ))
-        componentbuttons_layout.addWidget(btn_rem)
-
-        btn_limit_set = QtWidgets.QPushButton('&Set/Show Limits', self)
-        btn_limit_set.resize(btn_limit_set.sizeHint())
-        btn_limit_set.clicked.connect(self.setLimits)
-        componentbuttons_layout.addWidget(btn_limit_set)
-
-        # indicator for limits
-        self.status_label = QtWidgets.QLabel()
-        self.status_label.setFixedSize(18, 18)
-        self.status_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.status_label.setStyleSheet("background-color: grey; border-radius: 9px")
-
-        # Create a QLabel for the status text
-        self.status_text = QtWidgets.QLabel("Limits not used")
-        self.status_text.setAlignment(QtCore.Qt.AlignLeft)
-        self.status_text.setAlignment(QtCore.Qt.AlignVCenter)
-
-        # Create a QVBoxLayout to hold the status widgets
-        status_layout = QtWidgets.QHBoxLayout()
-        status_layout.addWidget(self.status_label)
-        status_layout.addWidget(self.status_text)
-        status_layout.setAlignment(QtCore.Qt.AlignVCenter)
-        componentbuttons_layout.addLayout(status_layout)
-        componentbuttons_layout.setAlignment(QtCore.Qt.AlignVCenter)
+        componentbuttons_layout, self.status_label, self.status_text = createComponentButtons(self)
 
         layout_bottom_mid.addLayout(componentbuttons_layout)
+
 
         # set Fit Table
         self.fitp1, self.list_shape, self.list_component, self.fitp1_lims, list_col = createFitTables(self)
         # load default preset
-        # pre_pk = [[0,0],[2,0],[2,0],[2,0],[2,0],[2,0],[2,0],[2,0]]
-        pre_pk = [[0, 0], [2, 284.6], [0, 20000], [2, 0.2], [2, 0.2], [2, 0.02], [2, 0], [2, 0], [2, 0.0], [2, 0.026],
-                  [2, 1], [2, 0.7], [2, 1], [0, 0], [2, 0.1], [0, 0], [2, 0.5], [0, 0], [2, 1], [0, 0], [2, 1],
-                  [0, 0], [2, 1], [0, 0], [2, 1], [0, 0], [2, 1]]
-        self.pre = [[self.idx_bg, self.xmin, self.xmax, self.hv, self.wf, self.correct_energy], pre_bg, pre_pk, [[0, '', '']] * 19]
-
-        self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
-
+        initializePresets(self)
         layout_bottom_mid.addWidget(self.fitp1)
 
         toprow_layout.addLayout(layout_top_mid, 4)

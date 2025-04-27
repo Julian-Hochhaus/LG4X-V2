@@ -1,10 +1,42 @@
 from PyQt5 import QtWidgets
 from helpers import *
-def createFitButtons(parent):
-    """Create fit-related buttons and return both layout and button references."""
-    layout = QtWidgets.QHBoxLayout()
+from matplotlib.backends.backend_qt5agg import FigureCanvas, NavigationToolbar2QT as NavigationToolbar
+import matplotlib.pyplot as plt
 
-    # Create buttons
+def setupWindow(parent):
+    """Set up basic window properties."""
+    parent.setGeometry(0, 0, parent.resolution[0], parent.resolution[1])
+    parent.showNormal()
+    parent.center()
+    parent.setWindowTitle(parent.version)
+    parent.statusBar().showMessage(
+        'Copyright (C) 2022, Julian Hochhaus, TU Dortmund University'
+    )
+
+
+def setupCanvas(parent):
+    ##Set up the matplotlib canvas and navigation toolbar.
+    figure, (ar, ax) = plt.subplots(
+        2,
+        sharex=True,
+        gridspec_kw={'height_ratios': [1, 5], 'hspace': 0}
+    )
+
+    # Create the canvas for displaying the figure
+    canvas = FigureCanvas(figure)
+
+    # Create the navigation toolbar to interact with the plot
+    toolbar = NavigationToolbar(canvas, parent)
+
+    # Style the toolbar
+    toolbar.setMaximumHeight(20)
+    toolbar.setMinimumHeight(15)
+    toolbar.setStyleSheet("QToolBar { border: 0px }")
+
+    return figure, ar, ax, canvas, toolbar
+def createFitButtons(parent):
+    """Create fit-related buttons and returns both layout and button references."""
+    layout = QtWidgets.QHBoxLayout()
     btn_fit = QtWidgets.QPushButton('Fit', parent)
     btn_fit.clicked.connect(parent.fit)
 
@@ -17,20 +49,84 @@ def createFitButtons(parent):
     btn_interrupt = QtWidgets.QPushButton('Interrupt fitting', parent)
     btn_interrupt.clicked.connect(parent.interrupt_fit)
 
-    # Add buttons to layout
     for button in [btn_fit, btn_eva, btn_undoFit, btn_interrupt]:
         button.resize(button.sizeHint())
         layout.addWidget(button)
 
-    # Return both layout and button references
     return layout, {
         'btn_fit': btn_fit,
         'btn_eva': btn_eva,
         'btn_undoFit': btn_undoFit,
         'btn_interrupt': btn_interrupt,
     }
+def createComponentButtons(parent):
+    """Create add/remove component and limits buttons and limits status indicator and returns both layout and limit status/text."""
+    layout = QtWidgets.QHBoxLayout()
+    # Add Button
+    btn_add = QtWidgets.QPushButton('add component', parent)
+    btn_add.resize(btn_add.sizeHint())
+    btn_add.clicked.connect(parent.add_col)
+    layout.addWidget(btn_add)
+    # Remove Button
+    btn_rem = QtWidgets.QPushButton('rem component', parent)
+    btn_rem.resize(btn_rem.sizeHint())
+    btn_rem.clicked.connect(lambda: parent.removeCol(idx=None,text=None ))
+    layout.addWidget(btn_rem)
 
+    btn_limit_set = QtWidgets.QPushButton('&Set/Show Limits', parent)
+    btn_limit_set.resize(btn_limit_set.sizeHint())
+    btn_limit_set.clicked.connect(parent.setLimits)
+    layout.addWidget(btn_limit_set)
 
+    # indicator for limits
+    status_label = QtWidgets.QLabel()
+    status_label.setFixedSize(18, 18)
+    status_label.setAlignment(QtCore.Qt.AlignCenter)
+    status_label.setStyleSheet("background-color: grey; border-radius: 9px")
+
+    # Create a QLabel for the status text
+    status_text = QtWidgets.QLabel("Limits not used")
+    status_text.setAlignment(QtCore.Qt.AlignLeft)
+    status_text.setAlignment(QtCore.Qt.AlignVCenter)
+
+    # Create a QVBoxLayout to hold the status widgets
+    status_layout = QtWidgets.QHBoxLayout()
+    status_layout.addWidget(status_label)
+    status_layout.addWidget(status_text)
+    status_layout.setAlignment(QtCore.Qt.AlignVCenter)
+    layout.addLayout(status_layout)
+    layout.setAlignment(QtCore.Qt.AlignVCenter)
+    return layout, status_label,status_text
+def initializePresets(parent):
+    """Initialize presets for background, peak, and other configurations."""
+    # Prepopulate default values for BG table
+    pre_bg = [['', 1e-06, '', 10, 2, 0.0003, 2, 1000, '', ''],
+              [2, 2866.0, '', 1643.0, '', 1.0, '', 1.0, '', 50],
+              [2, 0, 2, 0, 2, 0, 2, 0, 2, 0],
+              [2, 0.0, '', '', '', '', '', '', '', '', '']]
+
+    # Default values for peak presets
+    pre_pk = [[0, 0], [2, 284.6], [0, 20000], [2, 0.2], [2, 0.2], [2, 0.02], [2, 0], [2, 0], [2, 0.0], [2, 0.026],
+              [2, 1], [2, 0.7], [2, 1], [0, 0], [2, 0.1], [0, 0], [2, 0.5], [0, 0], [2, 1], [0, 0], [2, 1],
+              [0, 0], [2, 1], [0, 0], [2, 1], [0, 0], [2, 1]]
+
+    # Default preset configuration
+    parent.pre = [
+        [
+            parent.idx_bg,
+            parent.xmin,
+            parent.xmax,
+            parent.hv,
+            parent.wf,
+            parent.correct_energy
+        ],
+        pre_bg,
+        pre_pk,
+        [[0, '', '']] * 19
+    ]
+
+    # Apply presets using setPreset method
+    parent.setPreset(parent.pre[0], parent.pre[1], parent.pre[2], parent.pre[3])
 def createPlotSettingsForm(parent):
     """Create the plot settings form layout and assign fields directly to parent."""
     plot_settings_layout = QtWidgets.QHBoxLayout()
@@ -109,31 +205,7 @@ def createBGTable(parent, dictBG):
                 item.setText('')
             fitp0.setItem(row, col, item)
 
-    # Prepopulate default values for BG table
-    pre_bg = [['', 1e-06, '', 10, 2, 0.0003, 2, 1000, '', ''],
-              [2, 2866.0, '', 1643.0, '', 1.0, '', 1.0, '', 50],
-              [2, 0, 2, 0, 2, 0, 2, 0, 2, 0],
-              [2, 0.0, '', '', '', '', '', '', '', '', '']]
-    # Fixed background layout
-    bg_fixed_layout = QtWidgets.QHBoxLayout()
-
-    # Create checkbox for "Keep background fixed"
-    fixedBG_checkbox = QtWidgets.QCheckBox('Keep background fixed')
-    parent.fixedBG = fixedBG_checkbox  # Assign to parent for later use
-
-    # Create label to display chosen backgrounds
-    displayChosenBG_label = QtWidgets.QLabel()
-    displayChosenBG_label.setText(
-        'Choosen Background: {}'.format('+ '.join([dictBG[str(idx)] for idx in parent.idx_bg]))
-    )
-    displayChosenBG_label.setStyleSheet("font-weight: bold")
-    parent.displayChoosenBG = displayChosenBG_label  # Assign to parent for later use
-
-    # Add widgets to the layout
-    bg_fixed_layout.addWidget(displayChosenBG_label)
-    bg_fixed_layout.addWidget(fixedBG_checkbox)
-
-    return fitp0, bg_fixed_layout, pre_bg
+    return fitp0
 
 def createFitTables(parent):
     list_col = ['C_1']
