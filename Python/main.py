@@ -133,250 +133,84 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.initSingleWindowUI()
 
     def initTwoWindowUI(self):
-        setupWindow(parent=self)
-        self.pt = PeriodicTable()
-        self.pt.setWindowTitle('Periodic Table')
-        # data template
-        self.df = []
-        self.result = pd.DataFrame()
+        # --- Setup main window ---
+        setupMainWindow(self)
+        initializeData(self)
+
+        # --- Setup central widget and layout ---
         outer_layout = QtWidgets.QVBoxLayout()
-        self.static_bg = int(0)
-        self.idx_imp = 0
-
-        self.idx_bg = [2]
-
-        self.idx_pres = 0
-
-        menubar=createMenuBar(self)
-        # central widget layout
         widget = QtWidgets.QWidget(self)
-        self.setCentralWidget(widget)
         widget.setLayout(outer_layout)
+        self.setCentralWidget(widget)
 
-        # Home directory
+        # --- Home directory and canvas ---
         self.filePath = QtCore.QDir.homePath()
-        self.figure, self.ar, self.ax, self.canvas, self.toolbar=setupCanvas(self)
-        # layout top row
-        toprow_layout = QtWidgets.QHBoxLayout()
+        self.figure, self.ar, self.ax, self.canvas, self.toolbar = setupCanvas(self)
+
+        # --- Top row layout ---
+        toprow_layout = createTopRowLayout(self, dictBG)
+        outer_layout.addLayout(toprow_layout, 1)
+        outer_layout.addWidget(LayoutHline())
+
+        # --- First screen bottom layout ---
         bottomrow_layout = QtWidgets.QHBoxLayout()
-        bottomrow_second_screen_layout = QtWidgets.QHBoxLayout()
-        # button layout
 
-        layout_top_left = QtWidgets.QVBoxLayout()
-        fitbuttons_layout, self.fit_buttons = createFitButtons(self)
-        layout_top_left.addLayout(fitbuttons_layout)
-
-        # lists of dropdown menus
-        self.list_file = ['File list', 'Clear list']
-        # DropDown file list
-        self.comboBox_file = QtWidgets.QComboBox(self)
-        self.comboBox_file.addItems(self.list_file)
-        self.comboBox_file.currentIndexChanged.connect(self.plot)
-        layout_top_left.addWidget(self.comboBox_file)
-        layout_top_left.addWidget(LayoutHline())
-        plottitle_form = QtWidgets.QFormLayout()
-        self.plottitle = QtWidgets.QLineEdit()
-        plottitle_form.addRow("Plot title: ", self.plottitle)
-        plot_settings_layout = createPlotSettingsForm(parent=self)
-        layout_top_left.addLayout(plottitle_form)
-        layout_top_left.addLayout(plot_settings_layout)
-        layout_top_left.addStretch(1)
-
-        layout_bottom_left = QtWidgets.QVBoxLayout()
-        layout_bottom_left.addWidget(self.toolbar)
-        layout_bottom_left.addWidget(self.canvas)
-
-        toprow_layout.addLayout(layout_top_left, 4)
+        layout_bottom_left = createBottomLeftLayout(self)
         bottomrow_layout.addLayout(layout_bottom_left, 4)
 
-        layout_top_mid = QtWidgets.QVBoxLayout()
-        layout_bottom_mid = QtWidgets.QVBoxLayout()
-        self.fitp0= createBGTable(self, dictBG)
-        # Fixed background layout
-        bg_fixed_layout = QtWidgets.QHBoxLayout()
-
-        # Create checkbox for "Keep background fixed"
-        fixedBG_checkbox = QtWidgets.QCheckBox('Keep background fixed')
-        self.fixedBG = fixedBG_checkbox  # Assign to parent for later use
-
-        # Create label to display chosen backgrounds
-        displayChosenBG_label = QtWidgets.QLabel()
-        displayChosenBG_label.setText(
-            'Choosen Background: {}'.format('+ '.join([dictBG[str(idx)] for idx in self.idx_bg]))
-        )
-        displayChosenBG_label.setStyleSheet("font-weight: bold")
-        self.displayChoosenBG = displayChosenBG_label  # Assign to parent for later use
-
-        # Add widgets to the layout
-        bg_fixed_layout.addWidget(displayChosenBG_label)
-        bg_fixed_layout.addWidget(fixedBG_checkbox)
-        layout_top_mid.addWidget(self.fitp0)
-        layout_top_mid.addLayout(bg_fixed_layout)
-        componentbuttons_layout, self.status_label, self.status_text = createComponentButtons(self)
-
-        layout_bottom_mid.addLayout(componentbuttons_layout)
-        initializePresets(self)
-        self.fitp1, self.list_shape, self.list_component, self.fitp1_lims, list_col = createFitTables(self)
-
-        layout_bottom_mid.addWidget(self.fitp1)
-
-        toprow_layout.addLayout(layout_top_mid, 4)
-        bottomrow_second_screen_layout.addLayout(layout_bottom_mid, 3)
-        outer_layout.addLayout(toprow_layout, 1)
-
-        outer_layout.addWidget(LayoutHline())
         outer_layout.addLayout(bottomrow_layout, 6)
-        # grid..addWidget(self.res_label, 7, 7, 1, 1)
 
+        # --- Second screen bottom layout ---
+        bottomrow_second_screen_layout = QtWidgets.QHBoxLayout()
 
-        self.second_window = QtWidgets.QMainWindow()
-        second_window_layout = QtWidgets.QVBoxLayout()
-        self.second_window.setGeometry(0, 0, self.resolution[0], self.resolution[1])
-        self.second_window.showNormal()
-        self.second_window.setWindowTitle(self.version+'-second screen-')
-        second_window_central_widget = QtWidgets.QWidget(self.second_window)
-        second_window_central_widget.setLayout(second_window_layout)
-        self.second_window.setCentralWidget(second_window_central_widget)
-        second_window_layout.addLayout(bottomrow_second_screen_layout, 6)
-        layout_top_right = QtWidgets.QVBoxLayout()
-        layout_bottom_right = QtWidgets.QVBoxLayout()
-        self.res_tab=createResultTable(self,list_col)
-        layout_bottom_right.addWidget(self.res_tab)
-        toprow_layout.addLayout(layout_top_right, 1)
+        layout_bottom_mid, list_col = createMiddleLayout(self)
+        bottomrow_second_screen_layout.addLayout(layout_bottom_mid, 3)
+
+        layout_bottom_right = createBottomRightLayout(self, list_col)
         bottomrow_second_screen_layout.addLayout(layout_bottom_right, 2)
-        self.stats_tab=createStatsTable()
-        layout_bottom_right.addWidget(self.stats_tab)
-        self.stats_label = QtWidgets.QLabel()
-        self.stats_label.setText("Fit statistics:")
-        self.stats_label.setStyleSheet("font-weight: bold; font-size:12pt")
-        # grid..addWidget(self.stats_label, 5, 7, 1, 1)
-        self.pars_label = QtWidgets.QLabel()
-        self.pars_label.setText("Peak parameters:")
-        self.pars_label.setStyleSheet("font-weight: bold; font-size:12pt")
-        # grid..addWidget(self.pars_label, 3, 3, 1, 1)
-        self.res_label = QtWidgets.QLabel()
-        self.res_label.setText("Fit results:")
-        self.res_label.setStyleSheet("font-weight: bold; font-size:12pt")
+
+        # --- Setup second window ---
+        setupSecondWindow(self,bottomrow_second_screen_layout)
+
+        # --- Final adjustments ---
         self.activeParameters()
         self.resizeAllColumns()
 
     def initSingleWindowUI(self):
-        setupWindow(parent=self)
-        self.pt = PeriodicTable()
-        self.pt.setWindowTitle('Periodic Table')
-        # data template
-        self.df = []
-        self.result = pd.DataFrame()
+        # --- Setup main window ---
+        setupMainWindow(self)
+        initializeData(self)
+
+        # --- Setup central widget and layout ---
         outer_layout = QtWidgets.QVBoxLayout()
-        self.static_bg=int(0)
-        self.idx_imp = 0
-
-        self.idx_bg = [2]
-
-        self.idx_pres = 0
-
-        menubar=createMenuBar(self)
-        # central widget layout
         widget = QtWidgets.QWidget(self)
-        self.setCentralWidget(widget)
         widget.setLayout(outer_layout)
+        self.setCentralWidget(widget)
 
-        # Home directory
+        # --- Home directory and canvas ---
         self.filePath = QtCore.QDir.homePath()
-        self.figure, self.ar, self.ax, self.canvas, self.toolbar=setupCanvas(self)
-        # layout top row
-        toprow_layout = QtWidgets.QHBoxLayout()
+        self.figure, self.ar, self.ax, self.canvas, self.toolbar = setupCanvas(self)
+
+        # --- Top row layout ---
+        toprow_layout = createTopRowLayout(self, dictBG)
+        outer_layout.addLayout(toprow_layout, 1)
+        outer_layout.addWidget(LayoutHline())
+
+        # --- Bottom row layout ---
         bottomrow_layout = QtWidgets.QHBoxLayout()
-        # button layout
 
-        layout_top_left = QtWidgets.QVBoxLayout()
-        fitbuttons_layout, self.fit_buttons = createFitButtons(self)
-        layout_top_left.addLayout(fitbuttons_layout)
-
-        # lists of dropdown menus
-        self.list_file = ['File list', 'Clear list']
-        # DropDown file list
-        self.comboBox_file = QtWidgets.QComboBox(self)
-        self.comboBox_file.addItems(self.list_file)
-        self.comboBox_file.currentIndexChanged.connect(self.value_change_filelist)
-        layout_top_left.addWidget(self.comboBox_file)
-        layout_top_left.addWidget(LayoutHline())
-        plottitle_form = QtWidgets.QFormLayout()
-        self.plottitle = QtWidgets.QLineEdit()
-        plottitle_form.addRow("Plot title: ", self.plottitle)
-        plot_settings_layout = createPlotSettingsForm(parent=self)
-        layout_top_left.addLayout(plottitle_form)
-        layout_top_left.addLayout(plot_settings_layout)
-        layout_top_left.addStretch(1)
-
-        layout_bottom_left = QtWidgets.QVBoxLayout()
-        layout_bottom_left.addWidget(self.toolbar)
-        layout_bottom_left.addWidget(self.canvas)
-
-        toprow_layout.addLayout(layout_top_left, 4)
+        layout_bottom_left = createBottomLeftLayout(self)
         bottomrow_layout.addLayout(layout_bottom_left, 4)
 
-        layout_top_mid = QtWidgets.QVBoxLayout()
-        layout_bottom_mid = QtWidgets.QVBoxLayout()
-        self.fitp0 = createBGTable(self, dictBG)
-
-        # Fixed background layout
-        bg_fixed_layout = QtWidgets.QHBoxLayout()
-
-        # Create checkbox for "Keep background fixed"
-        fixedBG_checkbox = QtWidgets.QCheckBox('Keep background fixed')
-        self.fixedBG = fixedBG_checkbox  # Assign to parent for later use
-
-        # Create label to display chosen backgrounds
-        displayChosenBG_label = QtWidgets.QLabel()
-        displayChosenBG_label.setText(
-            'Choosen Background: {}'.format('+ '.join([dictBG[str(idx)] for idx in self.idx_bg]))
-        )
-        displayChosenBG_label.setStyleSheet("font-weight: bold")
-        self.displayChoosenBG = displayChosenBG_label  # Assign to parent for later use
-
-        # Add widgets to the layout
-        bg_fixed_layout.addWidget(displayChosenBG_label)
-        bg_fixed_layout.addWidget(fixedBG_checkbox)
-        layout_top_mid.addWidget(self.fitp0)
-        layout_top_mid.addLayout(bg_fixed_layout)
-        componentbuttons_layout, self.status_label, self.status_text = createComponentButtons(self)
-
-        layout_bottom_mid.addLayout(componentbuttons_layout)
-
-
-        # set Fit Table
-        self.fitp1, self.list_shape, self.list_component, self.fitp1_lims, list_col = createFitTables(self)
-        # load default preset
-        initializePresets(self)
-        layout_bottom_mid.addWidget(self.fitp1)
-
-        toprow_layout.addLayout(layout_top_mid, 4)
+        layout_bottom_mid, list_col = createMiddleLayout(self)
         bottomrow_layout.addLayout(layout_bottom_mid, 3)
-        outer_layout.addLayout(toprow_layout, 1)
 
-        outer_layout.addWidget(LayoutHline())
-        outer_layout.addLayout(bottomrow_layout, 6)
-        layout_top_right = QtWidgets.QVBoxLayout()
-        layout_bottom_right = QtWidgets.QVBoxLayout()
-        self.res_tab=createResultTable(self,list_col)
-        layout_bottom_right.addWidget(self.res_tab)
-        toprow_layout.addLayout(layout_top_right, 1)
+        layout_bottom_right = createBottomRightLayout(self, list_col)
         bottomrow_layout.addLayout(layout_bottom_right, 2)
-        self.stats_tab=createStatsTable()
-        layout_bottom_right.addWidget(self.stats_tab)
-        self.stats_label = QtWidgets.QLabel()
-        self.stats_label.setText("Fit statistics:")
-        self.stats_label.setStyleSheet("font-weight: bold; font-size:12pt")
-        # grid..addWidget(self.stats_label, 5, 7, 1, 1)
-        self.pars_label = QtWidgets.QLabel()
-        self.pars_label.setText("Peak parameters:")
-        self.pars_label.setStyleSheet("font-weight: bold; font-size:12pt")
-        # grid..addWidget(self.pars_label, 3, 3, 1, 1)
-        self.res_label = QtWidgets.QLabel()
-        self.res_label.setText("Fit results:")
-        self.res_label.setStyleSheet("font-weight: bold; font-size:12pt")
-        # grid..addWidget(self.res_label, 7, 7, 1, 1)
+
+        outer_layout.addLayout(bottomrow_layout, 6)
+
+        # --- Final adjustments ---
         self.activeParameters()
         self.resizeAllColumns()
 

@@ -2,6 +2,7 @@ from PyQt5 import QtWidgets
 from helpers import *
 from matplotlib.backends.backend_qt5agg import FigureCanvas, NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
+from periodictable import PeriodicTable
 
 def setupWindow(parent):
     """Set up basic window properties."""
@@ -14,6 +15,163 @@ def setupWindow(parent):
     )
 
 
+
+def setupMainWindow(parent):
+    setupWindow(parent=parent)
+    parent.pt = PeriodicTable()
+    parent.pt.setWindowTitle('Periodic Table')
+
+def initializeData(parent):
+    parent.df = []
+    parent.result = pd.DataFrame()
+    parent.static_bg = 0
+    parent.idx_imp = 0
+    parent.idx_bg = [2]
+    parent.idx_pres = 0
+
+def createBottomLeftLayout(parent):
+    layout = QtWidgets.QVBoxLayout()
+    layout.addWidget(parent.toolbar)
+    layout.addWidget(parent.canvas)
+    return layout
+
+def createMiddleLayout(parent):
+    layout = QtWidgets.QVBoxLayout()
+
+    componentbuttons_layout, parent.status_label, parent.status_text = createComponentButtons(parent)
+    layout.addLayout(componentbuttons_layout)
+    parent.pars_label = QtWidgets.QLabel()
+    parent.pars_label.setText("Peak parameters:")
+    parent.pars_label.setStyleSheet("font-weight: bold; font-size:12pt")
+    layout.addWidget(parent.pars_label)
+
+    parent.fitp1, parent.list_shape, parent.list_component, parent.fitp1_lims, list_col = createFitTables(parent)
+    initializePresets(parent)
+    layout.addWidget(parent.fitp1)
+
+    return layout, list_col
+
+def setupSecondWindow(parent, bottom_layout):
+    parent.second_window = QtWidgets.QMainWindow()
+    parent.second_window.setGeometry(0, 0, parent.resolution[0], parent.resolution[1])
+    parent.second_window.setWindowTitle(parent.version + '-second screen-')
+
+    second_window_layout = QtWidgets.QVBoxLayout()
+    central_widget = QtWidgets.QWidget(parent.second_window)
+    central_widget.setLayout(second_window_layout)
+    parent.second_window.setCentralWidget(central_widget)
+
+    second_window_layout.addLayout(bottom_layout, 6)
+    parent.second_window.showNormal()
+
+def createTopLeftLayout(parent):
+    """Create the top-left layout with buttons, dropdowns, and plot settings."""
+    layout_top_left = QtWidgets.QVBoxLayout()
+
+    # Add Fit Buttons
+    fitbuttons_layout, parent.fit_buttons = createFitButtons(parent)
+    layout_top_left.addLayout(fitbuttons_layout)
+
+    # Dropdown menu for file list
+    parent.list_file = ['File list', 'Clear list']
+    parent.comboBox_file = QtWidgets.QComboBox(parent)
+    parent.comboBox_file.addItems(parent.list_file)
+    parent.comboBox_file.currentIndexChanged.connect(parent.value_change_filelist)
+    layout_top_left.addWidget(parent.comboBox_file)
+
+    # Horizontal line separator
+    layout_top_left.addWidget(LayoutHline())
+
+    # Plot title input form
+    plottitle_form = QtWidgets.QFormLayout()
+    parent.plottitle = QtWidgets.QLineEdit()
+    plottitle_form.addRow("Plot title: ", parent.plottitle)
+
+    # Add plot settings form
+    plot_settings_layout = createPlotSettingsForm(parent=parent)
+
+    layout_top_left.addLayout(plottitle_form)
+    layout_top_left.addLayout(plot_settings_layout)
+
+    # Add stretch for alignment
+    layout_top_left.addStretch(1)
+
+    return layout_top_left
+
+
+def createBottomRightLayout(parent, list_col):
+    """
+    Create result and statistics tables.
+
+    """
+    layout_bottom_right = QtWidgets.QVBoxLayout()
+
+    # Result Table Section
+    parent.res_label = QtWidgets.QLabel("Fit results:")
+    parent.res_label.setStyleSheet("font-weight: bold; font-size:12pt")
+    parent.res_tab = createResultTable(parent, list_col)
+
+    # Add result label and table to layout
+    layout_bottom_right.addWidget(parent.res_label)
+    layout_bottom_right.addWidget(parent.res_tab)
+
+    # Statistics Table Section
+    parent.stats_label = QtWidgets.QLabel("Fit statistics:")
+    parent.stats_label.setStyleSheet("font-weight: bold; font-size:12pt")
+    parent.stats_tab = createStatsTable()
+
+    # Add stats label and table to layout
+    layout_bottom_right.addWidget(parent.stats_label)
+    layout_bottom_right.addWidget(parent.stats_tab)
+
+    return layout_bottom_right
+
+    return layout_bottom_right
+
+
+def createBackgroundLayout(parent, dictBG):
+    #Create layout for background configuration.
+
+    # Create a horizontal layout for background settings
+    bg_fixed_layout = QtWidgets.QHBoxLayout()
+
+    # Create checkbox for "Keep background fixed"
+    fixedBG_checkbox = QtWidgets.QCheckBox('Keep background fixed')
+    parent.fixedBG = fixedBG_checkbox
+
+    # Create label to display chosen backgrounds
+    displayChosenBG_label = QtWidgets.QLabel()
+    displayChosenBG_label.setText(
+        'Choosen Background: {}'.format('+ '.join([dictBG[str(idx)] for idx in parent.idx_bg]))
+    )
+    displayChosenBG_label.setStyleSheet("font-weight: bold")
+    parent.displayChoosenBG = displayChosenBG_label  # Assign to parent for later use
+
+    # Add widgets to the layout
+    bg_fixed_layout.addWidget(displayChosenBG_label)
+    bg_fixed_layout.addWidget(fixedBG_checkbox)
+
+    return bg_fixed_layout
+
+
+def createTopRowLayout(parent, dictBG):
+    #Create top row layout for the UI.
+    # Create the top-left layout (buttons, dropdowns, etc.)
+    layout_top_left = createTopLeftLayout(parent)
+
+    layout_top_mid = QtWidgets.QVBoxLayout()
+
+    parent.fitp0 = createBGTable(parent, dictBG)  # Fit table for background
+    bg_fixed_layout = createBackgroundLayout(parent, dictBG)  # Background configuration
+
+    layout_top_mid.addWidget(parent.fitp0)  # Add fit table widget
+    layout_top_mid.addLayout(bg_fixed_layout)  # Add background settings
+
+    toprow_layout = QtWidgets.QHBoxLayout()
+    toprow_layout.addLayout(layout_top_left, 4)  # Add top-left section
+    toprow_layout.addLayout(layout_top_mid, 4)  # Add top-mid section
+
+    return toprow_layout
 def setupCanvas(parent):
     ##Set up the matplotlib canvas and navigation toolbar.
     figure, (ar, ax) = plt.subplots(
