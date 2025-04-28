@@ -130,13 +130,31 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.data_arr={}
         self.current_theme = 'dark'
         self.initUI()
+
     def initUI(self):
         logging.info("Application started.")
         logging.info(f"Version: {__version__}")
+
+        # --- Clear old UI ---
+        old_central = self.centralWidget()
+        if old_central:
+            old_central.deleteLater()
+
+        if hasattr(self, 'second_window') and self.second_window is not None:
+            self.second_window.close()
+            self.second_window.deleteLater()
+            self.second_window = None
+
+        if self.menuBar():
+            self.menuBar().clear()
+
         if self.two_window_mode:
             self.initTwoWindowUI()
         else:
             self.initSingleWindowUI()
+
+        # Apply resize after init
+        self.resize(self.resolution[0], self.resolution[1])
 
     def initTwoWindowUI(self):
         # --- Setup main window ---
@@ -177,7 +195,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         bottomrow_second_screen_layout.addLayout(layout_bottom_right, 2)
 
         # --- Setup second window ---
-        setupSecondWindow(self,bottomrow_second_screen_layout)
+        setupSecondWindow(self,config,bottomrow_second_screen_layout)
 
         # --- Final adjustments ---
         self.activeParameters()
@@ -224,7 +242,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
     def open_settings_window(self):
         self.settings_dialog = SettingsDialog(self,config, config_file_path)
-        self.settings_dialog.exec_()
+        self.settings_dialog.show()
 
 
     def duplicateComponentNames(self, new_label):
@@ -3300,8 +3318,14 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.move(qr.topLeft())
 
     def closeEvent(self, event):
+
         self.interrupt_fit()
+
+        if self.settings_dialog is not None and self.settings_dialog.isVisible():
+            self.settings_dialog.close()
+
         event.accept()
+
         sys.exit(0)
 
 
