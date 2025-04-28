@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from periodictable import PeriodicTable
+from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, QMenu, QComboBox, QWidget, QHBoxLayout, QWidgetAction,QSpacerItem, QSizePolicy, QDockWidget
+from PyQt5.QtCore import Qt
+import qdarktheme
 
 def setupWindow(parent):
     """Set up basic window properties."""
@@ -16,6 +19,223 @@ def setupWindow(parent):
     )
 
 
+def createMenuBar(parent):
+    """Create a reusable menu bar and return it."""
+    menubar = parent.menuBar()
+
+    # File Menu
+    # File Menu
+    fileMenu = menubar.addMenu('&File')
+
+    # Import Submenu
+    importSubmenu = fileMenu.addMenu('&Import')
+    actions_import = [
+        ('Import &csv', 'Ctrl+Shift+X', lambda: parent.clickOnBtnImp(idx=1)),
+        ('Import &txt', 'Ctrl+Shift+Y', lambda: parent.clickOnBtnImp(idx=2)),
+        ('Import &vms', 'Ctrl+Shift+V', lambda: parent.clickOnBtnImp(idx=3)),
+        ('Open directory (.txt and .csv)', 'Ctrl+Shift+D', lambda: parent.clickOnBtnImp(idx=4)),
+        ('Open directory (only .csv)', 'Ctrl+Shift+C', lambda: parent.clickOnBtnImp(idx=5)),
+        ('Open directory (only .txt)', 'Ctrl+Shift+T', lambda: parent.clickOnBtnImp(idx=6))
+    ]
+
+    for name, shortcut, func in actions_import:
+        action = QtWidgets.QAction(name, parent)
+        action.setShortcut(shortcut)
+        action.triggered.connect(func)
+        importSubmenu.addAction(action)
+
+    # Export Submenu
+    exportSubmenu = fileMenu.addMenu('&Export')
+    actions_export = [
+        ('&Results', 'Ctrl+Shift+R', parent.exportResults),
+        ('Re&sults + Data', 'Ctrl+Shift+A', parent.export_all)
+    ]
+
+    for name, shortcut, func in actions_export:
+        action = QtWidgets.QAction(name, parent)
+        action.setShortcut(shortcut)
+        action.triggered.connect(func)
+        exportSubmenu.addAction(action)
+
+    # Exit Application Action
+    exitAction = QtWidgets.QAction('E&xit', parent)
+    exitAction.setShortcut('Ctrl+Q')
+    exitAction.setStatusTip('Exit application')
+    exitAction.triggered.connect(QtWidgets.qApp.quit)
+
+    fileMenu.addSeparator()
+    fileMenu.addAction(exitAction)
+
+    # Preset Menu
+    presetMenu = menubar.addMenu('&Preset')
+
+    actions_preset = [
+        ('&New', 'Ctrl+Shift+N', lambda: parent.clickOnBtnPreset(idx=1)),
+        ('&Load', 'Ctrl+Shift+L', lambda: parent.clickOnBtnPreset(idx=2)),
+        ('&Append', 'Ctrl+Shift+A', lambda: parent.clickOnBtnPreset(idx=3)),
+        ('&Save', None, lambda: parent.clickOnBtnPreset(idx=4)),
+        ('&C1s', None, lambda: parent.clickOnBtnPreset(idx=5)),
+        ('C &K edge', None, lambda: parent.clickOnBtnPreset(idx=6)),
+        ('Periodic &Table', None, lambda: parent.clickOnBtnPreset(idx=7))
+    ]
+
+    for name, shortcut, func in actions_preset:
+        action = QtWidgets.QAction(name, parent)
+
+        if shortcut:
+            action.setShortcut(shortcut)  # Add shortcuts only if defined
+
+        action.triggered.connect(func)
+        presetMenu.addAction(action)
+
+    # Background Menu
+    bgMenu = menubar.addMenu('&Choose BG')
+
+    # Define actions for background menu
+    bg_actions = [
+        ('&Active &Shirley BG', None, parent.clickOnBtnBG, True),
+        ('&Static &Shirley BG', None, parent.clickOnBtnBG, True),
+        ('&Active &Tougaard BG', None, parent.clickOnBtnBG, True),
+        ('&Static &Tougaard BG', None, parent.clickOnBtnBG, True),
+        ('&Polynomial BG', 'Ctrl+Alt+P', parent.clickOnBtnBG, True),
+        ('&Slope BG', 'Ctrl+Alt+S', parent.clickOnBtnBG, True),
+        ('&Arctan BG', None, parent.clickOnBtnBG, True),
+        ('&Erf BG', None, parent.clickOnBtnBG, True),
+        ('&VBM/Cutoff BG', None, parent.clickOnBtnBG, True)
+    ]
+
+    # Add actions to background menu
+    for name, shortcut, func, checkable in bg_actions:
+        action = QtWidgets.QAction(name, parent)
+        if shortcut:
+            action.setShortcut(shortcut)
+        action.setCheckable(checkable)
+        action.triggered.connect(func)
+        bgMenu.addAction(action)
+
+    # Tougaard Cross Section Action
+    btn_tougaard_cross_section = QtWidgets.QAction('Tougaard &Cross Section ', parent)
+    btn_tougaard_cross_section.triggered.connect(parent.clicked_cross_section)
+
+    bgMenu.addSeparator()
+    bgMenu.addAction(btn_tougaard_cross_section)
+
+    # Settings Menu
+    settings_menu = menubar.addMenu('&Settings')
+
+    btn_settings = QtWidgets.QAction('&Open Settings', parent)
+    btn_settings.triggered.connect(parent.open_settings_window)
+
+    settings_menu.addAction(btn_settings)
+
+    # Help/Info Menu
+    links_menu = menubar.addMenu('&Help/Info')
+
+    github_link = QtWidgets.QAction('See on &Github', parent)
+    github_link.triggered.connect(lambda: webbrowser.open('https://github.com/Julian-Hochhaus/LG4X-V2'))
+
+    about_link = QtWidgets.QAction('&How to cite?', parent)
+    about_link.triggered.connect(parent.show_citation_dialog)
+
+    links_menu.addAction(github_link)
+    links_menu.addAction(about_link)
+
+    # Add theme switcher to the right corner
+    theme_menu = menubar.addMenu("Switch Theme")  # Empty title
+
+    # Create the theme combo box layout
+    theme_widget = QWidget()
+    theme_layout = QHBoxLayout(theme_widget)
+    theme_layout.setContentsMargins(0, 0, 0, 0)  # No margins
+
+
+    parent.theme_combo = QComboBox()
+    parent.theme_combo.addItems(qdarktheme.get_themes())
+    parent.theme_combo.setCurrentText('dark')
+    parent.current_theme = 'dark'
+    parent.theme_combo.currentTextChanged.connect(qdarktheme.setup_theme)
+    parent.theme_combo.currentTextChanged.connect(lambda theme: on_theme_changed(parent, theme))
+    parent.theme_combo.setMinimumWidth(100)
+    theme_layout.addWidget(parent.theme_combo)
+
+    # Create a QWidgetAction and set the theme widget
+    theme_action = QWidgetAction(parent)
+    theme_action.setDefaultWidget(theme_widget)
+
+    # Add the theme switcher to the menu
+    theme_menu.addAction(theme_action)
+
+    # Set initial theme
+    qdarktheme.setup_theme('dark')
+
+def on_theme_changed(parent, theme_name):
+    qdarktheme.setup_theme(theme_name)
+    update_matplotlib_style(parent,theme_name)
+    parent.current_theme = theme_name
+
+    # IMPORTANT: redraw your plot after changing style
+    #parent.plot()
+
+
+def update_matplotlib_style(parent, theme):
+    import matplotlib.pyplot as plt
+
+    # Define colors based on theme
+    if theme == 'dark':
+        plt.style.use('dark_background')
+        background_color = '#121212'
+        text_color = 'white'
+        grid_color = 'white'
+    else:
+        plt.style.use('default')
+        background_color = 'white'
+        text_color = 'black'
+        grid_color = 'black'
+
+    # Get the current figure
+    fig = parent.canvas.figure
+
+    # Iterate over all axes in the figure
+    for ax in fig.get_axes():
+        current_lines = ax.get_lines()
+        ax.cla()
+
+        # Apply the new style to the axis
+        ax.set_facecolor(background_color)
+        ax.xaxis.label.set_color(text_color)
+        ax.yaxis.label.set_color(text_color)
+        ax.title.set_color(text_color)
+        ax.tick_params(axis='x', colors=text_color)
+        ax.tick_params(axis='y', colors=text_color)
+        ax.spines['bottom'].set_color(text_color)
+        ax.spines['top'].set_color(text_color)
+        ax.spines['left'].set_color(text_color)
+        ax.spines['right'].set_color(text_color)
+
+        # Set grid color for the axis
+        ax.grid(True, color=grid_color)
+
+        # Reapply figure background color
+        fig.patch.set_facecolor(background_color)
+
+        # Get all current lines in the axis
+
+        for line, color in zip(current_lines,get_current_style_colors(len(current_lines))) :
+            ax.plot(line.get_xdata(), line.get_ydata(), linestyle=line.get_linestyle(), color=color,
+                    label=line.get_label())
+
+
+        # Reapply the legend if it exists
+        ax.legend(loc='best')
+
+    # Redraw the canvas to apply changes
+    parent.canvas.draw()
+def get_current_style_colors(num_colors):
+    # Get the current color cycle from rcParams
+    colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+    # Return the first 'num_colors' from the color cycle
+    return colors[:num_colors]
 
 def setupMainWindow(parent):
     setupWindow(parent=parent)
@@ -173,59 +393,34 @@ def createTopRowLayout(parent, dictBG):
     toprow_layout.addLayout(layout_top_mid, 4)  # Add top-mid section
 
     return toprow_layout
-def setupCanvas(parent, is_dark_mode=False):
+def setupCanvas(parent):
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+    from matplotlib.backends.backend_qt5 import NavigationToolbar2QT as NavigationToolbar
 
-    # Create the figure and axes
+    # Use parent's tracked theme
+    is_dark_mode = 'dark' in parent.current_theme.lower()
+
+    if is_dark_mode:
+        plt.style.use('dark_background')
+    else:
+        plt.style.use('default')
+
     figure, (ar, ax) = plt.subplots(
         2,
         sharex=True,
         gridspec_kw={'height_ratios': [1, 5], 'hspace': 0}
     )
 
-    # Set up the canvas for displaying the figure
     canvas = FigureCanvas(figure)
-
-    # Apply dark mode styling if enabled
-    if is_dark_mode:
-        # Dark mode styling for figure and axes
-        figure.patch.set_facecolor('#2e2e2e')  # Dark background for the figure
-        ax.set_facecolor('#2e2e2e')  # Dark background for axes
-        ax.tick_params(axis='both', colors='white')  # Change tick color to white
-        ax.spines['top'].set_color('white')
-        ax.spines['right'].set_color('white')
-        ax.spines['left'].set_color('white')
-        ax.spines['bottom'].set_color('white')
-        ax.xaxis.label.set_color('white')  # X-axis label text color
-        ax.yaxis.label.set_color('white')  # Y-axis label text color
-        ax.title.set_color('white')  # Title text color
-        ax.grid(True, color='white')  # White gridlines
-        plt.setp(ax.get_xticklabels(), color='white')
-        plt.setp(ax.get_yticklabels(), color='white')
-    else:
-        # Light mode default settings (if needed)
-        figure.patch.set_facecolor('white')
-        ax.set_facecolor('white')
-        ax.tick_params(axis='both', colors='black')
-        ax.spines['top'].set_color('black')
-        ax.spines['right'].set_color('black')
-        ax.spines['left'].set_color('black')
-        ax.spines['bottom'].set_color('black')
-        ax.xaxis.label.set_color('black')
-        ax.yaxis.label.set_color('black')
-        ax.title.set_color('black')
-        ax.grid(True, color='black')
-        plt.setp(ax.get_xticklabels(), color='black')
-        plt.setp(ax.get_yticklabels(), color='black')
-
-    # Create the navigation toolbar to interact with the plot
     toolbar = NavigationToolbar(canvas, parent)
-
-    # Style the toolbar
     toolbar.setMaximumHeight(20)
     toolbar.setMinimumHeight(15)
     toolbar.setStyleSheet("QToolBar { border: 0px }")
 
     return figure, ar, ax, canvas, toolbar
+def is_dark_mode(parent):
+    return 'dark' in parent.current_theme.lower()
 
 def createFitButtons(parent):
     """Create fit-related buttons and returns both layout and button references."""
@@ -550,10 +745,7 @@ class SettingsDialog(QtWidgets.QDialog):
         self.line_edit_column_width.setText(str(current_column_width))
         apply_column_button = QtWidgets.QPushButton("Apply Column width")
         apply_column_button.clicked.connect(self.apply_to_main)
-        self.checkbox_dark_mode = QtWidgets.QCheckBox("Enable Dark Mode")
-        self.checkbox_dark_mode.setChecked(config.getboolean('GUI', 'dark_mode', fallback=False))
-        self.checkbox_dark_mode.setStyleSheet('color:blue')
-        self.checkbox_dark_mode.toggled.connect(self.onDarkModeToggle)
+
 
         # GUI settings
         label_gui_settings_static = QtWidgets.QLabel("The following GUI settings in blue are \n only applied after restarting the application.")
@@ -609,7 +801,7 @@ class SettingsDialog(QtWidgets.QDialog):
         layout_column_width.addWidget(self.line_edit_column_width)
         layout_column_width.addWidget(apply_column_button)
         gui_layout_dynamic.addLayout(layout_column_width)
-        gui_layout_dynamic.addWidget(self.checkbox_dark_mode)
+
 
         gui_layout_static = QtWidgets.QVBoxLayout()
         gui_layout_static.addWidget(label_gui_settings_static)
@@ -656,13 +848,6 @@ class SettingsDialog(QtWidgets.QDialog):
             else:
                 self.main_gui.raise_error("Invalid Column Width", "Please enter a valid positive integer for column width.")
             self.config.set('GUI', 'two_window_mode', str(self.checkbox_two_window_mode.isChecked()))
-            self.config.set('GUI', 'dark_mode', str(self.checkbox_dark_mode.isChecked()))
-            if self.checkbox_dark_mode.isChecked():
-                enableDarkMode(QtWidgets.QApplication.instance())
-            else:
-                QtWidgets.QApplication.instance().setPalette(
-                    QtWidgets.QApplication.instance().style().standardPalette())
-
             self.config.set('GUI', 'resolution_width', str(self.line_edit_resolution_width.text()))
             self.config.set('GUI', 'resolution_height', str(self.line_edit_resolution_height.text()))
 
@@ -679,11 +864,6 @@ class SettingsDialog(QtWidgets.QDialog):
         except ValueError as e:
             QtWidgets.QMessageBox.warning(self, "Saving settings failed: \n ", str(e))
 
-    def onDarkModeToggle(self, checked):
-        if checked:
-            toggleDarkMode(self.main_gui,True)  # Enable dark mode
-        else:
-            toggleDarkMode(self.main_gui,False)  # Disable dark mode
     def apply_to_main(self):
         self.main_gui.column_width = int(self.line_edit_column_width.text())
         # apply changes to the main GUI
@@ -696,83 +876,5 @@ class SettingsDialog(QtWidgets.QDialog):
         for column in range(self.main_gui.res_tab.columnCount()):
             self.main_gui.res_tab.setColumnWidth(column, self.main_gui.column_width)
 
-def enableDarkMode(app):
-    from PyQt5.QtGui import QPalette, QColor
-    from PyQt5.QtCore import Qt
 
-    dark_palette = QPalette()
-    dark_palette.setColor(QPalette.Window, QColor(45, 45, 45))
-    dark_palette.setColor(QPalette.WindowText, Qt.white)
-    dark_palette.setColor(QPalette.Base, QColor(30, 30, 30))
-    dark_palette.setColor(QPalette.AlternateBase, QColor(45, 45, 45))
-    dark_palette.setColor(QPalette.ToolTipBase, Qt.white)
-    dark_palette.setColor(QPalette.ToolTipText, Qt.white)
-    dark_palette.setColor(QPalette.Text, Qt.white)
-    dark_palette.setColor(QPalette.Button, QColor(45, 45, 45))
-    dark_palette.setColor(QPalette.ButtonText, Qt.white)
-    dark_palette.setColor(QPalette.BrightText, Qt.red)
-    dark_palette.setColor(QPalette.Link, QColor(42, 130, 218))
-    dark_palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
-    dark_palette.setColor(QPalette.HighlightedText, Qt.black)
-    app.setPalette(dark_palette)
-
-
-def updateLabelColors(self):
-    is_dark_mode = self.isDarkModeEnabled
-    label_color = 'white' if is_dark_mode else 'black'
-
-    for widget in self.findChildren(QtWidgets.QWidget):
-        if isinstance(widget, QtWidgets.QLabel):
-            widget.setStyleSheet(f"color: {label_color};font-weight: bold")
-        # If you want, you can also handle other widgets here
-        # elif isinstance(widget, QtWidgets.QLineEdit):
-        #     widget.setStyleSheet(f"color: {label_color};")
-
-
-def toggleDarkMode(self, enable: bool):
-    app = QtWidgets.QApplication.instance()
-
-    if enable:
-        enableDarkMode(app)  # Apply dark mode palette
-        self.isDarkModeEnabled = True
-    else:
-        app.setPalette(app.style().standardPalette())  # Revert to default palette
-        self.isDarkModeEnabled = False
-
-    # Update the canvas and plot to reflect the new theme
-    print(self.isDarkModeEnabled)
-    if hasattr(self, 'canvas') and self.canvas is not None:
-        self.canvas.deleteLater()
-    if hasattr(self, 'toolbar') and self.toolbar is not None:
-        self.toolbar.deleteLater()
-    self.figure, self.ar, self.ax, self.canvas, self.toolbar = setupCanvas(self, is_dark_mode=self.isDarkModeEnabled)
-
-    # --- First screen bottom layout --- (Re-create the layout with the new canvas)
-    bottomrow_layout = QtWidgets.QHBoxLayout()
-
-    # Left layout (including toolbar and canvas)
-    layout_bottom_left = createBottomLeftLayout(self)
-    bottomrow_layout.addLayout(layout_bottom_left, 4)
-
-    # Middle layout (includes fit tables, parameters, etc.)
-    layout_bottom_mid, list_col = createMiddleLayout(self)
-    bottomrow_layout.addLayout(layout_bottom_mid, 3)
-
-    # Right layout (for additional content)
-    layout_bottom_right = createBottomRightLayout(self, list_col)
-    bottomrow_layout.addLayout(layout_bottom_right, 2)
-
-    # Add the newly created layout to the main outer layout
-    outer_layout = self.findChild(QtWidgets.QVBoxLayout)  # Or get reference to the main layout
-    if outer_layout:
-        # Remove the old bottom row layout (if necessary)
-        for i in range(outer_layout.count()):
-            item = outer_layout.itemAt(i)
-            if item and item.layout() == bottomrow_layout:
-                outer_layout.removeItem(item)
-
-        # Add the new bottom row layout to the outer layout
-        outer_layout.addLayout(bottomrow_layout, 6)
-
-    updateLabelColors(self)  # Update label colors and other UI elements
 

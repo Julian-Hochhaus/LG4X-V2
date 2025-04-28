@@ -128,12 +128,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.version = 'LG4X: LMFit GUI for XPS curve fitting v{}'.format(__version__)
         self.floating = '.3f'
         self.data_arr={}
+        self.current_theme = 'dark'
         self.initUI()
     def initUI(self):
         logging.info("Application started.")
         logging.info(f"Version: {__version__}")
-        dark_mode_enabled = config.getboolean('GUI', 'dark_mode', fallback=False)
-        toggleDarkMode(self,dark_mode_enabled)
         if self.two_window_mode:
             self.initTwoWindowUI()
         else:
@@ -142,7 +141,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
     def initTwoWindowUI(self):
         # --- Setup main window ---
         setupMainWindow(self)
-
+        initializeData(self)
 
         # --- Setup central widget and layout ---
         outer_layout = QtWidgets.QVBoxLayout()
@@ -153,8 +152,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         # --- Home directory and canvas ---
         self.filePath = QtCore.QDir.homePath()
-        self.figure, self.ar, self.ax, self.canvas, self.toolbar = setupCanvas(self,
-                                                                               is_dark_mode=self.isDarkModeEnabled)
+        self.figure, self.ar, self.ax, self.canvas, self.toolbar = setupCanvas(self)
 
         # --- Top row layout ---
         toprow_layout = createTopRowLayout(self, dictBG)
@@ -199,8 +197,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         # --- Home directory and canvas ---
         self.filePath = QtCore.QDir.homePath()
-        self.figure, self.ar, self.ax, self.canvas, self.toolbar = setupCanvas(self,
-                                                                               is_dark_mode=self.isDarkModeEnabled)
+        self.figure, self.ar, self.ax, self.canvas, self.toolbar = setupCanvas(self)
 
         # --- Top row layout ---
         toprow_layout = createTopRowLayout(self, dictBG)
@@ -1620,54 +1617,72 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.ar.cla()
             self.ax.cla()
             self.canvas.draw()
+
     def plot(self):
+        if not self.comboBox_file.currentText():  # If nothing selected
+            self.ax.cla()
+            self.ax.set_xlabel('Energy (eV)', fontsize=11)
+            self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
+            self.ax.grid(True)
+            self.canvas.draw()
+            self.repaint()
+            return
+
         plottitle = self.comboBox_file.currentText().split('/')[-1]
-        fileName=self.comboBox_file.currentText()
-        filePath = self.data_arr[str(self.comboBox_file.currentText())].filepath
-        f = open(filePath, 'r')
-        header_line = str(f.readline())
+        fileName = self.comboBox_file.currentText()
+
+        if fileName not in self.data_arr:
+            self.ax.cla()
+            self.ax.set_xlabel('Energy (eV)', fontsize=11)
+            self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
+            self.ax.grid(True)
+            self.canvas.draw()
+            self.repaint()
+            return
+
+        filePath = self.data_arr[fileName].filepath
+        try:
+            with open(filePath, 'r') as f:
+                header_line = str(f.readline())
+        except Exception as e:
+            return self.raise_error(window_title="Error: could not open file.",
+                                    error_message='Could not open the selected file.')
+
         if 'rows_lightened' in header_line:
             self.rows_lightened = int(header_line.split('=')[1])
         else:
             self.rows_lightened = 1
 
-        #get rid of self.df before here
-        self.df=self.data_arr[fileName].df
+        self.df = self.data_arr[fileName].df
 
         try:
             x0 = self.df.iloc[:, 0].to_numpy()
-        except Exception as e:
-            return self.raise_error(window_title="Error: could not load .csv file.",
-                                        error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
-        try:
             y0 = self.df.iloc[:, 1].to_numpy()
         except Exception as e:
             return self.raise_error(window_title="Error: could not load .csv file.",
-                                        error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
-        #strpe = (str(strpe).split())
+                                    error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
 
-        pe=self.data_arr[fileName].pe
+        pe = self.data_arr[fileName].pe
         if pe is not None:
             print('Current Pass energy is PE= ', pe, 'eV')
-        self.ar.cla()
+
         self.ax.cla()
+
         try:
             self.ax.plot(x0, y0, linestyle='-', color="b", label="raw")
-        except:
+        except Exception as e:
             return self.raise_error(window_title="Error: could not plot data.",
                                     error_message='Plotting data failed. The following traceback may help to solve the issue:')
+
         if x0[0] > x0[-1]:
             self.ax.set_xlabel('Binding energy (eV)', fontsize=11)
         else:
             self.ax.set_xlabel('Energy (eV)', fontsize=11)
 
-        plt.xlim(x0[0], x0[-1])
         self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
         self.ax.grid(True)
         self.ax.legend(loc=0)
         self.canvas.draw()
-
-        # macOS's compatibility issue on pyqt5, add below to update window
         self.repaint()
 
     def plot_pt(self):
@@ -3277,7 +3292,5 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
-    if config.getboolean('GUI', 'dark_mode', fallback=False):
-        enableDarkMode(app)
     w = PrettyWidget()
     sys.exit(app.exec_())
