@@ -91,30 +91,55 @@ def createMenuBar(parent):
     # Background Menu
     bgMenu = menubar.addMenu('&Choose BG')
 
-    # Define actions for background menu
-    bg_actions = [
-        ('&Active &Shirley BG', None, parent.clickOnBtnBG, True),
-        ('&Static &Shirley BG', None, parent.clickOnBtnBG, True),
-        ('&Active &Tougaard BG', None, parent.clickOnBtnBG, True),
-        ('&Static &Tougaard BG', None, parent.clickOnBtnBG, True),
-        ('&Polynomial BG', 'Ctrl+Alt+P', parent.clickOnBtnBG, True),
-        ('&Slope BG', 'Ctrl+Alt+S', parent.clickOnBtnBG, True),
-        ('&Arctan BG', None, parent.clickOnBtnBG, True),
-        ('&Erf BG', None, parent.clickOnBtnBG, True),
-        ('&VBM/Cutoff BG', None, parent.clickOnBtnBG, True)
-    ]
+    parent.btn_bg_shirley_act = QtWidgets.QAction('&Active &Shirley BG', parent)
+    parent.btn_bg_shirley_act.setCheckable(True)
+    parent.btn_bg_shirley_act.triggered.connect(parent.clickOnBtnBG)
+    bgMenu.addAction(parent.btn_bg_shirley_act)
 
-    # Add actions to background menu
-    for name, shortcut, func, checkable in bg_actions:
-        action = QtWidgets.QAction(name, parent)
-        if shortcut:
-            action.setShortcut(shortcut)
-        action.setCheckable(checkable)
-        action.triggered.connect(func)
-        bgMenu.addAction(action)
+    parent.btn_bg_shirley_static = QtWidgets.QAction('&Static &Shirley BG', parent)
+    parent.btn_bg_shirley_static.setCheckable(True)
+    parent.btn_bg_shirley_static.triggered.connect(parent.clickOnBtnBG)
+    bgMenu.addAction(parent.btn_bg_shirley_static)
+
+    parent.btn_bg_tougaard_act = QtWidgets.QAction('&Active &Tougaard BG', parent)
+    parent.btn_bg_tougaard_act.setCheckable(True)
+    parent.btn_bg_tougaard_act.triggered.connect(parent.clickOnBtnBG)
+    bgMenu.addAction(parent.btn_bg_tougaard_act)
+
+    parent.btn_bg_tougaard_static = QtWidgets.QAction('&Static &Tougaard BG', parent)
+    parent.btn_bg_tougaard_static.setCheckable(True)
+    parent.btn_bg_tougaard_static.triggered.connect(parent.clickOnBtnBG)
+    bgMenu.addAction(parent.btn_bg_tougaard_static)
+
+    parent.btn_bg_polynomial = QtWidgets.QAction('&Polynomial BG', parent)
+    parent.btn_bg_polynomial.setCheckable(True)
+    parent.btn_bg_polynomial.setShortcut('Ctrl+Alt+P')
+    parent.btn_bg_polynomial.triggered.connect(parent.clickOnBtnBG)
+    bgMenu.addAction(parent.btn_bg_polynomial)
+
+    parent.btn_bg_slope = QtWidgets.QAction('&Slope BG', parent)
+    parent.btn_bg_slope.setCheckable(True)
+    parent.btn_bg_slope.setShortcut('Ctrl+Alt+S')
+    parent.btn_bg_slope.triggered.connect(parent.clickOnBtnBG)
+    bgMenu.addAction(parent.btn_bg_slope)
+
+    parent.btn_bg_arctan = QtWidgets.QAction('&Arctan BG', parent)
+    parent.btn_bg_arctan.setCheckable(True)
+    parent.btn_bg_arctan.triggered.connect(parent.clickOnBtnBG)
+    bgMenu.addAction(parent.btn_bg_arctan)
+
+    parent.btn_bg_erf = QtWidgets.QAction('&Erf BG', parent)
+    parent.btn_bg_erf.setCheckable(True)
+    parent.btn_bg_erf.triggered.connect(parent.clickOnBtnBG)
+    bgMenu.addAction(parent.btn_bg_erf)
+
+    parent.btn_bg_vbm = QtWidgets.QAction('&VBM/Cutoff BG', parent)
+    parent.btn_bg_vbm.setCheckable(True)
+    parent.btn_bg_vbm.triggered.connect(parent.clickOnBtnBG)
+    bgMenu.addAction(parent.btn_bg_vbm)
 
     # Tougaard Cross Section Action
-    btn_tougaard_cross_section = QtWidgets.QAction('Tougaard &Cross Section ', parent)
+    btn_tougaard_cross_section = QtWidgets.QAction('Tougaard &Cross Section', parent)
     btn_tougaard_cross_section.triggered.connect(parent.clicked_cross_section)
 
     bgMenu.addSeparator()

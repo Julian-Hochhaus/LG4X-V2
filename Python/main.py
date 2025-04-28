@@ -318,6 +318,17 @@ class PrettyWidget(QtWidgets.QMainWindow):
             webbrowser.open(url)
 
     def setButtonState(self, indices):
+        # Clear all button states
+        self.btn_bg_shirley_static.setChecked(False)
+        self.btn_bg_shirley_act.setChecked(False)
+        self.btn_bg_tougaard_static.setChecked(False)
+        self.btn_bg_tougaard_act.setChecked(False)
+        self.btn_bg_polynomial.setChecked(False)
+        self.btn_bg_arctan.setChecked(False)
+        self.btn_bg_erf.setChecked(False)
+        self.btn_bg_vbm.setChecked(False)
+        self.btn_bg_slope.setChecked(False)
+
         for i in indices:
             if i == 0:
                 self.btn_bg_shirley_static.setChecked(True)
@@ -1394,8 +1405,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
             print(f'The file "{cfilePath}" has already been loaded. Skipping')
             QtWidgets.QMessageBox.information(self, "Filename already used", f'The file "{cfilePath}" has already been loaded. Skipping')
             return  # Skip further processing
-        df = pd.read_csv(cfilePath, comment='#', usecols=[0, 1])
-        num_columns = len(df.columns)
+        if '.txt' in cfilePath:
+            df = pd.read_csv(cfilePath, comment='#')
+            num_columns = len(df.columns)
+        elif '.csv' in cfilePath:
+            df = pd.read_csv(cfilePath, comment='#', usecols=[0,1])
+            num_columns = len(df.columns)
         if not num_columns == 2 and not remember_settings:
             remember_settings=False
         if not remember_settings:
