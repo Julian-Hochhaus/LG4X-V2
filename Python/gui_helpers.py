@@ -10,13 +10,22 @@ import qdarktheme
 
 def setupWindow(parent):
     """Set up basic window properties."""
-    parent.setGeometry(0, 0, parent.resolution[0], parent.resolution[1])
-    parent.showNormal()
-    parent.center()
+    screen_index = config.getint('GUI', 'main_window_screen', fallback=0)
+    screens = QtWidgets.QApplication.screens()
+
+    if screen_index >= len(screens):
+        screen_index = 0  # fallback if monitor is unplugged
+
+    screen_geometry = screens[screen_index].availableGeometry()
+    x = screen_geometry.x() + (screen_geometry.width() - parent.resolution[0]) // 2
+    y = screen_geometry.y() + (screen_geometry.height() - parent.resolution[1]) // 2
+    parent.setGeometry(x, y, parent.resolution[0], parent.resolution[1])
+
     parent.setWindowTitle(parent.version)
     parent.statusBar().showMessage(
         'Copyright (C) 2022, Julian Hochhaus, TU Dortmund University'
     )
+    parent.showNormal()  # Only show after geometry is set
 
 
 def createMenuBar(parent):
@@ -321,10 +330,28 @@ def setupSecondWindow(self, config,bottom_layout):
 
     # Add the layout passed as argument (bottom_layout)
     second_window_layout.addLayout(bottom_layout, 6)
+    screens = QtWidgets.QApplication.screens()
 
-    # Show the second window
-    self.second_window.showNormal()
+    if len(screens) > 1:
+        second_screen = screens[1]
+        screen_geometry = second_screen.availableGeometry()
 
+        # Move the second window to the second screen before showing
+        self.second_window.move(screen_geometry.topLeft())
+
+        # Maximize the window after it's moved
+        self.second_window.showMaximized()
+    else:
+        # Fallback: place and maximize on primary screen
+        screen_geometry = screens[0].availableGeometry()
+        self.second_window.move(screen_geometry.topLeft())
+        self.second_window.showMaximized()
+
+    def second_window_close_event(event):
+        # Optional: Clean up other things first if needed
+        QtWidgets.QApplication.quit()  # or sys.exit(0)
+
+    self.second_window.closeEvent = second_window_close_event
     # Ensure second window closes when the main window closes
     self.destroyed.connect(lambda: self.second_window.close())
 

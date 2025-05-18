@@ -5,6 +5,7 @@
 import ast
 import math
 import sys
+import base64
 import pickle
 import webbrowser
 import matplotlib.pyplot as plt
@@ -116,6 +117,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.pt = None
         self.floating = None
         self.version = None
+        self.settings_dialog=None
         self.parameter_history_list = []
         self.go_back_in_parameter_history = False
         self.event_stop = threading.Event()
@@ -3318,14 +3320,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.move(qr.topLeft())
 
     def closeEvent(self, event):
-
         self.interrupt_fit()
-
+        # Close settings dialog if open
         if self.settings_dialog is not None and self.settings_dialog.isVisible():
             self.settings_dialog.close()
 
         event.accept()
-
         sys.exit(0)
 
 
