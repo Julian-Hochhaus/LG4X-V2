@@ -3,7 +3,7 @@ Please use a released version for the productive use of the software (i.e. the l
 
 ## Announcement:
 
-An advanced version of open-source XPS fitting software is available from (binary)[https://sourceforge.net/projects/khervefitting/] and (github)[https://github.com/KherveFitting/KherveFitting] developed by Gwilherm Kerherve. The software uses a very similar approach to LG4X/LG4X-V2, combining an even more user-friendly GUI with the models and optimization algorithms implemented in LMFIT/lmfitxps. Please check it out!
+An advanced version of open-source XPS fitting software is available from [binary](https://sourceforge.net/projects/khervefitting/) and [github](https://github.com/KherveFitting/KherveFitting) developed by Gwilherm Kerherve. The software uses a very similar approach to LG4X/LG4X-V2, combining an even more user-friendly GUI with the models and optimization algorithms implemented in LMFIT/lmfitxps. Please check it out!
 
 ## Introduction
  LG4X-V2 is an open-source GUI for X-ray photoemission spectroscopy (XPS) curve fitting based on the python lmfit package. It streamlines the fitting process for easier validation and consistency. It is inspired by its predecessor software [LG4X](https://github.com/hidecode221b/LG4X) by [Hideki Nakajima](https://github.com/hidecode221b).
