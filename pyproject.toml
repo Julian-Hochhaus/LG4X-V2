@@ -16,6 +16,6 @@ description='A graphical user interface for X-ray photoemission spectroscopy (XP
 homepage='https://github.com/Julian-Hochhaus/lmfitxps'
 documentation='https://lmfitxps.readthedocs.io/en/latest/'
 
-tool.setuptools.packages.find]
+[tool.setuptools.packages.find]
 where = ["."]
 include = ["lg4x*", "Python*"]
