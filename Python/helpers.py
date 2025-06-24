@@ -13,6 +13,7 @@ import traceback
 import logging
 import pandas as pd
 import configparser
+import webbrowser
 config = configparser.ConfigParser()
 def autoscale_y(ax, margin=0.1):
     """Rescales the y-axis based on the visible data given the current xlim of the axis.
@@ -775,155 +776,11 @@ class PreviewDialog(QtWidgets.QDialog):
             self.column2_combobox.currentTextChanged.connect(self.update_preview)
 
 
-class SettingsDialog(QtWidgets.QDialog):
-    def __init__(self, mainGUI, config,config_file_path,parent=None):
-        super(SettingsDialog, self).__init__(parent)
-        self.setWindowTitle("Settings")
-        self.config = config
-        config.read(config_file_path)
-        self.config_file_path= config_file_path
-        self.main_gui = mainGUI
-        label_column_width = QtWidgets.QLabel("Column Width:")
-        self.line_edit_column_width = QtWidgets.QLineEdit()
-        current_column_width = config.getint('GUI', 'column_width')
-        self.line_edit_column_width.setText(str(current_column_width))
-        apply_column_button = QtWidgets.QPushButton("Apply Column width")
-        apply_column_button.clicked.connect(self.apply_to_main)
-
-        # GUI settings
-        label_gui_settings_static = QtWidgets.QLabel("The following GUI settings in blue are \n only applied after restarting the application.")
-        label_gui_settings_static.setStyleSheet('color:blue')
-        self.checkbox_two_window_mode = QtWidgets.QCheckBox("Two Window Mode")
-        self.checkbox_two_window_mode.setChecked(config.getboolean('GUI', 'two_window_mode'))
-        self.checkbox_two_window_mode.setStyleSheet('color:blue')
-
-        label_resolution_width = QtWidgets.QLabel("Resolution Width:")
-        label_resolution_width.setToolTip("Set the width of the main window.")
-        label_resolution_width.setStyleSheet('color:blue')
-        self.line_edit_resolution_width = QtWidgets.QLineEdit()
-        self.line_edit_resolution_width.setText(str(config.getint('GUI', 'resolution_width')))
-        self.line_edit_resolution_width.setStyleSheet('color:blue')
-
-        label_resolution_height = QtWidgets.QLabel("Resolution Height:")
-        label_resolution_height.setToolTip("Set the height of the main window.")
-        label_resolution_height.setStyleSheet('color:blue')
-        self.line_edit_resolution_height = QtWidgets.QLineEdit()
-        self.line_edit_resolution_height.setText(str(config.getint('GUI', 'resolution_height')))
-        self.line_edit_resolution_height.setStyleSheet('color:blue')
-
-        # File import settings
-        label_file_settings = QtWidgets.QLabel(
-            "The following settings are used for importing data files. \n These settings are applied when opening a new file.")
-        label_separator = QtWidgets.QLabel("Separator:")
-        self.line_edit_separator = QtWidgets.QLineEdit()
-        self.line_edit_separator.setText(config.get('Import', 'separator'))
-
-
-        label_columns = QtWidgets.QLabel("Columns (Format e.g.: [0,1]):")
-        self.line_edit_columns = QtWidgets.QLineEdit()
-        self.line_edit_columns.setText(str(config.get('Import', 'columns')))
-
-        label_header_row = QtWidgets.QLabel("Header Row/(if no header: Rows to skip):")
-        self.line_edit_header_row = QtWidgets.QLineEdit()
-        self.line_edit_header_row.setText(str(config.getint('Import', 'header_row')))
-
-
-        self.checkbox_has_header = QtWidgets.QCheckBox("Has Header")
-        self.checkbox_has_header.setChecked(config.getboolean('Import', 'has_header'))
-
-        self.checkbox_remember_settings = QtWidgets.QCheckBox("No Preview dialogue on file open\n (Unset to get back Preview Dialog on file open)")
-        self.checkbox_remember_settings.setChecked(config.getboolean('Import', 'remember_settings'))
-
-        save_button = QtWidgets.QPushButton("Save")
-        save_button.clicked.connect(self.save_settings)
-
-
-
-        gui_layout = QtWidgets.QVBoxLayout()
-        gui_layout_dynamic = QtWidgets.QVBoxLayout()
-        layout_column_width = QtWidgets.QHBoxLayout()
-        gui_layout_dynamic.addWidget(label_column_width)
-        layout_column_width.addWidget(self.line_edit_column_width)
-        layout_column_width.addWidget(apply_column_button)
-        gui_layout_dynamic.addLayout(layout_column_width)
-        gui_layout_static = QtWidgets.QVBoxLayout()
-        gui_layout_static.addWidget(label_gui_settings_static)
-        gui_layout_static.addWidget(self.checkbox_two_window_mode)
-        gui_layout_static.addWidget(label_resolution_width)
-        gui_layout_static.addWidget(self.line_edit_resolution_width)
-        gui_layout_static.addWidget(label_resolution_height)
-        gui_layout_static.addWidget(self.line_edit_resolution_height)
-        gui_layout.addLayout(gui_layout_dynamic)
-        gui_layout.addWidget(LayoutHline())
-
-        gui_layout.addLayout(gui_layout_static)
-
-
-        import_layout = QtWidgets.QVBoxLayout()
-        import_layout.addWidget(label_file_settings)
-        import_layout.addWidget(label_separator)
-        import_layout.addWidget(self.line_edit_separator)
-        import_layout.addWidget(label_columns)
-        import_layout.addWidget(self.line_edit_columns)
-        import_layout.addWidget(label_header_row)
-        import_layout.addWidget(self.line_edit_header_row)
-        import_layout.addWidget(self.checkbox_has_header)
-        import_layout.addWidget(self.checkbox_remember_settings)
-
-        # Create a main layout for the dialog
-        main_layout = QtWidgets.QVBoxLayout()
-        main_layout.addLayout(gui_layout)
-        main_layout.addWidget(LayoutHline())
-        main_layout.addLayout(import_layout)
-        main_layout.addWidget(LayoutHline())
-        main_layout.addWidget(save_button)
-
-        # Set the main layout for the dialog
-        self.setLayout(main_layout)
-
-
-    def save_settings(self):
-        try:
-            new_column_width = int(self.line_edit_column_width.text())
-            if new_column_width > 0:
-                self.config.set('GUI', 'column_width', str(new_column_width))
-                self.main_gui.column_width = new_column_width
-            else:
-                self.main_gui.raise_error("Invalid Column Width", "Please enter a valid positive integer for column width.")
-            self.config.set('GUI', 'two_window_mode', str(self.checkbox_two_window_mode.isChecked()))
-
-            self.config.set('GUI', 'resolution_width', str(self.line_edit_resolution_width.text()))
-            self.config.set('GUI', 'resolution_height', str(self.line_edit_resolution_height.text()))
-
-            # Save Import settings
-            self.config.set('Import', 'separator', self.line_edit_separator.text())
-            self.config.set('Import', 'columns', str(self.line_edit_columns.text()))
-            self.config.set('Import', 'header_row', str(self.line_edit_header_row.text()))
-            self.config.set('Import', 'has_header', str(self.checkbox_has_header.isChecked()))
-            self.config.set('Import', 'remember_settings', str(self.checkbox_remember_settings.isChecked()))
-
-            with open(self.config_file_path, 'w') as config_file:
-                self.config.write(config_file)
-            self.accept()
-        except ValueError as e:
-            QtWidgets.QMessageBox.warning(self, "Saving settings failed: \n ", str(e))
-
-    def apply_to_main(self):
-        self.main_gui.column_width = int(self.line_edit_column_width.text())
-        # apply changes to the main GUI
-        for column in range(0,self.main_gui.fitp1.columnCount()):
-            if column % 2 != 0:
-                self.main_gui.fitp1.setColumnWidth(column,self.main_gui.column_width)
-        for column in range(self.main_gui.fitp1_lims.columnCount()):
-            if column % 3 != 0:
-                self.main_gui.fitp1_lims.setColumnWidth(column, self.main_gui.column_width)
-        for column in range(self.main_gui.res_tab.columnCount()):
-            self.main_gui.res_tab.setColumnWidth(column, self.main_gui.column_width)
-
-
 class DataSet():
     def __init__(self, df, filepath, pe):
         self.df = df
         self.filepath = filepath
         self.filename= os.path.basename(filepath)
         self.pe = pe
+
+

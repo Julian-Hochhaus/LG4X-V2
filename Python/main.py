@@ -5,6 +5,7 @@
 import ast
 import math
 import sys
+import base64
 import pickle
 import webbrowser
 import matplotlib.pyplot as plt
@@ -23,6 +24,7 @@ import vamas_export as vpy
 from periodictable import PeriodicTable
 from scipy import integrate
 from helpers import *
+from gui_helpers import *
 import threading
 
 import traceback  # error handling
@@ -48,7 +50,7 @@ handler = RotatingFileHandler(log_file_path, maxBytes=max_log_size, backupCount=
 handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 logger.addHandler(handler)
 
 config = configparser.ConfigParser()
@@ -103,6 +105,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.stats_tab = None
         self.fitp1 = None
         self.result = None
+        self.xmin=270
+        self.xmax=300
+        self.hv = 1486.6
+        self.wf = 4
+        self.correct_energy=0
         self.canvas = None
         self.figure = None
         self.df = None
@@ -110,6 +117,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.pt = None
         self.floating = None
         self.version = None
+        self.settings_dialog=None
         self.parameter_history_list = []
         self.go_back_in_parameter_history = False
         self.event_stop = threading.Event()
@@ -122,1053 +130,121 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.version = 'LG4X: LMFit GUI for XPS curve fitting v{}'.format(__version__)
         self.floating = '.3f'
         self.data_arr={}
+        self.current_theme = 'dark'
         self.initUI()
+
     def initUI(self):
         logging.info("Application started.")
         logging.info(f"Version: {__version__}")
+
+        # --- Clear old UI ---
+        old_central = self.centralWidget()
+        if old_central:
+            old_central.deleteLater()
+
+        if hasattr(self, 'second_window') and self.second_window is not None:
+            self.second_window.close()
+            self.second_window.deleteLater()
+            self.second_window = None
+
+        if self.menuBar():
+            self.menuBar().clear()
+
         if self.two_window_mode:
             self.initTwoWindowUI()
         else:
             self.initSingleWindowUI()
 
+        # Apply resize after init
+        self.resize(self.resolution[0], self.resolution[1])
+
     def initTwoWindowUI(self):
-        self.setGeometry(0, 0, self.resolution[0], self.resolution[1])
-        self.showNormal()
-        self.center()
-        self.setWindowTitle(self.version)
-        self.statusBar().showMessage(
-            'Copyright (C) 2022, Julian Hochhaus, TU Dortmund University')
-        self.pt = PeriodicTable()
-        self.pt.setWindowTitle('Periodic Table')
-        # data template
-        self.df = []
-        self.result = pd.DataFrame()
+        # --- Setup main window ---
+        setupMainWindow(self)
+        initializeData(self)
+
+        # --- Setup central widget and layout ---
         outer_layout = QtWidgets.QVBoxLayout()
-        self.static_bg = int(0)
-        self.idx_imp = 0
-
-        self.idx_bg = [2]
-
-        self.idx_pres = 0
-        # Menu bar
-        menubar = self.menuBar()
-        ## Import sub menue
-        fileMenu = menubar.addMenu('&File')
-
-        btn_imp_csv = QtWidgets.QAction('Import &csv', self)
-        btn_imp_csv.setShortcut('Ctrl+Shift+C')
-        btn_imp_csv.triggered.connect(lambda: self.clickOnBtnImp(idx=1))
-
-        btn_imp_txt = QtWidgets.QAction('Import &txt', self)
-        btn_imp_txt.setShortcut('Ctrl+Shift+T')
-        btn_imp_txt.triggered.connect(lambda: self.clickOnBtnImp(idx=2))
-
-        btn_imp_vms = QtWidgets.QAction('Import &vms', self)
-        btn_imp_vms.setShortcut('Ctrl+Shift+V')
-        btn_imp_vms.triggered.connect(lambda: self.clickOnBtnImp(idx=3))
-
-        btn_open_dir = QtWidgets.QAction('Open directory', self)
-        btn_open_dir.setShortcut('Ctrl+Shift+D')
-        btn_open_dir.triggered.connect(lambda: self.clickOnBtnImp(idx=4))
-
-        importSubmenu = fileMenu.addMenu('&Import')
-        importSubmenu.addAction(btn_imp_csv)
-        importSubmenu.addAction(btn_imp_txt)
-        importSubmenu.addAction(btn_imp_vms)
-        importSubmenu.addAction(btn_open_dir)
-        ### Export submenu
-        btn_exp_results = QtWidgets.QAction('&Results', self)
-        btn_exp_results.setShortcut('Ctrl+Shift+R')
-        btn_exp_results.triggered.connect(self.exportResults)
-
-        btn_exp_all_results = QtWidgets.QAction('Re&sults + Data', self)
-        btn_exp_all_results.setShortcut('Ctrl+Shift+S')
-        btn_exp_all_results.triggered.connect(self.export_all)
-
-        exportSubmenu = fileMenu.addMenu('&Export')
-        exportSubmenu.addAction(btn_exp_results)
-        exportSubmenu.addAction(btn_exp_all_results)
-
-        # exit application
-        exitAction = QtWidgets.QAction('E&xit', self)
-        exitAction.setShortcut('Ctrl+Q')
-        exitAction.setStatusTip('Exit application')
-        exitAction.triggered.connect(QtWidgets.qApp.quit)
-
-        fileMenu.addAction(exitAction)
-
-        ## Preset sub menue
-        presetMenu = menubar.addMenu('&Preset')
-
-        btn_preset_new = QtWidgets.QAction('&New', self)
-        btn_preset_new.setShortcut('Ctrl+Shift+N')
-        btn_preset_new.triggered.connect(lambda: self.clickOnBtnPreset(idx=1))
-
-        btn_preset_load = QtWidgets.QAction('&Load', self)
-        btn_preset_load.setShortcut('Ctrl+Shift+L')
-        btn_preset_load.triggered.connect(lambda: self.clickOnBtnPreset(idx=2))
-
-        btn_preset_append = QtWidgets.QAction('&Append', self)
-        btn_preset_append.setShortcut('Ctrl+Shift+A')
-        btn_preset_append.triggered.connect(lambda: self.clickOnBtnPreset(idx=3))
-
-        btn_preset_save = QtWidgets.QAction('&Save', self)
-        # btn_preset_save.setShortcut('Ctrl+Shift+S')
-        btn_preset_save.triggered.connect(lambda: self.clickOnBtnPreset(idx=4))
-
-        btn_preset_c1s = QtWidgets.QAction('&C1s', self)
-        # btn_preset_c1s.setShortcut('Ctrl+Shift+')
-        btn_preset_c1s.triggered.connect(lambda: self.clickOnBtnPreset(idx=5))
-
-        btn_preset_ckedge = QtWidgets.QAction('C &K edge', self)
-        # btn_preset_ckedge.setShortcut('Ctrl+Shift+')
-        btn_preset_ckedge.triggered.connect(lambda: self.clickOnBtnPreset(idx=6))
-
-        btn_preset_ptable = QtWidgets.QAction('Periodic &Table', self)
-        # btn_preset_ptable.setShortcut('Ctrl+Shift+')
-        btn_preset_ptable.triggered.connect(lambda: self.clickOnBtnPreset(idx=7))
-
-        presetMenu.addAction(btn_preset_new)
-        presetMenu.addAction(btn_preset_load)
-        presetMenu.addAction(btn_preset_append)
-        presetMenu.addAction(btn_preset_save)
-        presetMenu.addAction(btn_preset_c1s)
-        presetMenu.addAction(btn_preset_ckedge)
-        menubar.addAction(btn_preset_ptable)
-
-        self.bgMenu = menubar.addMenu('&Choose BG')
-
-        self.btn_bg_shirley_act = QtWidgets.QAction('&Active &Shirley BG', self, checkable=True)
-        self.btn_bg_shirley_act.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_shirley_static = QtWidgets.QAction('&Static &Shirley BG', self, checkable=True)
-        self.btn_bg_shirley_static.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_tougaard_act = QtWidgets.QAction('&Active &Tougaard BG', self, checkable=True)
-        self.btn_bg_tougaard_act.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_tougaard_static = QtWidgets.QAction('&Static &Tougaard BG', self, checkable=True)
-        self.btn_bg_tougaard_static.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_polynomial = QtWidgets.QAction('&Polynomial BG', self, checkable=True)
-        self.btn_bg_polynomial.setShortcut('Ctrl+Alt+P')
-        self.btn_bg_polynomial.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_slope = QtWidgets.QAction('&Slope BG', self, checkable=True)
-        self.btn_bg_slope.setShortcut('Ctrl+Alt+S')
-        self.btn_bg_slope.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_arctan = QtWidgets.QAction('&Arctan BG', self, checkable=True)
-        self.btn_bg_arctan.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_erf = QtWidgets.QAction('&Erf BG', self, checkable=True)
-        self.btn_bg_erf.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_vbm = QtWidgets.QAction('&VBM/Cutoff BG', self, checkable=True)
-        self.btn_bg_vbm.triggered.connect(self.clickOnBtnBG)
-
-        # Add the checkable actions to the menu
-        self.bgMenu.addAction(self.btn_bg_shirley_act)
-        self.bgMenu.addAction(self.btn_bg_shirley_static)
-        self.bgMenu.addAction(self.btn_bg_tougaard_act)
-        self.bgMenu.addAction(self.btn_bg_tougaard_static)
-        self.bgMenu.addAction(self.btn_bg_polynomial)
-        self.bgMenu.addAction(self.btn_bg_slope)
-        self.bgMenu.addAction(self.btn_bg_arctan)
-        self.bgMenu.addAction(self.btn_bg_erf)
-        self.bgMenu.addAction(self.btn_bg_vbm)
-
-        btn_tougaard_cross_section = QtWidgets.QAction('Tougaard &Cross Section ', self)
-        btn_tougaard_cross_section.triggered.connect(self.clicked_cross_section)
-        self.bgMenu.addSeparator()
-        self.bgMenu.addAction(btn_tougaard_cross_section)
-        menubar.addSeparator()
-        settings_menu = menubar.addMenu('&Settings')
-        btn_settings = QtWidgets.QAction('& Open Settings', self)
-        btn_settings.triggered.connect(self.open_settings_window)
-        settings_menu.addAction(btn_settings)
-        menubar.addSeparator()
-        links_menu = menubar.addMenu('&Help/Info')
-        # manual_link= QtWidgets.QAction('&Manual', self)
-        # manual_link.triggered.connect(lambda: webbrowser.open('https://julian-hochhaus.github.io/LG4X-V2/'))
-        # links_menu.addAction(manual_link)
-        github_link = QtWidgets.QAction('See on &Github', self)
-        github_link.triggered.connect(lambda: webbrowser.open('https://github.com/Julian-Hochhaus/LG4X-V2'))
-        links_menu.addAction(github_link)
-        about_link = QtWidgets.QAction('&How to cite', self)
-        about_link.triggered.connect(self.show_citation_dialog)
-        links_menu.addAction(about_link)
-
-        # central widget layout
         widget = QtWidgets.QWidget(self)
-        self.setCentralWidget(widget)
         widget.setLayout(outer_layout)
+        self.setCentralWidget(widget)
+        createMenuBar(self)
 
-        # Home directory
+        # --- Home directory and canvas ---
         self.filePath = QtCore.QDir.homePath()
+        self.figure, self.ar, self.ax, self.canvas, self.toolbar = setupCanvas(self)
 
-        self.figure, (self.ar, self.ax) = plt.subplots(2, sharex=True,
-                                                       gridspec_kw={'height_ratios': [1, 5], 'hspace': 0})
-        self.canvas = FigureCanvas(self.figure)
-        self.toolbar = NavigationToolbar(self.canvas, self)
-        self.toolbar.setMaximumHeight(20)
-        self.toolbar.setMinimumHeight(15)
-        self.toolbar.setStyleSheet("QToolBar { border: 0px }")
+        # --- Top row layout ---
+        toprow_layout = createTopRowLayout(self, dictBG)
+        outer_layout.addLayout(toprow_layout, 1)
+        outer_layout.addWidget(LayoutHline())
 
-        # layout top row
-        toprow_layout = QtWidgets.QHBoxLayout()
+        # --- First screen bottom layout ---
         bottomrow_layout = QtWidgets.QHBoxLayout()
-        bottomrow_second_screen_layout = QtWidgets.QHBoxLayout()
-        # button layout
 
-        layout_top_left = QtWidgets.QVBoxLayout()
-        fitbuttons_layout = QtWidgets.QHBoxLayout()
-        # Fit Button
-        self.btn_fit = QtWidgets.QPushButton('Fit', self)
-        self.btn_fit.resize(self.btn_fit.sizeHint())
-        self.btn_fit.clicked.connect(self.fit)
-        fitbuttons_layout.addWidget(self.btn_fit)
-        # Evaluate Button
-        self.btn_eva = QtWidgets.QPushButton('Evaluate', self)
-        self.btn_eva.resize(self.btn_eva.sizeHint())
-        self.btn_eva.clicked.connect(self.eva)
-        fitbuttons_layout.addWidget(self.btn_eva)
-        # Undo Fit Button
-        self.btn_undoFit = QtWidgets.QPushButton('undo Fit', self)
-        self.btn_undoFit.resize(self.btn_undoFit.sizeHint())
-        self.btn_undoFit.clicked.connect(self.one_step_back_in_params_history)
-        fitbuttons_layout.addWidget(self.btn_undoFit)
-        # Interrupt fit Button
-        self.btn_interrupt = QtWidgets.QPushButton('Interrupt fitting', self)
-        self.btn_interrupt.resize(self.btn_interrupt.sizeHint())
-        self.btn_interrupt.clicked.connect(self.interrupt_fit)
-        fitbuttons_layout.addWidget(self.btn_interrupt)
-        layout_top_left.addLayout(fitbuttons_layout)
-
-        # lists of dropdown menus
-        self.list_file = ['File list', 'Clear list']
-        # DropDown file list
-        self.comboBox_file = QtWidgets.QComboBox(self)
-        self.comboBox_file.addItems(self.list_file)
-        self.comboBox_file.currentIndexChanged.connect(self.plot)
-        layout_top_left.addWidget(self.comboBox_file)
-        layout_top_left.addWidget(LayoutHline())
-        plottitle_form = QtWidgets.QFormLayout()
-        self.plottitle = QtWidgets.QLineEdit()
-        plottitle_form.addRow("Plot title: ", self.plottitle)
-        plot_settings_layout = QtWidgets.QHBoxLayout()
-        min_form = QtWidgets.QFormLayout()
-        self.xmin_item = DoubleLineEdit()
-        self.xmin = 270
-        self.xmin_item.setText(str(self.xmin))
-        self.xmin_item.textChanged.connect(self.update_com_vals)
-        min_form.addRow("x_min: ", self.xmin_item)
-        plot_settings_layout.addLayout(min_form)
-        max_form = QtWidgets.QFormLayout()
-        self.xmax_item = DoubleLineEdit()
-        self.xmax = 300
-        self.xmax_item.setText(str(self.xmax))
-        self.xmax_item.textChanged.connect(self.update_com_vals)
-        max_form.addRow("x_max: ", self.xmax_item)
-        plot_settings_layout.addLayout(max_form)
-        hv_form = QtWidgets.QFormLayout()
-        self.hv_item = DoubleLineEdit()
-        self.hv = 1486.6
-        self.hv_item.setText(str(self.hv))
-        self.hv_item.textChanged.connect(self.update_com_vals)
-        hv_form.addRow("hv: ", self.hv_item)
-        plot_settings_layout.addLayout(hv_form)
-        wf_form = QtWidgets.QFormLayout()
-        self.wf_item = DoubleLineEdit()
-        self.wf = 4
-        self.wf_item.setText(str(self.wf))
-        self.wf_item.textChanged.connect(self.update_com_vals)
-        wf_form.addRow("wf: ", self.wf_item)
-        plot_settings_layout.addLayout(wf_form)
-        correct_energy_form = QtWidgets.QFormLayout()
-        self.correct_energy_item = DoubleLineEdit()
-        self.correct_energy = 0
-        self.correct_energy_item.setText(str(self.correct_energy))
-        self.correct_energy_item.textChanged.connect(self.update_com_vals)
-        correct_energy_form.addRow("shift energy: ", self.correct_energy_item)
-        plot_settings_layout.addLayout(correct_energy_form)
-        layout_top_left.addLayout(plottitle_form)
-        layout_top_left.addLayout(plot_settings_layout)
-        layout_top_left.addStretch(1)
-
-        layout_bottom_left = QtWidgets.QVBoxLayout()
-        layout_bottom_left.addWidget(self.toolbar)
-        layout_bottom_left.addWidget(self.canvas)
-
-        toprow_layout.addLayout(layout_top_left, 4)
+        layout_bottom_left = createBottomLeftLayout(self)
         bottomrow_layout.addLayout(layout_bottom_left, 4)
 
-        layout_top_mid = QtWidgets.QVBoxLayout()
-        layout_bottom_mid = QtWidgets.QVBoxLayout()
-        # PolyBG Table
-        list_bg_col = ['bg_c0', 'bg_c1', 'bg_c2', 'bg_c3', 'bg_c4']
-        list_bg_row = ['Shirley (cv, it, k, c)', 'Tougaard(B, C, C*, D, extend)', 'Polynomial', 'Slope(k)',
-                       'arctan (amp, ctr, sig)', 'erf (amp, ctr, sig)', 'cutoff (ctr, d1-4)']
-        self.fitp0 = QtWidgets.QTableWidget(len(list_bg_row), len(list_bg_col) * 2)
-
-        self.fitp0.setItemDelegate(self.delegate)
-        list_bg_colh = ['', 'bg_c0', '', 'bg_c1', '', 'bg_c2', '', 'bg_c3', '', 'bg_c4']
-
-        self.fitp0.setHorizontalHeaderLabels(list_bg_colh)
-        self.fitp0.setVerticalHeaderLabels(list_bg_row)
-        # set BG table checkbox
-        for row in range(len(list_bg_row)):
-            for col in range(len(list_bg_colh)):
-                if (row == 2 or row > 3 or (row == 3 and col < 2) or (row == 0 and 8 > col >= 4) or (
-                        row == 1 and col == 0)) and col % 2 == 0:
-                    item = QtWidgets.QTableWidgetItem()
-                    item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
-                    item.setCheckState(QtCore.Qt.Unchecked)
-                    item.setToolTip('Check to keep fixed during fit procedure')
-                    self.fitp0.setItem(row, col, item)
-                else:
-                    item = QtWidgets.QTableWidgetItem()
-                    item.setText('')
-                    self.fitp0.setItem(row, col, item)
-        # set BG table default
-        pre_bg = [['', 1e-06, '', 10, 2, 0.0003, 2, 1000, '', ''],
-                  [2, 2866.0, '', 1643.0, '', 1.0, '', 1.0, '', 50],
-                  [2, 0, 2, 0, 2, 0, 2, 0, 2, 0],
-                  [2, 0.0, '', '', '', '', '', '', '', '', '']]
-        # self.setPreset([0], pre_bg, [])
-
-        bg_fixedLayout = QtWidgets.QHBoxLayout()
-        self.fixedBG = QtWidgets.QCheckBox('Keep background fixed')
-        self.displayChoosenBG.setText(
-            'Choosen Background: {}'.format('+ '.join([dictBG[str(idx)] for idx in self.idx_bg])))
-        self.displayChoosenBG.setStyleSheet("font-weight: bold")
-
-        bg_fixedLayout.addWidget(self.displayChoosenBG)
-        bg_fixedLayout.addWidget(self.fixedBG)
-
-        layout_top_mid.addWidget(self.fitp0)
-        layout_top_mid.addLayout(bg_fixedLayout)
-        # Add Button
-
-        componentbuttons_layout = QtWidgets.QHBoxLayout()
-        btn_add = QtWidgets.QPushButton('add component', self)
-        btn_add.resize(btn_add.sizeHint())
-        btn_add.clicked.connect(self.add_col)
-        componentbuttons_layout.addWidget(btn_add)
-
-        # Remove Button
-        btn_rem = QtWidgets.QPushButton('rem component', self)
-        btn_rem.resize(btn_rem.sizeHint())
-        btn_rem.clicked.connect(lambda: self.removeCol(idx=None, text=None))
-        componentbuttons_layout.addWidget(btn_rem)
-
-        btn_limit_set = QtWidgets.QPushButton('&Set/Show Limits', self)
-        btn_limit_set.resize(btn_limit_set.sizeHint())
-        btn_limit_set.clicked.connect(self.setLimits)
-        componentbuttons_layout.addWidget(btn_limit_set)
-
-        # indicator for limits
-        self.status_label = QtWidgets.QLabel()
-        self.status_label.setFixedSize(18, 18)
-        self.status_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.status_label.setStyleSheet("background-color: grey; border-radius: 9px")
-
-        # Create a QLabel for the status text
-        self.status_text = QtWidgets.QLabel("Limits not used")
-        self.status_text.setAlignment(QtCore.Qt.AlignLeft)
-        self.status_text.setAlignment(QtCore.Qt.AlignVCenter)
-
-        # Create a QVBoxLayout to hold the status widgets
-        status_layout = QtWidgets.QHBoxLayout()
-        status_layout.addWidget(self.status_label)
-        status_layout.addWidget(self.status_text)
-        status_layout.setAlignment(QtCore.Qt.AlignVCenter)
-        componentbuttons_layout.addLayout(status_layout)
-        componentbuttons_layout.setAlignment(QtCore.Qt.AlignVCenter)
-
-        layout_bottom_mid.addLayout(componentbuttons_layout)
-
-        # set Fit Table
-        list_col = ['C_1']
-        list_row = ['model', 'center', 'amplitude', 'lorentzian (sigma/gamma)', 'gaussian(sigma)', 'asymmetry(gamma)',
-                    'frac', 'skew', 'q', 'kt', 'soc',
-                    'height_ratio',
-                    'fct_coster_kronig', 'center_ref', 'ctr_diff', 'amp_ref', 'ratio', 'lorentzian_ref', 'ratio',
-                    'gaussian_ref', 'ratio',
-                    'asymmetry_ref', 'ratio', 'soc_ref', 'ratio', 'height_ref', 'ratio']
-
-        def comps_edit_condition(logicalIndex):
-            return logicalIndex % 2 != 0
-
-        self.fitp1 = RemoveAndEditTableWidget(len(list_row), len(list_col) * 2, comps_edit_condition)
-        self.fitp1.headerTextChanged.connect(self.updateHeader_lims)
-        self.fitp1.removeOptionChanged.connect(self.removeCol)
-        self.fitp1.setItemDelegate(self.delegate)
-        list_colh = ['', 'C_1']
-        self.fitp1.setHorizontalHeaderLabels(list_colh)
-        self.fitp1.setVerticalHeaderLabels(list_row)
-        self.list_row_limits = [
-            'center', 'amplitude', 'lorentzian (sigma/gamma)', 'gaussian(sigma)', 'asymmetry(gamma)', 'frac', 'skew',
-            'q', 'kt', 'soc',
-            'height', "fct_coster_kronig", 'ctr_diff', 'amp_ratio', 'lorentzian_ratio', 'gaussian_ratio',
-            'asymmetry_ratio', 'soc_ratio', 'height_ratio']
-        list_colh_limits = ['C_1', 'min', 'max']
-
-        def lims_edit_condition(logicalIndex):
-            return logicalIndex % 3 == 0
-
-        self.fitp1_lims = EditableHeaderTableWidget(len(self.list_row_limits), len(list_col) * 3, lims_edit_condition)
-        self.fitp1_lims.headerTextChanged.connect(self.updateHeader_comps)
-        self.fitp1_lims.setItemDelegate(self.delegate)
-
-        self.fitp1_lims.setHorizontalHeaderLabels(list_colh_limits)
-        self.fitp1_lims.setVerticalHeaderLabels(self.list_row_limits)
-        self.fitp1_lims.cellChanged.connect(self.lims_changed)
-
-        # self.list_shape = ['g', 'l', 'v', 'p']
-        self.list_shape = ['g: Gaussian', 'l: Lorentzian', 'v: Voigt', 'p: PseudoVoigt', 'e: ExponentialGaussian',
-                           's: SkewedGaussian', 'a: SkewedVoigt', 'b: BreitWigner', 'n: Lognormal', 'd: Doniach',
-                           'gdd: Convolution Gaussian/Doniach-Dublett', 'gds: Convolution Gaussian/Doniach-Singlett',
-                           'fe:Convolution FermiDirac/Gaussian']
-        self.list_component = ['', 'C_1']
-
-        # set DropDown component model
-        for col in range(len(list_col)):
-            comboBox = QtWidgets.QComboBox()
-            comboBox.addItems(self.list_shape)
-            # comboBox.setMaximumWidth(55)
-            self.fitp1.setCellWidget(0, 2 * col + 1, comboBox)
-        # set DropDown ctr_ref component selection
-        for i in range(7):
-            for col in range(len(list_col)):
-                comboBox = QtWidgets.QComboBox()
-                comboBox.addItems(self.list_component)
-                comboBox.setMaximumWidth(55)
-                self.fitp1.setCellWidget(13 + 2 * i, 2 * col + 1, comboBox)
-
-        # set checkbox and dropdown in fit table
-        for row in range(len(list_row)):
-            for col in range(len(list_colh)):
-                if col % 2 == 0:
-                    item = QtWidgets.QTableWidgetItem()
-                    item.setToolTip('Check to keep fixed during fit procedure')
-                    item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
-                    if 0 < row < 13:
-                        item.setCheckState(QtCore.Qt.Checked)
-                        self.fitp1.setItem(row, col, item)
-                    if 13 <= row:
-                        if row % 2 == 0:
-                            item.setCheckState(QtCore.Qt.Unchecked)
-                            self.fitp1.setItem(row, col, item)
-                        else:
-                            item = QtWidgets.QTableWidgetItem()
-                            item.setText('')
-                            self.fitp1.setItem(row, col, item)
-                elif col % 2 != 0 and (row == 0 or (12 <= row and row % 2 == 1)):
-                    comboBox = QtWidgets.QComboBox()
-                    if row == 0:
-                        comboBox.addItems(self.list_shape)
-                        comboBox.currentTextChanged.connect(self.activeParameters)
-                    else:
-                        comboBox.addItems(self.list_component)
-                    self.fitp1.setCellWidget(row, col, comboBox)
-                else:
-                    item = QtWidgets.QTableWidgetItem()
-                    item.setText('')
-                    self.fitp1.setItem(row, col, item)
-        # set checkbox in limits table
-        for row in range(len(self.list_row_limits)):
-            for col in range(len(list_colh_limits)):
-                item = QtWidgets.QTableWidgetItem()
-                if col % 3 == 0:
-                    item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
-                    item.setCheckState(QtCore.Qt.Unchecked)
-                    item.setToolTip('Check to use limit during fit procedure')
-                else:
-                    item.setText("")
-                self.fitp1_lims.setItem(row, col, item)
-        # load default preset
-        # pre_pk = [[0,0],[2,0],[2,0],[2,0],[2,0],[2,0],[2,0],[2,0]]
-        pre_pk = [[0, 0], [2, 284.6], [0, 20000], [2, 0.2], [2, 0.2], [2, 0.02], [2, 0], [2, 0], [2, 0.0], [2, 0.026],
-                  [2, 1], [2, 0.7], [2, 1], [0, 0], [2, 0.1], [0, 0], [2, 0.5], [0, 0], [2, 1], [0, 0], [2, 1],
-                  [0, 0], [2, 1], [0, 0], [2, 1], [0, 0], [2, 1]]
-        self.pre = [[self.idx_bg, self.xmin, self.xmax, self.hv, self.wf, self.correct_energy], pre_bg, pre_pk,
-                    [[0, '', '']] * 19]
-        self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
-        self.fitp1.setHeaderTooltips()
-        layout_bottom_mid.addWidget(self.fitp1)
-
-        toprow_layout.addLayout(layout_top_mid, 4)
-        bottomrow_second_screen_layout.addLayout(layout_bottom_mid, 3)
-        outer_layout.addLayout(toprow_layout, 1)
-
-        outer_layout.addWidget(LayoutHline())
         outer_layout.addLayout(bottomrow_layout, 6)
-        # grid..addWidget(self.res_label, 7, 7, 1, 1)
 
+        # --- Second screen bottom layout ---
+        bottomrow_second_screen_layout = QtWidgets.QHBoxLayout()
 
-        self.second_window = QtWidgets.QMainWindow()
-        second_window_layout = QtWidgets.QVBoxLayout()
-        self.second_window.setGeometry(0, 0, self.resolution[0], self.resolution[1])
-        self.second_window.showNormal()
-        self.second_window.setWindowTitle(self.version+'-second screen-')
-        second_window_central_widget = QtWidgets.QWidget(self.second_window)
-        second_window_central_widget.setLayout(second_window_layout)
-        self.second_window.setCentralWidget(second_window_central_widget)
-        second_window_layout.addLayout(bottomrow_second_screen_layout, 6)
-        layout_top_right = QtWidgets.QVBoxLayout()
-        layout_bottom_right = QtWidgets.QVBoxLayout()
-        self.fitp1_lims.setHeaderTooltips()
-        list_res_row = ['gaussian_fwhm', 'lorentzian_fwhm_p1', 'lorentzian_fwhm_p2', 'fwhm_p1', 'fwhm_p2', 'height_p1',
-                        'height_p2', 'approx. area_p1', 'approx. area_p2', 'area_total']
+        layout_bottom_mid, list_col = createMiddleLayout(self)
+        bottomrow_second_screen_layout.addLayout(layout_bottom_mid, 3)
 
-        def res_edit_condition(logicalIndex):
-            return logicalIndex % 1 == 0
-
-        self.res_tab = EditableHeaderTableWidget(len(list_res_row), len(list_col), res_edit_condition)
-        self.res_tab.setHorizontalHeaderLabels(list_col)
-        self.res_tab.setVerticalHeaderLabels(list_res_row)
-        self.res_tab.headerTextChanged.connect(self.updateHeader_res)
-        layout_bottom_right.addWidget(self.res_tab)
-        toprow_layout.addLayout(layout_top_right, 1)
+        layout_bottom_right = createBottomRightLayout(self, list_col)
         bottomrow_second_screen_layout.addLayout(layout_bottom_right, 2)
-        list_stats_row = ['success?', 'message', 'nfev', 'nvary', 'ndata', 'nfree', 'chisqr', 'redchi', 'aic', 'bic']
-        list_stats_col = ['Fit stats']
-        self.stats_tab = QtWidgets.QTableWidget(len(list_stats_row), 1)
-        self.stats_tab.setHorizontalHeaderLabels(list_stats_col)
-        self.stats_tab.setVerticalHeaderLabels(list_stats_row)
-        layout_bottom_right.addWidget(self.stats_tab)
-        self.stats_label = QtWidgets.QLabel()
-        self.stats_label.setText("Fit statistics:")
-        self.stats_label.setStyleSheet("font-weight: bold; font-size:12pt")
-        # grid..addWidget(self.stats_label, 5, 7, 1, 1)
-        self.pars_label = QtWidgets.QLabel()
-        self.pars_label.setText("Peak parameters:")
-        self.pars_label.setStyleSheet("font-weight: bold; font-size:12pt")
-        # grid..addWidget(self.pars_label, 3, 3, 1, 1)
-        self.res_label = QtWidgets.QLabel()
-        self.res_label.setText("Fit results:")
-        self.res_label.setStyleSheet("font-weight: bold; font-size:12pt")
+
+        # --- Setup second window ---
+        setupSecondWindow(self,config,bottomrow_second_screen_layout)
+
+        # --- Final adjustments ---
         self.activeParameters()
         self.resizeAllColumns()
 
     def initSingleWindowUI(self):
-        self.setGeometry(0, 0, self.resolution[0], self.resolution[1])
-        self.showNormal()
-        self.center()
-        self.setWindowTitle(self.version)
-        self.statusBar().showMessage(
-            'Copyright (C) 2022, Julian Hochhaus, TU Dortmund University')
-        self.pt = PeriodicTable()
-        self.pt.setWindowTitle('Periodic Table')
-        # data template
-        self.df = []
-        self.result = pd.DataFrame()
+        # --- Setup main window ---
+        setupMainWindow(self)
+        initializeData(self)
+
+        # --- Setup central widget and layout ---
         outer_layout = QtWidgets.QVBoxLayout()
-        self.static_bg=int(0)
-        self.idx_imp = 0
-
-        self.idx_bg = [2]
-
-        self.idx_pres = 0
-        # Menu bar
-        menubar = self.menuBar()
-        ## Import sub menue
-        fileMenu = menubar.addMenu('&File')
-
-        btn_imp_csv = QtWidgets.QAction('Import &csv', self)
-        btn_imp_csv.setShortcut('Ctrl+Shift+X')
-        btn_imp_csv.triggered.connect(lambda: self.clickOnBtnImp(idx=1))
-
-        btn_imp_txt = QtWidgets.QAction('Import &txt', self)
-        btn_imp_txt.setShortcut('Ctrl+Shift+Y')
-        btn_imp_txt.triggered.connect(lambda: self.clickOnBtnImp(idx=2))
-
-        btn_imp_vms = QtWidgets.QAction('Import &vms', self)
-        btn_imp_vms.setShortcut('Ctrl+Shift+V')
-        btn_imp_vms.triggered.connect(lambda: self.clickOnBtnImp(idx=3))
-
-        btn_open_dir = QtWidgets.QAction('Open directory (.txt and .csv)', self)
-        btn_open_dir.setShortcut('Ctrl+Shift+D')
-        btn_open_dir.triggered.connect(lambda: self.clickOnBtnImp(idx=4))
-
-        btn_open_dir_csv = QtWidgets.QAction('Open directory (only .csv)', self)
-        btn_open_dir_csv.setShortcut('Ctrl+Shift+C')
-        btn_open_dir_csv.triggered.connect(lambda: self.clickOnBtnImp(idx=5))
-
-        btn_open_dir_txt = QtWidgets.QAction('Open directory (only .txt)', self)
-        btn_open_dir_txt.setShortcut('Ctrl+Shift+T')
-        btn_open_dir_txt.triggered.connect(lambda: self.clickOnBtnImp(idx=6))
-
-        importSubmenu = fileMenu.addMenu('&Import')
-        importSubmenu.addAction(btn_imp_csv)
-        importSubmenu.addAction(btn_imp_txt)
-        importSubmenu.addAction(btn_imp_vms)
-        importSubmenu.addAction(btn_open_dir)
-        importSubmenu.addAction(btn_open_dir_csv)
-        importSubmenu.addAction(btn_open_dir_txt)
-        ### Export submenu
-        btn_exp_results = QtWidgets.QAction('&Results', self)
-        btn_exp_results.setShortcut('Ctrl+Shift+R')
-        btn_exp_results.triggered.connect(self.exportResults)
-
-        btn_exp_all_results = QtWidgets.QAction('Re&sults + Data', self)
-        btn_exp_all_results.setShortcut('Ctrl+Shift+S')
-        btn_exp_all_results.triggered.connect(self.export_all)
-
-        exportSubmenu = fileMenu.addMenu('&Export')
-        exportSubmenu.addAction(btn_exp_results)
-        exportSubmenu.addAction(btn_exp_all_results)
-
-        # exit application
-        exitAction = QtWidgets.QAction('E&xit', self)
-        exitAction.setShortcut('Ctrl+Q')
-        exitAction.setStatusTip('Exit application')
-        exitAction.triggered.connect(QtWidgets.qApp.quit)
-
-        fileMenu.addAction(exitAction)
-
-        ## Preset sub menue
-        presetMenu = menubar.addMenu('&Preset')
-
-        btn_preset_new = QtWidgets.QAction('&New', self)
-        btn_preset_new.setShortcut('Ctrl+Shift+N')
-        btn_preset_new.triggered.connect(lambda: self.clickOnBtnPreset(idx=1))
-
-        btn_preset_load = QtWidgets.QAction('&Load', self)
-        btn_preset_load.setShortcut('Ctrl+Shift+L')
-        btn_preset_load.triggered.connect(lambda: self.clickOnBtnPreset(idx=2))
-
-        btn_preset_append = QtWidgets.QAction('&Append', self)
-        btn_preset_append.setShortcut('Ctrl+Shift+A')
-        btn_preset_append.triggered.connect(lambda: self.clickOnBtnPreset(idx=3))
-
-        btn_preset_save = QtWidgets.QAction('&Save', self)
-        # btn_preset_save.setShortcut('Ctrl+Shift+S')
-        btn_preset_save.triggered.connect(lambda: self.clickOnBtnPreset(idx=4))
-
-        btn_preset_c1s = QtWidgets.QAction('&C1s', self)
-        # btn_preset_c1s.setShortcut('Ctrl+Shift+')
-        btn_preset_c1s.triggered.connect(lambda: self.clickOnBtnPreset(idx=5))
-
-        btn_preset_ckedge = QtWidgets.QAction('C &K edge', self)
-        # btn_preset_ckedge.setShortcut('Ctrl+Shift+')
-        btn_preset_ckedge.triggered.connect(lambda: self.clickOnBtnPreset(idx=6))
-
-        btn_preset_ptable = QtWidgets.QAction('Periodic &Table', self)
-        # btn_preset_ptable.setShortcut('Ctrl+Shift+')
-        btn_preset_ptable.triggered.connect(lambda: self.clickOnBtnPreset(idx=7))
-
-        presetMenu.addAction(btn_preset_new)
-        presetMenu.addAction(btn_preset_load)
-        presetMenu.addAction(btn_preset_append)
-        presetMenu.addAction(btn_preset_save)
-        presetMenu.addAction(btn_preset_c1s)
-        presetMenu.addAction(btn_preset_ckedge)
-        menubar.addAction(btn_preset_ptable)
-
-        self.bgMenu = menubar.addMenu('&Choose BG')
-
-        self.btn_bg_shirley_act = QtWidgets.QAction('&Active &Shirley BG', self, checkable=True)
-        self.btn_bg_shirley_act.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_shirley_static = QtWidgets.QAction('&Static &Shirley BG', self, checkable=True)
-        self.btn_bg_shirley_static.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_tougaard_act = QtWidgets.QAction('&Active &Tougaard BG', self, checkable=True)
-        self.btn_bg_tougaard_act.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_tougaard_static = QtWidgets.QAction('&Static &Tougaard BG', self, checkable=True)
-        self.btn_bg_tougaard_static.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_polynomial = QtWidgets.QAction('&Polynomial BG', self, checkable=True)
-        self.btn_bg_polynomial.setShortcut('Ctrl+Alt+P')
-        self.btn_bg_polynomial.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_slope = QtWidgets.QAction('&Slope BG', self, checkable=True)
-        self.btn_bg_slope.setShortcut('Ctrl+Alt+S')
-        self.btn_bg_slope.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_arctan = QtWidgets.QAction('&Arctan BG', self, checkable=True)
-        self.btn_bg_arctan.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_erf = QtWidgets.QAction('&Erf BG', self, checkable=True)
-        self.btn_bg_erf.triggered.connect(self.clickOnBtnBG)
-
-        self.btn_bg_vbm = QtWidgets.QAction('&VBM/Cutoff BG', self, checkable=True)
-        self.btn_bg_vbm.triggered.connect(self.clickOnBtnBG)
-
-        # Add the checkable actions to the menu
-        self.bgMenu.addAction(self.btn_bg_shirley_act)
-        self.bgMenu.addAction(self.btn_bg_shirley_static)
-        self.bgMenu.addAction(self.btn_bg_tougaard_act)
-        self.bgMenu.addAction(self.btn_bg_tougaard_static)
-        self.bgMenu.addAction(self.btn_bg_polynomial)
-        self.bgMenu.addAction(self.btn_bg_slope)
-        self.bgMenu.addAction(self.btn_bg_arctan)
-        self.bgMenu.addAction(self.btn_bg_erf)
-        self.bgMenu.addAction(self.btn_bg_vbm)
-
-        btn_tougaard_cross_section = QtWidgets.QAction('Tougaard &Cross Section ', self)
-        btn_tougaard_cross_section.triggered.connect(self.clicked_cross_section)
-        self.bgMenu.addSeparator()
-        self.bgMenu.addAction(btn_tougaard_cross_section)
-        menubar.addSeparator()
-        settings_menu = menubar.addMenu('&Settings')
-        btn_settings = QtWidgets.QAction('&Settings', self)
-        btn_settings.triggered.connect(self.open_settings_window)
-        settings_menu.addAction(btn_settings)
-        menubar.addSeparator()
-        links_menu = menubar.addMenu('&Help/Info')
-        # manual_link= QtWidgets.QAction('&Manual', self)
-        # manual_link.triggered.connect(lambda: webbrowser.open('https://julian-hochhaus.github.io/LG4X-V2/'))
-        # links_menu.addAction(manual_link)
-        github_link = QtWidgets.QAction('See on &Github', self)
-        github_link.triggered.connect(lambda: webbrowser.open('https://github.com/Julian-Hochhaus/LG4X-V2'))
-        links_menu.addAction(github_link)
-        about_link = QtWidgets.QAction('&How to cite', self)
-        about_link.triggered.connect(self.show_citation_dialog)
-        links_menu.addAction(about_link)
-
-        # central widget layout
         widget = QtWidgets.QWidget(self)
-        self.setCentralWidget(widget)
         widget.setLayout(outer_layout)
+        self.setCentralWidget(widget)
+        createMenuBar(self)
 
-        # Home directory
+        # --- Home directory and canvas ---
         self.filePath = QtCore.QDir.homePath()
+        self.figure, self.ar, self.ax, self.canvas, self.toolbar = setupCanvas(self)
 
-        self.figure, (self.ar, self.ax) = plt.subplots(2, sharex=True,
-                                                       gridspec_kw={'height_ratios': [1, 5], 'hspace': 0})
-        self.canvas = FigureCanvas(self.figure)
-        self.toolbar = NavigationToolbar(self.canvas, self)
-        self.toolbar.setMaximumHeight(20)
-        self.toolbar.setMinimumHeight(15)
-        self.toolbar.setStyleSheet("QToolBar { border: 0px }")
+        # --- Top row layout ---
+        toprow_layout = createTopRowLayout(self, dictBG)
+        outer_layout.addLayout(toprow_layout, 1)
+        outer_layout.addWidget(LayoutHline())
 
-        # layout top row
-        toprow_layout = QtWidgets.QHBoxLayout()
+        # --- Bottom row layout ---
         bottomrow_layout = QtWidgets.QHBoxLayout()
-        # button layout
 
-        layout_top_left = QtWidgets.QVBoxLayout()
-        fitbuttons_layout = QtWidgets.QHBoxLayout()
-        # Fit Button
-        self.btn_fit = QtWidgets.QPushButton('Fit', self)
-        self.btn_fit.resize(self.btn_fit.sizeHint())
-        self.btn_fit.clicked.connect(self.fit)
-        fitbuttons_layout.addWidget(self.btn_fit)
-        # Evaluate Button
-        self.btn_eva = QtWidgets.QPushButton('Evaluate', self)
-        self.btn_eva.resize(self.btn_eva.sizeHint())
-        self.btn_eva.clicked.connect(self.eva)
-        fitbuttons_layout.addWidget(self.btn_eva)
-        # Undo Fit Button
-        self.btn_undoFit = QtWidgets.QPushButton('undo Fit', self)
-        self.btn_undoFit.resize(self.btn_undoFit.sizeHint())
-        self.btn_undoFit.clicked.connect(self.one_step_back_in_params_history)
-        fitbuttons_layout.addWidget(self.btn_undoFit)
-        # Interrupt fit Button
-        self.btn_interrupt = QtWidgets.QPushButton('Interrupt fitting', self)
-        self.btn_interrupt.resize(self.btn_interrupt.sizeHint())
-        self.btn_interrupt.clicked.connect(self.interrupt_fit)
-        fitbuttons_layout.addWidget(self.btn_interrupt)
-        layout_top_left.addLayout(fitbuttons_layout)
-
-        # lists of dropdown menus
-        self.list_file = ['File list', 'Clear list']
-        # DropDown file list
-        self.comboBox_file = QtWidgets.QComboBox(self)
-        self.comboBox_file.addItems(self.list_file)
-        self.comboBox_file.currentIndexChanged.connect(self.value_change_filelist)
-        layout_top_left.addWidget(self.comboBox_file)
-        layout_top_left.addWidget(LayoutHline())
-        plottitle_form = QtWidgets.QFormLayout()
-        self.plottitle = QtWidgets.QLineEdit()
-        plottitle_form.addRow("Plot title: ", self.plottitle)
-        plot_settings_layout = QtWidgets.QHBoxLayout()
-        min_form = QtWidgets.QFormLayout()
-        self.xmin_item = DoubleLineEdit()
-        self.xmin = 270
-        self.xmin_item.setText(str(self.xmin))
-        self.xmin_item.textChanged.connect(self.update_com_vals)
-        min_form.addRow("x_min: ", self.xmin_item)
-        plot_settings_layout.addLayout(min_form)
-        max_form = QtWidgets.QFormLayout()
-        self.xmax_item = DoubleLineEdit()
-        self.xmax = 300
-        self.xmax_item.setText(str(self.xmax))
-        self.xmax_item.textChanged.connect(self.update_com_vals)
-        max_form.addRow("x_max: ", self.xmax_item)
-        plot_settings_layout.addLayout(max_form)
-        hv_form = QtWidgets.QFormLayout()
-        self.hv_item = DoubleLineEdit()
-        self.hv = 1486.6
-        self.hv_item.setText(str(self.hv))
-        self.hv_item.textChanged.connect(self.update_com_vals)
-        hv_form.addRow("hv: ", self.hv_item)
-        plot_settings_layout.addLayout(hv_form)
-        wf_form = QtWidgets.QFormLayout()
-        self.wf_item = DoubleLineEdit()
-        self.wf = 4
-        self.wf_item.setText(str(self.wf))
-        self.wf_item.textChanged.connect(self.update_com_vals)
-        wf_form.addRow("wf: ", self.wf_item)
-        plot_settings_layout.addLayout(wf_form)
-        correct_energy_form = QtWidgets.QFormLayout()
-        self.correct_energy_item = DoubleLineEdit()
-        self.correct_energy = 0
-        self.correct_energy_item.setText(str(self.correct_energy))
-        self.correct_energy_item.textChanged.connect(self.update_com_vals)
-        correct_energy_form.addRow("shift energy: ", self.correct_energy_item)
-        plot_settings_layout.addLayout(correct_energy_form)
-        layout_top_left.addLayout(plottitle_form)
-        layout_top_left.addLayout(plot_settings_layout)
-        layout_top_left.addStretch(1)
-
-        layout_bottom_left = QtWidgets.QVBoxLayout()
-        layout_bottom_left.addWidget(self.toolbar)
-        layout_bottom_left.addWidget(self.canvas)
-
-        toprow_layout.addLayout(layout_top_left, 4)
+        layout_bottom_left = createBottomLeftLayout(self)
         bottomrow_layout.addLayout(layout_bottom_left, 4)
 
-        layout_top_mid = QtWidgets.QVBoxLayout()
-        layout_bottom_mid = QtWidgets.QVBoxLayout()
-        # PolyBG Table
-        list_bg_col = ['bg_c0', 'bg_c1', 'bg_c2', 'bg_c3', 'bg_c4']
-        list_bg_row = ['Shirley (cv, it, k, c)', 'Tougaard(B, C, C*, D, extend)', 'Polynomial', 'Slope(k)',
-                       'arctan (amp, ctr, sig)', 'erf (amp, ctr, sig)', 'cutoff (ctr, d1-4)']
-        self.fitp0 = QtWidgets.QTableWidget(len(list_bg_row), len(list_bg_col) * 2)
-
-        self.fitp0.setItemDelegate(self.delegate)
-        list_bg_colh = ['', 'bg_c0', '', 'bg_c1', '', 'bg_c2', '', 'bg_c3', '', 'bg_c4']
-
-        self.fitp0.setHorizontalHeaderLabels(list_bg_colh)
-        self.fitp0.setVerticalHeaderLabels(list_bg_row)
-        # set BG table checkbox
-        for row in range(len(list_bg_row)):
-            for col in range(len(list_bg_colh)):
-                if (row == 2 or row > 3 or (row == 3 and col < 2) or (row == 0 and 8 > col >= 4) or (
-                        row == 1 and col == 0)) and col % 2 == 0:
-                    item = QtWidgets.QTableWidgetItem()
-                    item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
-                    item.setCheckState(QtCore.Qt.Unchecked)
-                    item.setToolTip('Check to keep fixed during fit procedure')
-                    self.fitp0.setItem(row, col, item)
-                else:
-                    item = QtWidgets.QTableWidgetItem()
-                    item.setText('')
-                    self.fitp0.setItem(row, col, item)
-        # set BG table default
-        pre_bg = [['', 1e-06, '', 10, 2, 0.0003, 2, 1000, '', ''],
-                  [2, 2866.0, '', 1643.0, '', 1.0, '', 1.0, '', 50],
-                  [2, 0, 2, 0, 2, 0, 2, 0, 2, 0],
-                  [2, 0.0, '', '', '', '', '', '', '', '', '']]
-        # self.setPreset([0], pre_bg, [])
-
-        bg_fixedLayout = QtWidgets.QHBoxLayout()
-        self.fixedBG = QtWidgets.QCheckBox('Keep background fixed')
-        self.displayChoosenBG.setText(
-            'Choosen Background: {}'.format('+ '.join([dictBG[str(idx)] for idx in self.idx_bg])))
-        self.displayChoosenBG.setStyleSheet("font-weight: bold")
-
-        bg_fixedLayout.addWidget(self.displayChoosenBG)
-        bg_fixedLayout.addWidget(self.fixedBG)
-
-        layout_top_mid.addWidget(self.fitp0)
-        layout_top_mid.addLayout(bg_fixedLayout)
-        # Add Button
-
-        componentbuttons_layout = QtWidgets.QHBoxLayout()
-        btn_add = QtWidgets.QPushButton('add component', self)
-        btn_add.resize(btn_add.sizeHint())
-        btn_add.clicked.connect(self.add_col)
-        componentbuttons_layout.addWidget(btn_add)
-
-        # Remove Button
-        btn_rem = QtWidgets.QPushButton('rem component', self)
-        btn_rem.resize(btn_rem.sizeHint())
-        btn_rem.clicked.connect(lambda: self.removeCol(idx=None,text=None ))
-        componentbuttons_layout.addWidget(btn_rem)
-
-        btn_limit_set = QtWidgets.QPushButton('&Set/Show Limits', self)
-        btn_limit_set.resize(btn_limit_set.sizeHint())
-        btn_limit_set.clicked.connect(self.setLimits)
-        componentbuttons_layout.addWidget(btn_limit_set)
-
-        # indicator for limits
-        self.status_label = QtWidgets.QLabel()
-        self.status_label.setFixedSize(18, 18)
-        self.status_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.status_label.setStyleSheet("background-color: grey; border-radius: 9px")
-
-        # Create a QLabel for the status text
-        self.status_text = QtWidgets.QLabel("Limits not used")
-        self.status_text.setAlignment(QtCore.Qt.AlignLeft)
-        self.status_text.setAlignment(QtCore.Qt.AlignVCenter)
-
-        # Create a QVBoxLayout to hold the status widgets
-        status_layout = QtWidgets.QHBoxLayout()
-        status_layout.addWidget(self.status_label)
-        status_layout.addWidget(self.status_text)
-        status_layout.setAlignment(QtCore.Qt.AlignVCenter)
-        componentbuttons_layout.addLayout(status_layout)
-        componentbuttons_layout.setAlignment(QtCore.Qt.AlignVCenter)
-
-        layout_bottom_mid.addLayout(componentbuttons_layout)
-
-        # set Fit Table
-        list_col = ['C_1']
-        list_row = ['model', 'center', 'amplitude', 'lorentzian (sigma/gamma)', 'gaussian(sigma)', 'asymmetry(gamma)',
-                    'frac', 'skew', 'q', 'kt', 'soc',
-                    'height_ratio',
-                    'fct_coster_kronig', 'center_ref', 'ctr_diff', 'amp_ref', 'ratio', 'lorentzian_ref', 'ratio',
-                    'gaussian_ref', 'ratio',
-                    'asymmetry_ref', 'ratio', 'soc_ref', 'ratio', 'height_ref', 'ratio']
-        def comps_edit_condition(logicalIndex):
-            return logicalIndex % 2 != 0
-        self.fitp1=RemoveAndEditTableWidget(len(list_row), len(list_col) * 2, comps_edit_condition)
-        self.fitp1.headerTextChanged.connect(self.updateHeader_lims)
-        self.fitp1.removeOptionChanged.connect(self.removeCol)
-        self.fitp1.setItemDelegate(self.delegate)
-        list_colh = ['', 'C_1']
-        self.fitp1.setHorizontalHeaderLabels(list_colh)
-        self.fitp1.setVerticalHeaderLabels(list_row)
-        self.list_row_limits = [
-            'center', 'amplitude', 'lorentzian (sigma/gamma)', 'gaussian(sigma)', 'asymmetry(gamma)', 'frac', 'skew',
-            'q', 'kt', 'soc',
-            'height', "fct_coster_kronig", 'ctr_diff', 'amp_ratio', 'lorentzian_ratio', 'gaussian_ratio',
-            'asymmetry_ratio', 'soc_ratio', 'height_ratio']
-        list_colh_limits = ['C_1', 'min', 'max']
-
-        def lims_edit_condition(logicalIndex):
-            return logicalIndex % 3 == 0
-        self.fitp1_lims = EditableHeaderTableWidget(len(self.list_row_limits), len(list_col) * 3, lims_edit_condition)
-        self.fitp1_lims.headerTextChanged.connect(self.updateHeader_comps)
-        self.fitp1_lims.setItemDelegate(self.delegate)
-
-        self.fitp1_lims.setHorizontalHeaderLabels(list_colh_limits)
-        self.fitp1_lims.setVerticalHeaderLabels(self.list_row_limits)
-        self.fitp1_lims.cellChanged.connect(self.lims_changed)
-
-        # self.list_shape = ['g', 'l', 'v', 'p']
-        self.list_shape = ['g: Gaussian', 'l: Lorentzian', 'v: Voigt', 'p: PseudoVoigt', 'e: ExponentialGaussian',
-                           's: SkewedGaussian', 'a: SkewedVoigt', 'b: BreitWigner', 'n: Lognormal', 'd: Doniach',
-                           'gdd: Convolution Gaussian/Doniach-Dublett', 'gds: Convolution Gaussian/Doniach-Singlett',
-                           'fe:Convolution FermiDirac/Gaussian']
-        self.list_component = ['', 'C_1']
-
-        # set DropDown component model
-        for col in range(len(list_col)):
-            comboBox = QtWidgets.QComboBox()
-            comboBox.addItems(self.list_shape)
-            # comboBox.setMaximumWidth(55)
-            self.fitp1.setCellWidget(0, 2 * col + 1, comboBox)
-        # set DropDown ctr_ref component selection
-        for i in range(7):
-            for col in range(len(list_col)):
-                comboBox = QtWidgets.QComboBox()
-                comboBox.addItems(self.list_component)
-                comboBox.setMaximumWidth(55)
-                self.fitp1.setCellWidget(13 + 2 * i, 2 * col + 1, comboBox)
-
-        # set checkbox and dropdown in fit table
-        for row in range(len(list_row)):
-            for col in range(len(list_colh)):
-                if col % 2 == 0:
-                    item = QtWidgets.QTableWidgetItem()
-                    item.setToolTip('Check to keep fixed during fit procedure')
-                    item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
-                    if 0 < row < 13:
-                        item.setCheckState(QtCore.Qt.Checked)
-                        self.fitp1.setItem(row, col, item)
-                    if 13 <= row:
-                        if row % 2 == 0:
-                            item.setCheckState(QtCore.Qt.Unchecked)
-                            self.fitp1.setItem(row, col, item)
-                        else:
-                            item = QtWidgets.QTableWidgetItem()
-                            item.setText('')
-                            self.fitp1.setItem(row, col, item)
-                elif col % 2 != 0 and (row == 0 or (12 <= row and row % 2 == 1)):
-                    comboBox = QtWidgets.QComboBox()
-                    if row == 0:
-                        comboBox.addItems(self.list_shape)
-                        comboBox.currentTextChanged.connect(self.activeParameters)
-                    else:
-                        comboBox.addItems(self.list_component)
-                    self.fitp1.setCellWidget(row, col, comboBox)
-                else:
-                    item = QtWidgets.QTableWidgetItem()
-                    item.setText('')
-                    self.fitp1.setItem(row, col, item)
-        # set checkbox in limits table
-        for row in range(len(self.list_row_limits)):
-            for col in range(len(list_colh_limits)):
-                item = QtWidgets.QTableWidgetItem()
-                if col % 3 == 0:
-                    item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
-                    item.setCheckState(QtCore.Qt.Unchecked)
-                    item.setToolTip('Check to use limit during fit procedure')
-                else:
-                    item.setText("")
-                self.fitp1_lims.setItem(row, col, item)
-        # load default preset
-        # pre_pk = [[0,0],[2,0],[2,0],[2,0],[2,0],[2,0],[2,0],[2,0]]
-        pre_pk = [[0, 0], [2, 284.6], [0, 20000], [2, 0.2], [2, 0.2], [2, 0.02], [2, 0], [2, 0], [2, 0.0], [2, 0.026],
-                  [2, 1], [2, 0.7], [2, 1], [0, 0], [2, 0.1], [0, 0], [2, 0.5], [0, 0], [2, 1], [0, 0], [2, 1],
-                  [0, 0], [2, 1], [0, 0], [2, 1], [0, 0], [2, 1]]
-        self.pre = [[self.idx_bg, self.xmin, self.xmax, self.hv, self.wf, self.correct_energy], pre_bg, pre_pk, [[0, '', '']] * 19]
-        self.setPreset(self.pre[0], self.pre[1], self.pre[2], self.pre[3])
-        self.fitp1.setHeaderTooltips()
-        layout_bottom_mid.addWidget(self.fitp1)
-
-        toprow_layout.addLayout(layout_top_mid, 4)
+        layout_bottom_mid, list_col = createMiddleLayout(self)
         bottomrow_layout.addLayout(layout_bottom_mid, 3)
-        outer_layout.addLayout(toprow_layout, 1)
 
-        outer_layout.addWidget(LayoutHline())
-        outer_layout.addLayout(bottomrow_layout, 6)
-        layout_top_right = QtWidgets.QVBoxLayout()
-        layout_bottom_right = QtWidgets.QVBoxLayout()
-        self.fitp1_lims.setHeaderTooltips()
-        list_res_row = ['gaussian_fwhm', 'lorentzian_fwhm_p1', 'lorentzian_fwhm_p2', 'fwhm_p1', 'fwhm_p2', 'height_p1',
-                        'height_p2', 'approx. area_p1', 'approx. area_p2', 'area_total']
-
-        def res_edit_condition(logicalIndex):
-            return logicalIndex % 1 == 0
-        self.res_tab = EditableHeaderTableWidget(len(list_res_row), len(list_col) , res_edit_condition)
-        self.res_tab.setHorizontalHeaderLabels(list_col)
-        self.res_tab.setVerticalHeaderLabels(list_res_row)
-        self.res_tab.headerTextChanged.connect(self.updateHeader_res)
-        layout_bottom_right.addWidget(self.res_tab)
-        toprow_layout.addLayout(layout_top_right, 1)
+        layout_bottom_right = createBottomRightLayout(self, list_col)
         bottomrow_layout.addLayout(layout_bottom_right, 2)
-        list_stats_row = ['success?', 'message', 'nfev', 'nvary', 'ndata', 'nfree', 'chisqr', 'redchi', 'aic', 'bic']
-        list_stats_col = ['Fit stats']
-        self.stats_tab = QtWidgets.QTableWidget(len(list_stats_row), 1)
-        self.stats_tab.setHorizontalHeaderLabels(list_stats_col)
-        self.stats_tab.setVerticalHeaderLabels(list_stats_row)
-        layout_bottom_right.addWidget(self.stats_tab)
-        self.stats_label = QtWidgets.QLabel()
-        self.stats_label.setText("Fit statistics:")
-        self.stats_label.setStyleSheet("font-weight: bold; font-size:12pt")
-        # grid..addWidget(self.stats_label, 5, 7, 1, 1)
-        self.pars_label = QtWidgets.QLabel()
-        self.pars_label.setText("Peak parameters:")
-        self.pars_label.setStyleSheet("font-weight: bold; font-size:12pt")
-        # grid..addWidget(self.pars_label, 3, 3, 1, 1)
-        self.res_label = QtWidgets.QLabel()
-        self.res_label.setText("Fit results:")
-        self.res_label.setStyleSheet("font-weight: bold; font-size:12pt")
-        # grid..addWidget(self.res_label, 7, 7, 1, 1)
+
+        outer_layout.addLayout(bottomrow_layout, 6)
+
+        # --- Final adjustments ---
         self.activeParameters()
         self.resizeAllColumns()
 
     def open_settings_window(self):
         self.settings_dialog = SettingsDialog(self,config, config_file_path)
-        self.settings_dialog.exec_()
+        self.settings_dialog.show()
 
 
     def duplicateComponentNames(self, new_label):
@@ -1262,6 +338,17 @@ class PrettyWidget(QtWidgets.QMainWindow):
             webbrowser.open(url)
 
     def setButtonState(self, indices):
+        # Clear all button states
+        self.btn_bg_shirley_static.setChecked(False)
+        self.btn_bg_shirley_act.setChecked(False)
+        self.btn_bg_tougaard_static.setChecked(False)
+        self.btn_bg_tougaard_act.setChecked(False)
+        self.btn_bg_polynomial.setChecked(False)
+        self.btn_bg_arctan.setChecked(False)
+        self.btn_bg_erf.setChecked(False)
+        self.btn_bg_vbm.setChecked(False)
+        self.btn_bg_slope.setChecked(False)
+
         for i in indices:
             if i == 0:
                 self.btn_bg_shirley_static.setChecked(True)
@@ -2338,8 +1425,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
             print(f'The file "{cfilePath}" has already been loaded. Skipping')
             QtWidgets.QMessageBox.information(self, "Filename already used", f'The file "{cfilePath}" has already been loaded. Skipping')
             return  # Skip further processing
-        df = pd.read_csv(cfilePath, comment='#', usecols=[0, 1])
-        num_columns = len(df.columns)
+        if '.txt' in cfilePath:
+            df = pd.read_csv(cfilePath, comment='#')
+            num_columns = len(df.columns)
+        elif '.csv' in cfilePath:
+            df = pd.read_csv(cfilePath, comment='#', usecols=[0,1])
+            num_columns = len(df.columns)
         if not num_columns == 2 and not remember_settings:
             remember_settings=False
         if not remember_settings:
@@ -2561,54 +1652,72 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.ar.cla()
             self.ax.cla()
             self.canvas.draw()
+
     def plot(self):
+        if not self.comboBox_file.currentText():  # If nothing selected
+            self.ax.cla()
+            self.ax.set_xlabel('Energy (eV)', fontsize=11)
+            self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
+            self.ax.grid(True)
+            self.canvas.draw()
+            self.repaint()
+            return
+
         plottitle = self.comboBox_file.currentText().split('/')[-1]
-        fileName=self.comboBox_file.currentText()
-        filePath = self.data_arr[str(self.comboBox_file.currentText())].filepath
-        f = open(filePath, 'r')
-        header_line = str(f.readline())
+        fileName = self.comboBox_file.currentText()
+
+        if fileName not in self.data_arr:
+            self.ax.cla()
+            self.ax.set_xlabel('Energy (eV)', fontsize=11)
+            self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
+            self.ax.grid(True)
+            self.canvas.draw()
+            self.repaint()
+            return
+
+        filePath = self.data_arr[fileName].filepath
+        try:
+            with open(filePath, 'r') as f:
+                header_line = str(f.readline())
+        except Exception as e:
+            return self.raise_error(window_title="Error: could not open file.",
+                                    error_message='Could not open the selected file.')
+
         if 'rows_lightened' in header_line:
             self.rows_lightened = int(header_line.split('=')[1])
         else:
             self.rows_lightened = 1
 
-        #get rid of self.df before here
-        self.df=self.data_arr[fileName].df
+        self.df = self.data_arr[fileName].df
 
         try:
             x0 = self.df.iloc[:, 0].to_numpy()
-        except Exception as e:
-            return self.raise_error(window_title="Error: could not load .csv file.",
-                                        error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
-        try:
             y0 = self.df.iloc[:, 1].to_numpy()
         except Exception as e:
             return self.raise_error(window_title="Error: could not load .csv file.",
-                                        error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
-        #strpe = (str(strpe).split())
+                                    error_message='The input .csv is not in the correct format!. The following traceback may help to solve the issue:')
 
-        pe=self.data_arr[fileName].pe
+        pe = self.data_arr[fileName].pe
         if pe is not None:
             print('Current Pass energy is PE= ', pe, 'eV')
-        self.ar.cla()
+
         self.ax.cla()
+
         try:
             self.ax.plot(x0, y0, linestyle='-', color="b", label="raw")
-        except:
+        except Exception as e:
             return self.raise_error(window_title="Error: could not plot data.",
                                     error_message='Plotting data failed. The following traceback may help to solve the issue:')
+
         if x0[0] > x0[-1]:
             self.ax.set_xlabel('Binding energy (eV)', fontsize=11)
         else:
             self.ax.set_xlabel('Energy (eV)', fontsize=11)
 
-        plt.xlim(x0[0], x0[-1])
         self.ax.set_ylabel('Intensity (arb. unit)', fontsize=11)
         self.ax.grid(True)
         self.ax.legend(loc=0)
         self.canvas.draw()
-
-        # macOS's compatibility issue on pyqt5, add below to update window
         self.repaint()
 
     def plot_pt(self):
@@ -3946,10 +3055,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
             zeros_in_data=True
             print('There were 0\'s in your data. The residuals are therefore not weighted by sqrt(data)!')
         if mode == 'eva' or mode== 'sim':
-            if zeros_in_data:
-                out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)), y=y)
-            else:
-                out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=y)
+            try:
+                if zeros_in_data:
+                    out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)), y=y)
+                else:
+                    out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=y)
+            except Exception as e:
+                return self.raise_error(window_title="Error: Could not evaluate fit model.",
+                                        error_message='Evaluation of the fit model failed. Please try different parameters! The following traceback may help to solve the issue:')
+
             self.fitting_finished(out, strmode=strmode, mode=mode, x=x,y=y, zeros_in_data=zeros_in_data, raw_x=raw_x, raw_y=raw_y, pars=pars)
         else:
             try_me_out = self.history_manager(pars)
@@ -3980,24 +3094,37 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.raise_error("Error in FitThread", error_message)
         self.statusBar().showMessage("Fitting failed! NaN in data/fit-model occured!")
         self.enable_buttons_after_fit_thread()
+
     def fit_thread_started(self):
-        self.btn_fit.setEnabled(False)
-        self.btn_fit.setStyleSheet("QPushButton:disabled { background-color: rgba(200, 200, 200, 128); }");
-        self.btn_eva.setEnabled(False)
-        self.btn_eva.setStyleSheet("QPushButton:disabled { background-color: rgba(200, 200, 200, 128); }");
-        self.btn_interrupt.setEnabled(True)
-        self.btn_interrupt.setStyleSheet('')
-        self.btn_undoFit.setEnabled(False)
-        self.btn_undoFit.setStyleSheet("QPushButton:disabled { background-color: rgba(200, 200, 200, 128); }");
+        """Update button states when the fit thread starts."""
+        self.fit_buttons['btn_fit'].setEnabled(False)
+        self.fit_buttons['btn_fit'].setStyleSheet(
+            "QPushButton:disabled { background-color: rgba(200, 200, 200, 128); }")
+
+        self.fit_buttons['btn_eva'].setEnabled(False)
+        self.fit_buttons['btn_eva'].setStyleSheet(
+            "QPushButton:disabled { background-color: rgba(200, 200, 200, 128); }")
+
+        self.fit_buttons['btn_interrupt'].setEnabled(True)
+        self.fit_buttons['btn_interrupt'].setStyleSheet('')
+
+        self.fit_buttons['btn_undoFit'].setEnabled(False)
+        self.fit_buttons['btn_undoFit'].setStyleSheet(
+            "QPushButton:disabled { background-color: rgba(200, 200, 200, 128); }")
+
     def enable_buttons_after_fit_thread(self):
-        self.btn_fit.setEnabled(True)
-        self.btn_fit.setStyleSheet('')
-        self.btn_eva.setEnabled(True)
-        self.btn_eva.setStyleSheet('')
-        self.btn_interrupt.setEnabled(True)
-        self.btn_interrupt.setStyleSheet('')
-        self.btn_undoFit.setEnabled(True)
-        self.btn_undoFit.setStyleSheet('')
+        """Enable buttons after the fit thread finishes."""
+        self.fit_buttons['btn_fit'].setEnabled(True)
+        self.fit_buttons['btn_fit'].setStyleSheet('')
+
+        self.fit_buttons['btn_eva'].setEnabled(True)
+        self.fit_buttons['btn_eva'].setStyleSheet('')
+
+        self.fit_buttons['btn_interrupt'].setEnabled(True)
+        self.fit_buttons['btn_interrupt'].setStyleSheet('')
+
+        self.fit_buttons['btn_undoFit'].setEnabled(True)
+        self.fit_buttons['btn_undoFit'].setStyleSheet('')
 
     def get_attr(self,obj, attr):
         """Format an attribute of an object for printing."""
@@ -4199,6 +3326,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         self.interrupt_fit()
+        # Close settings dialog if open
+        if self.settings_dialog is not None and self.settings_dialog.isVisible():
+            self.settings_dialog.close()
+
         event.accept()
         sys.exit(0)
 
