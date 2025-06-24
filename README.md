@@ -1,9 +1,19 @@
+<p align="center">
+  <a href="https://doi.org/10.5281/zenodo.7777422"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.7777422.svg" alt="DOI"></a>
+   <a href="#"><img src="https://img.shields.io/badge/python-3.8%20|%203.9%20|%203.10%20|%203.11%20-blue?logo=python" alt="Python Versions"></a>
+  <a href="https://opensource.org/licenses/"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License: MIT"></a>
+  <a href="https://en.wikipedia.org/wiki/Free_and_open-source_software"><img src="https://img.shields.io/badge/FOSS-100%25-green.svg?style=flat" alt="FOSS: 100%"></a>
+ <img alt="Flathub Downloads" src="https://img.shields.io/flathub/downloads/io.github.julian_hochhaus.LG4X_V2">
+
+</p>
+
 ## Hint:
 Please use a released version for the productive use of the software (i.e. the latest Release) as they are tested for several different use cases and not the newest Commit, as the different branches are used to work on new and not extensively tested features. The newest commits on the master branch might as well contain bugs as the software is work in progress.
 
 ## Announcement:
 
 An advanced version of open-source XPS fitting software is available from [binary](https://sourceforge.net/projects/khervefitting/) and [github](https://github.com/KherveFitting/KherveFitting) developed by Gwilherm Kerherve. The software uses a very similar approach to LG4X/LG4X-V2, combining an even more user-friendly GUI with the models and optimization algorithms implemented in LMFIT/lmfitxps. Please check it out!
+
 
 ## Introduction
  LG4X-V2 is an open-source GUI for X-ray photoemission spectroscopy (XPS) curve fitting based on the python lmfit package. It streamlines the fitting process for easier validation and consistency. It is inspired by its predecessor software [LG4X](https://github.com/hidecode221b/LG4X) by [Hideki Nakajima](https://github.com/hidecode221b).
