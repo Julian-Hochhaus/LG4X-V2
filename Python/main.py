@@ -3055,10 +3055,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
             zeros_in_data=True
             print('There were 0\'s in your data. The residuals are therefore not weighted by sqrt(data)!')
         if mode == 'eva' or mode== 'sim':
-            if zeros_in_data:
-                out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)), y=y)
-            else:
-                out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=y)
+            try:
+                if zeros_in_data:
+                    out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(self.rows_lightened)), y=y)
+                else:
+                    out = mod.fit(y, pars, x=x, weights=1 / (np.sqrt(raw_y) * np.sqrt(self.rows_lightened)), y=y)
+            except Exception as e:
+                return self.raise_error(window_title="Error: Could not evaluate fit model.",
+                                        error_message='Evaluation of the fit model failed. Please try different parameters! The following traceback may help to solve the issue:')
+
             self.fitting_finished(out, strmode=strmode, mode=mode, x=x,y=y, zeros_in_data=zeros_in_data, raw_x=raw_x, raw_y=raw_y, pars=pars)
         else:
             try_me_out = self.history_manager(pars)
