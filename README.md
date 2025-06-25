@@ -72,6 +72,7 @@ Below is a selection of publications that have made use of LG4X-V2. If you have 
 
 -  J. A. Hochhaus et al. [Structural analysis of Sn on Au(111) at low coverages: Towards the Au2Sn surface alloy with alternating fcc and hcp domains](https://doi.org/10.1038/s41598-025-91733-2) Sci. Rep. **15**, 7953 (2025). 
 
+- T.R. Acharya et al. [Non-thermal plasma-mediated green synthesis of chitosan-functionalized gold nanoparticles for enhanced cancer immunogenicity](https://doi.org/10.1016/j.jiec.2025.06.029) , J. Ind. Eng. Chem. **36** (2025).
   
 ### License
 
