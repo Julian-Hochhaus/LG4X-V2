@@ -2007,32 +2007,34 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.pre.append(list_pre_lims)
         self.pre.append(self.list_component)
 
-    def savePresetDia(self):
+    def savePresetDia(self, savename=None):
         if self.comboBox_file.currentIndex() > 0:
             fileName = os.path.basename(str(self.comboBox_file.currentText()))
             fileName = os.path.splitext(fileName)[0] + "_pars"
         else:
-            cfilePath = self.filePath.rsplit("/", 1)[0]
             fileName = "sample_pars"
 
-        # S_File will get the directory path and extension.
-        cfilePath, _ = QtWidgets.QFileDialog.getSaveFileName(
-            self,
-            "Save Preset file",
-            self.cfilePath + os.sep + fileName + ".dat",
-            "DAT Files (*.dat)",
-        )
-        if cfilePath != "":
+        if savename is not None:
+            cfilePath = savename
+            print(cfilePath)
+        else:
+            cfilePath, _ = QtWidgets.QFileDialog.getSaveFileName(
+                self,
+                "Save Preset file",
+                self.cfilePath, fileName + ".dat",
+                "DAT Files (*.dat)",
+            )
+
+        if cfilePath:
             self.cfilePath = cfilePath
-            self.filePath = self.cfilePath.rsplit("/", 1)[0]
-            # Finally, this will Save your file to the path selected.
-            with open(self.cfilePath, "w") as file:
+            self.filePath = os.path.dirname(cfilePath)
+            with open(cfilePath, "w") as file:
                 file.write(str(self.parText))
-            file.close()
+
 
     def export_all(self):
         try:
-            self.exportResults()
+            savename=self.exportResults()
         except Exception as e:
             return self.raise_error(
                 window_title="Error: could not export the results.",
@@ -2046,7 +2048,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 error_message="Saving parameters failed. The following traceback may help to solve the issue:",
             )
         try:
-            self.savePresetDia()
+            self.savePresetDia(savename+'.dat')
         except Exception as e:
             return self.raise_error(
                 window_title="Error: could not save parameters /export data.",
@@ -2086,6 +2088,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 window_title="Error: No Results exported!",
                 error_message="There is nothing to export here, results are empty.",
             )
+            return None
         else:
             if self.comboBox_file.currentIndex() > 0:
                 # print(self.export_pars)
@@ -2106,6 +2109,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if cfilePath != "":
                 self.cfilePath = cfilePath
                 self.filePath = self.cfilePath.rsplit("/", 1)[0]
+                savename=os.path.splitext(cfilePath)[0]
+
                 if self.comboBox_file.currentIndex() == 0:
                     strmode = "simulation mode"
                 else:
@@ -2225,7 +2230,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                             + "(if not using 2D detector, value is 1 and can be ignored!)\n"
                         )
                         self.result.to_csv(f, index=False, mode="a")
-                # print(self.result)
+                return savename
 
     def clickOnBtnImp(self, idx):
         self.plottitle.setText(
