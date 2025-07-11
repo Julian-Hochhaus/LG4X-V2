@@ -330,6 +330,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 comboBox.setMaximumWidth(55)
                 if index > 0 and col < int(colPosition_fitp1 / 2):
                     comboBox.setCurrentIndex(index)
+                else:
+                    comboBox.setCurrentIndex(1) # init dropdowns for reference with C1
                 self.fitp1.setCellWidget(13 + 2 * i, 2 * col + 1, comboBox)
         if int(len(header_texts)) == int(len(self.list_component)):
             self.list_component = header_texts
