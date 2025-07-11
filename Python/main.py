@@ -63,7 +63,7 @@ if len(config_file_path) >= 256:
     )
 config.read(config_file_path)
 
-__version__ = "2.3.1"
+__version__ = "2.3.2"
 # style.use('ggplot')
 style.use("seaborn-v0_8-colorblind")
 dictBG = {
