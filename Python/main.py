@@ -1776,9 +1776,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self, "Open data file", self.filePath, "DAT Files (*.dat)"
         )
         if cfilePath != "":
-            print(cfilePath)
-            self.filePath = cfilePath.rsplit("/", 1)[0]
-            with open(cfilePath, "r") as file:
+            self.cfilePath = cfilePath
+            self.filePath = self.cfilePath.rsplit("/", 1)[0]
+            with open(self.cfilePath, "r") as file:
                 temp_pre = file.read()
             file.close()
             # print(self.pre, type(self.pre))
@@ -1825,9 +1825,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self, "Open data file", self.filePath, "DAT Files (*.dat)"
         )
         if cfilePath != "":
-            print(cfilePath)
-            self.filePath = cfilePath.rsplit("/", 1)[0]
-            with open(cfilePath, "r") as file:
+            self.cfilePath = cfilePath
+            self.filePath = self.cfilePath.rsplit("/", 1)[0]
+            with open(self.cfilePath, "r") as file:
                 temp_pre = file.read()
             file.close()
             temp_settings = self.pre[0]
@@ -2009,7 +2009,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
     def savePresetDia(self):
         if self.comboBox_file.currentIndex() > 0:
-            cfilePath = os.path.dirname(str(self.comboBox_file.currentText()))
             fileName = os.path.basename(str(self.comboBox_file.currentText()))
             fileName = os.path.splitext(fileName)[0] + "_pars"
         else:
@@ -2020,13 +2019,14 @@ class PrettyWidget(QtWidgets.QMainWindow):
         cfilePath, _ = QtWidgets.QFileDialog.getSaveFileName(
             self,
             "Save Preset file",
-            cfilePath + os.sep + fileName + ".dat",
+            self.cfilePath + os.sep + fileName + ".dat",
             "DAT Files (*.dat)",
         )
         if cfilePath != "":
-            self.filePath = cfilePath.rsplit("/", 1)[0]
+            self.cfilePath = cfilePath
+            self.filePath = self.cfilePath.rsplit("/", 1)[0]
             # Finally, this will Save your file to the path selected.
-            with open(cfilePath, "w") as file:
+            with open(self.cfilePath, "w") as file:
                 file.write(str(self.parText))
             file.close()
 
@@ -2090,8 +2090,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
             if self.comboBox_file.currentIndex() > 0:
                 # print(self.export_pars)
                 # print(self.export_out.fit_report(min_correl=0.5))
-
-                cfilePath = os.path.dirname(str(self.comboBox_file.currentText()))
                 fileName = os.path.basename(str(self.comboBox_file.currentText()))
                 fileName = os.path.splitext(fileName)[0]
             else:
@@ -2102,11 +2100,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
             cfilePath, _ = QtWidgets.QFileDialog.getSaveFileName(
                 self,
                 "Save Fit file",
-                cfilePath + os.sep + fileName + "_fit.txt",
+                self.cfilePath + os.sep + fileName + "_fit.txt",
                 "Text Files (*.txt)",
             )
             if cfilePath != "":
-                self.filePath = cfilePath.rsplit("/", 1)[0]
+                self.cfilePath = cfilePath
+                self.filePath = self.cfilePath.rsplit("/", 1)[0]
                 if self.comboBox_file.currentIndex() == 0:
                     strmode = "simulation mode"
                 else:
@@ -2203,15 +2202,15 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         Text += "'" + key + "' : " + str(dic[key]) + ",\n"
                 Text += "}\n"
                 self.export_pickle(
-                    cfilePath
+                    self.cfilePath
                 )  # export las fit parameters as dict int po pickle file
 
-                with open(cfilePath, "w") as file:
+                with open(self.cfilePath, "w") as file:
                     file.write(str(Text))
                 file.close()
                 # print(filePath)
-                if cfilePath.split("_")[-1] == "fit.txt":
-                    with open(cfilePath.rsplit("_", 1)[0] + "_fit.csv", "w") as f:
+                if self.cfilePath.split("_")[-1] == "fit.txt":
+                    with open(self.cfilePath.rsplit("_", 1)[0] + "_fit.csv", "w") as f:
                         f.write(
                             "#No of rows lightened (2D detector)"
                             + str(self.rows_lightened)
@@ -2219,7 +2218,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         )
                         self.result.to_csv(f, index=False, mode="a")
                 else:
-                    with open(cfilePath.rsplit(".", 1)[0] + ".csv", "w") as f:
+                    with open(self.cfilePath.rsplit(".", 1)[0] + ".csv", "w") as f:
                         f.write(
                             "#No of rows lightened (2D detector)"
                             + str(self.rows_lightened)
@@ -2338,15 +2337,16 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     "TXT Files (*.txt)",
                 )
             if cfilePath != "":
-                self.filePath = cfilePath.rsplit("/", 1)[0]
+                self.cfilePath = cfilePath
+                self.filePath = self.cfilePath.rsplit("/", 1)[0]
                 remember_settings = config.getboolean("Import", "remember_settings")
                 try:
-                    self.imp_csv_or_txt(cfilePath, remember_settings=remember_settings)
+                    self.imp_csv_or_txt(self.cfilePath, remember_settings=remember_settings)
                 except Exception as e:
                     print(
                         f"Error: could not auto-load file. Please select correct format!\n Traceback:\n ****************** \n  {e}"
                     )
-                    self.imp_csv_or_txt(cfilePath, remember_settings=False)
+                    self.imp_csv_or_txt(self.cfilePath, remember_settings=False)
             if self.comboBox_file.currentIndex() > 1:
                 self.plot()
 
@@ -2355,17 +2355,18 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 self, "Open VAMAS file", self.filePath, "VMS Files (*.vms *.npl)"
             )
             if cfilePath != "":
-                self.filePath = cfilePath.rsplit("/", 1)[0]
-                # print (cfilePath)
+                self.cfilePath = cfilePath
+                self.filePath = self.cfilePath.rsplit("/", 1)[0]
+                # print (self.cfilePath)
                 try:
-                    self.list_vamas = vpy.list_vms(cfilePath)
+                    self.list_vamas = vpy.list_vms(self.cfilePath)
                 except Exception as e:
                     return self.raise_error(
                         window_title="Error: could not load VAMAS file.",
                         error_message="Loading VAMAS file failed. The following traceback may help to solve the issue:",
                     )
                 try:
-                    wf = vpy.get_wf(cfilePath)
+                    wf = vpy.get_wf(self.cfilePath)
                     if isinstance(wf, float):
                         self.wf = abs(wf)
                         self.wf_item.setText(
@@ -2385,7 +2386,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         error_message=e.args[0],
                     )
                 try:
-                    hv = vpy.get_hv(cfilePath)
+                    hv = vpy.get_hv(self.cfilePath)
                     if isinstance(hv, float):
                         self.hv = hv
                         self.hv_item.setText(str(hv))
@@ -2448,14 +2449,14 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         os.path.splitext(entry)[1] == ".csv"
                         or os.path.splitext(entry)[1] == ".txt"
                     ):
-                        cfilePath = os.path.join(directory, entry)
+                        self.cfilePath = os.path.join(directory, entry)
                         try:
-                            self.imp_csv_or_txt(cfilePath, remember_settings=True)
+                            self.imp_csv_or_txt(self.cfilePath, remember_settings=True)
                         except Exception as e:
                             print(
                                 f"Error: could not auto-load file. Please select correct format!\n Traceback:\n ****************** \n  {e}"
                             )
-                            self.imp_csv_or_txt(cfilePath, remember_settings=False)
+                            self.imp_csv_or_txt(self.cfilePath, remember_settings=False)
 
                 self.comboBox_file.clear()
                 self.comboBox_file.addItems(self.list_file)
