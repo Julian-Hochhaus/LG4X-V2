@@ -2244,93 +2244,105 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.idx_imp = idx
         self.imp()
 
+    import pandas as pd
+    import os
+
     def imp_csv_or_txt(self, cfilePath, remember_settings=True):
-        if os.path.basename(cfilePath) in self.data_arr.keys():
-            print(f'The file "{cfilePath}" has already been loaded. Skipping')
-            QtWidgets.QMessageBox.information(
-                self,
-                "Filename already used",
-                f'The file "{cfilePath}" has already been loaded. Skipping',
-            )
-            return  # Skip further processing
-        if ".txt" in cfilePath:
-            df = pd.read_csv(cfilePath, comment="#")
-            num_columns = len(df.columns)
-        elif ".csv" in cfilePath:
-            df = pd.read_csv(cfilePath, comment="#", usecols=[0, 1])
-            num_columns = len(df.columns)
-        if not num_columns == 2 and not remember_settings:
-            remember_settings = False
-        if not remember_settings:
-            preview_dialog = PreviewDialog(cfilePath, config, config_file_path)
-            if preview_dialog.exec_():
-                df = preview_dialog.df
-                filename = preview_dialog.fname
-                if df.isna().any().any():
-                    print("automatic import failed, please select correct format!")
-                    self.imp_csv_or_txt(cfilePath, remember_settings=False)
-                if df is not None:
-                    self.data_arr[filename] = DataSet(
-                        filepath=cfilePath, df=df, pe=None
-                    )
-            else:
-                filename = None
-        elif not num_columns == 2:
-            if config.getboolean("Import", "has_header"):
-                temp_header = pd.read_csv(
-                    cfilePath,
-                    delimiter=config.get("Import", "separator"),
-                    header=int(config.get("Import", "header_row")),
-                    engine="python",
-                    nrows=0,
+        try:
+            # --- entire original function code goes here unchanged ---
+            if os.path.basename(cfilePath) in self.data_arr.keys():
+                print(f'The file "{cfilePath}" has already been loaded. Skipping')
+                QtWidgets.QMessageBox.information(
+                    self,
+                    "Filename already used",
+                    f'The file "{cfilePath}" has already been loaded. Skipping',
                 )
-                if temp_header.columns.values.tolist()[0] == "#":
-                    cols = [col + 1 for col in config.get("Import", "columns")]
-                    df = pd.read_csv(
+                return  # Skip further processing
+            if ".txt" in cfilePath:
+                df = pd.read_csv(cfilePath, comment="#")
+                num_columns = len(df.columns)
+            elif ".csv" in cfilePath:
+                df = pd.read_csv(cfilePath, comment="#", usecols=[0, 1])
+                num_columns = len(df.columns)
+            if not num_columns == 2 and not remember_settings:
+                remember_settings = False
+            if not remember_settings:
+                preview_dialog = PreviewDialog(cfilePath, config, config_file_path)
+                if preview_dialog.exec_():
+                    df = preview_dialog.df
+                    filename = preview_dialog.fname
+                    if df.isna().any().any():
+                        print("automatic import failed, please select correct format!")
+                        self.imp_csv_or_txt(cfilePath, remember_settings=False)
+                    if df is not None:
+                        self.data_arr[filename] = DataSet(
+                            filepath=cfilePath, df=df, pe=None
+                        )
+                else:
+                    filename = None
+            elif not num_columns == 2:
+                if config.getboolean("Import", "has_header"):
+                    temp_header = pd.read_csv(
                         cfilePath,
                         delimiter=config.get("Import", "separator"),
+                        header=int(config.get("Import", "header_row")),
                         engine="python",
-                        names=temp_header.columns.values.tolist()[1:],
-                        skiprows=int(config.get("Import", "header_row")) + 1,
-                        comment="#",
+                        nrows=0,
                     )
+                    if temp_header.columns.values.tolist()[0] == "#":
+                        cols = [col + 1 for col in config.get("Import", "columns")]
+                        df = pd.read_csv(
+                            cfilePath,
+                            delimiter=config.get("Import", "separator"),
+                            engine="python",
+                            names=temp_header.columns.values.tolist()[1:],
+                            skiprows=int(config.get("Import", "header_row")) + 1,
+                            comment="#",
+                        )
+                    else:
+                        df = pd.read_csv(
+                            cfilePath,
+                            delimiter=config.get("Import", "separator"),
+                            engine="python",
+                            skiprows=int(config.get("Import", "header_row")),
+                            comment="#",
+                        )
                 else:
                     df = pd.read_csv(
                         cfilePath,
                         delimiter=config.get("Import", "separator"),
                         engine="python",
                         skiprows=int(config.get("Import", "header_row")),
+                        header=None,
                         comment="#",
                     )
+                    df.columns = [f"col{i + 1}" for i in range(len(df.columns))]
+                df = df.iloc[:, eval(config.get("Import", "columns"))]
+                if df.isna().any().any():
+                    print("automatic import failed, please select correct format")
+                    self.imp_csv_or_txt(cfilePath, remember_settings=False)
+                filename = os.path.basename(cfilePath)
+                self.data_arr[filename] = DataSet(filepath=cfilePath, df=df, pe=None)
             else:
-                df = pd.read_csv(
-                    cfilePath,
-                    delimiter=config.get("Import", "separator"),
-                    engine="python",
-                    skiprows=int(config.get("Import", "header_row")),
-                    header=None,
-                    comment="#",
-                )
-                df.columns = [f"col{i + 1}" for i in range(len(df.columns))]
-            df = df.iloc[:, eval(config.get("Import", "columns"))]
-            if df.isna().any().any():
-                print("automatic import failed, please select correct format")
-                self.imp_csv_or_txt(cfilePath, remember_settings=False)
-            filename = os.path.basename(cfilePath)
-            self.data_arr[filename] = DataSet(filepath=cfilePath, df=df, pe=None)
-        else:
-            filename = os.path.basename(cfilePath)
-            self.data_arr[filename] = DataSet(filepath=cfilePath, df=df, pe=None)
+                filename = os.path.basename(cfilePath)
+                self.data_arr[filename] = DataSet(filepath=cfilePath, df=df, pe=None)
 
-        self.comboBox_file.clear()
-        self.comboBox_file.addItems(self.list_file)
-        self.comboBox_file.addItems(self.data_arr.keys())
-        if filename:
-            index = self.comboBox_file.findText(filename, QtCore.Qt.MatchFixedString)
-        else:
-            index = -1
-        if index >= 0:
-            self.comboBox_file.setCurrentIndex(index)
+            self.comboBox_file.clear()
+            self.comboBox_file.addItems(self.list_file)
+            self.comboBox_file.addItems(self.data_arr.keys())
+            if filename:
+                index = self.comboBox_file.findText(filename, QtCore.Qt.MatchFixedString)
+            else:
+                index = -1
+            if index >= 0:
+                self.comboBox_file.setCurrentIndex(index)
+
+        except Exception as e:
+            # Raise your custom error popup with the exception message
+            self.raise_error(
+                window_title="File Import Error",
+                error_message=f"An error occurred while importing the file:\n{cfilePath}\n\nError details:\n{e}",
+            )
 
     def imp(self):
         index = self.idx_imp
@@ -3448,6 +3460,38 @@ class PrettyWidget(QtWidgets.QMainWindow):
             pars_all.append(pars)
         return [mod, pars]
 
+    def assign_expr_safe(
+            self,
+            pars,
+            target_id: str,
+            current_id: str,
+            param_name: str,
+            expr: str,
+    ) -> None:
+        """
+        Assign an expression to a parameter if it's not self-referencing.
+        Otherwise, raise an error.
+
+        Args:
+            pars: Parameter dictionary (e.g., from lmfit).
+            target_id (str): Target peak ID.
+            current_id (str): Current peak ID.
+            param_name (str): Name of the parameter (e.g. "sigma", "gamma").
+            expr (str): Expression to assign (e.g. "C1_sigma * C2_ratio").
+
+        Returns:
+            None
+        """
+        if target_id == current_id:
+            return self.raise_error(
+                window_title="Error: Self-referencing parameters.",
+                error_message=(
+                    f"Parameter '{current_id}_{param_name}' references itself.\n"
+                    f"This is invalid. Please select another peak or leave it blank."
+                ),
+            )
+        pars[f"{current_id}_{param_name}"].expr = expr
+
     def ratio_setup(self, pars, index_pk, strind, index):
         if (
             index == 2 or index == 6
@@ -3458,188 +3502,146 @@ class PrettyWidget(QtWidgets.QMainWindow):
         # amp ratio setup
         if self.pre[2][15][2 * index_pk + 1] > 0:
             pktar = self.pre[2][15][2 * index_pk + 1]
-            strtar = self.list_shape[self.pre[2][0][2 * pktar - 1]]
-            strtar = strtar.split(":", 1)[0]
+            strtar_raw = self.list_shape[self.pre[2][0][2 * pktar - 1]]
+            strtar = strtar_raw.split(":", 1)[0]
+
             if (
-                self.pre[2][16][2 * index_pk + 1] is not None
-                and len(str(self.pre[2][16][2 * index_pk + 1])) > 0
+                    self.pre[2][16][2 * index_pk + 1] is not None and
+                    str(self.pre[2][16][2 * index_pk + 1]).strip()
             ):
-                pars[strind + str(index_pk + 1) + "_amplitude"].expr = (
-                    strtar
-                    + str(pktar)
-                    + "_amplitude * "
-                    + str(strind + str(index_pk + 1) + "_amp_ratio")
-                )
+                target_id = strtar + str(pktar)
+                current_id = strind + str(index_pk + 1)
+                expr = f"{target_id}_amplitude * {current_id}_amp_ratio"
+
+                self.assign_expr_safe(pars, target_id, current_id, "amplitude", expr)
 
         # BE diff setup
         if self.pre[2][13][2 * index_pk + 1] > 0:
             pktar = self.pre[2][13][2 * index_pk + 1]
-            strtar = self.list_shape[self.pre[2][0][2 * pktar - 1]]
-            strtar = strtar.split(":", 1)[0]
+            strtar_raw = self.list_shape[self.pre[2][0][2 * pktar - 1]]
+            strtar = strtar_raw.split(":", 1)[0]
+
             if (
-                self.pre[2][14][2 * index_pk + 1] is not None
-                and len(str(self.pre[2][14][2 * index_pk + 1])) > 0
+                    self.pre[2][14][2 * index_pk + 1] is not None and
+                    str(self.pre[2][14][2 * index_pk + 1]).strip()
             ):
-                pars[strind + str(index_pk + 1) + "_center"].expr = (
-                    strtar
-                    + str(pktar)
-                    + "_center + "
-                    + str(strind + str(index_pk + 1) + "_center_diff")
-                )
+                target_id = strtar + str(pktar)
+                current_id = strind + str(index_pk + 1)
+                expr = f"{target_id}_center + {current_id}_center_diff"
+
+                self.assign_expr_safe(pars, target_id, current_id, "center", expr)
 
         # lorentzian sigma ref setup
         if self.pre[2][17][2 * index_pk + 1] > 0:
             pktar = self.pre[2][17][2 * index_pk + 1]
-            strtar = self.list_shape[self.pre[2][0][2 * pktar - 1]]
-            strtar = strtar.split(":", 1)[0]
-            if (
-                self.pre[2][18][2 * index_pk + 1] is not None
-                and len(str(self.pre[2][18][2 * index_pk + 1])) > 0
-            ):
-                if index == 1 or index == 3 or index == 9 or index == 10 or index == 11:
-                    if strtar in ["v", "a"]:
-                        pars[strind + str(index_pk + 1) + "_sigma"].expr = (
-                            strtar
-                            + str(pktar)
-                            + "_gamma * "
-                            + str(strind + str(index_pk + 1) + "_lorentzian_ratio")
-                        )
-                    else:
+            strtar_raw = self.list_shape[self.pre[2][0][2 * pktar - 1]]
+            strtar = strtar_raw.split(":", 1)[0]
 
-                        pars[strind + str(index_pk + 1) + "_sigma"].expr = (
-                            strtar
-                            + str(pktar)
-                            + "_sigma * "
-                            + str(strind + str(index_pk + 1) + "_lorentzian_ratio")
-                        )
-                if index == 2 or index == 6:
-                    if strtar not in ["v", "a"]:
-                        pars[strind + str(index_pk + 1) + "_gamma"].expr = (
-                            strtar
-                            + str(pktar)
-                            + "_sigma * "
-                            + str(strind + str(index_pk + 1) + "_lorentzian_ratio")
-                        )
+            if (
+                    self.pre[2][18][2 * index_pk + 1] is not None and
+                    str(self.pre[2][18][2 * index_pk + 1]).strip()
+            ):
+                target_id = strtar + str(pktar)
+                current_id = strind + str(index_pk + 1)
+
+                # Assign sigma expression
+                if index in [1, 3, 9, 10, 11]:
+                    if strtar in ["v", "a"]:
+                        expr = f"{target_id}_gamma * {current_id}_lorentzian_ratio"
                     else:
-                        pars[strind + str(index_pk + 1) + "_gamma"].expr = (
-                            strtar
-                            + str(pktar)
-                            + "_gamma * "
-                            + str(strind + str(index_pk + 1) + "_lorentzian_ratio")
-                        )
+                        expr = f"{target_id}_sigma * {current_id}_lorentzian_ratio"
+
+                    self.assign_expr_safe(pars, target_id, current_id, "sigma", expr)
+
+                # Assign gamma expression
+                if index in [2, 6]:
+                    if strtar not in ["v", "a"]:
+                        expr = f"{target_id}_sigma * {current_id}_lorentzian_ratio"
+                    else:
+                        expr = f"{target_id}_gamma * {current_id}_lorentzian_ratio"
+
+                    self.assign_expr_safe(pars, target_id, current_id, "gamma", expr)
 
         # gaussian sigma ref setup
         if self.pre[2][19][2 * index_pk + 1] > 0:
             pktar = self.pre[2][19][2 * index_pk + 1]
-            strtar = self.list_shape[self.pre[2][0][2 * pktar - 1]]
-            strtar = strtar.split(":", 1)[0]
+            strtar_raw = self.list_shape[self.pre[2][0][2 * pktar - 1]]
+            strtar = strtar_raw.split(":", 1)[0]
+
             if (
-                self.pre[2][20][2 * index_pk + 1] is not None
-                and len(str(self.pre[2][20][2 * index_pk + 1])) > 0
+                    self.pre[2][20][2 * index_pk + 1] is not None and
+                    str(self.pre[2][20][2 * index_pk + 1]).strip()
             ):
-                if (
-                    index == 0
-                    or index == 2
-                    or index == 4
-                    or index == 5
-                    or index == 6
-                    or index == 7
-                    or index == 8
-                    or index == 12
-                ):
+                target_id = strtar + str(pktar)
+                current_id = strind + str(index_pk + 1)
+
+                # For sigma assignment
+                if index in [0, 2, 4, 5, 6, 7, 8, 12]:
                     if strtar in ["gds", "gdd"]:
-                        pars[strind + str(index_pk + 1) + "_sigma"].expr = (
-                            strtar
-                            + str(pktar)
-                            + "_gaussian_sigma * "
-                            + str(strind + str(index_pk + 1) + "_gaussian_ratio")
-                        )
+                        expr = f"{target_id}_gaussian_sigma * {current_id}_gaussian_ratio"
                     else:
-                        pars[strind + str(index_pk + 1) + "_sigma"].expr = (
-                            strtar
-                            + str(pktar)
-                            + "_sigma * "
-                            + str(strind + str(index_pk + 1) + "_gaussian_ratio")
-                        )
-                if index == 10 or index == 11:
+                        expr = f"{target_id}_sigma * {current_id}_gaussian_ratio"
+
+                    self.assign_expr_safe(pars, target_id, current_id, "sigma", expr)
+
+                # For gaussian_sigma assignment
+                if index in [10, 11]:
                     if strtar not in ["gds", "gdd"]:
-                        pars[strind + str(index_pk + 1) + "_gaussian_sigma"].expr = (
-                            strtar
-                            + str(pktar)
-                            + "_sigma * "
-                            + str(strind + str(index_pk + 1) + "_gaussian_ratio")
-                        )
+                        expr = f"{target_id}_sigma * {current_id}_gaussian_ratio"
                     else:
-                        pars[strind + str(index_pk + 1) + "_gaussian_sigma"].expr = (
-                            strtar
-                            + str(pktar)
-                            + "_gaussian_sigma * "
-                            + str(strind + str(index_pk + 1) + "_gaussian_ratio")
-                        )
+                        expr = f"{target_id}_gaussian_sigma * {current_id}_gaussian_ratio"
+
+                    self.assign_expr_safe(pars, target_id, current_id, "gaussian_sigma", expr)
 
         # gamma ref setup
         if self.pre[2][21][2 * index_pk + 1] > 0:
             pktar = self.pre[2][21][2 * index_pk + 1]
-            strtar = self.list_shape[self.pre[2][0][2 * pktar - 1]]
-            strtar = strtar.split(":", 1)[0]
+            strtar_raw = self.list_shape[self.pre[2][0][2 * pktar - 1]]
+            strtar = strtar_raw.split(":", 1)[0]
+
             if (
-                self.pre[2][22][2 * index_pk + 1] is not None
-                and len(str(self.pre[2][22][2 * index_pk + 1])) > 0
+                    self.pre[2][22][2 * index_pk + 1] is not None and
+                    str(self.pre[2][22][2 * index_pk + 1]).strip()
             ):
-                if (index == 9 or index == 10 or index == 11) and (
-                    strtar in ["d", "gdd", "gds"]
-                ):
-                    pars[strind + str(index_pk + 1) + "_gamma"].expr = (
-                        strtar
-                        + str(pktar)
-                        + "_gamma * "
-                        + str(strind + str(index_pk + 1) + "_gamma_ratio")
-                    )
-                if index == 4 and strtar == "e":
-                    pars[strind + str(index_pk + 1) + "_gamma"].expr = (
-                        strtar
-                        + str(pktar)
-                        + "_gamma * "
-                        + str(strind + str(index_pk + 1) + "_gamma_ratio")
-                    )
-                if index == 5 and strtar == "s":
-                    pars[strind + str(index_pk + 1) + "_gamma"].expr = (
-                        strtar
-                        + str(pktar)
-                        + "_gamma * "
-                        + str(strind + str(index_pk + 1) + "_gamma_ratio")
-                    )
+                current_id = strind + str(index_pk + 1)
+                target_id = strtar + str(pktar)
+
+                valid_gamma_refs = (
+                        (index in [9, 10, 11] and strtar in ["d", "gdd", "gds"]) or
+                        (index == 4 and strtar == "e") or
+                        (index == 5 and strtar == "s")
+                )
+
+                if valid_gamma_refs:
+                    expr = f"{target_id}_gamma * {current_id}_gamma_ratio"
+                    self.assign_expr_safe(pars, target_id, current_id, "gamma", expr)
+
         # soc ref and height ratio ref setup
         if index == 10:
+            current_id = strind + str(index_pk + 1)
+
+            # SOC reference
             if self.pre[2][23][2 * index_pk + 1] > 0:
                 pktar = self.pre[2][23][2 * index_pk + 1]
-                strtar = self.list_shape[self.pre[2][0][2 * pktar - 1]]
-                strtar = strtar.split(":", 1)[0]
-                if (
-                    self.pre[2][24][2 * index_pk + 1] is not None
-                    and len(str(self.pre[2][24][2 * index_pk + 1])) > 0
-                ):
-                    pars[strind + str(index_pk + 1) + "_soc"].expr = (
-                        strtar
-                        + str(pktar)
-                        + "_soc * "
-                        + str(strind + str(index_pk + 1) + "_soc_ratio")
-                    )
+                strtar_raw = self.list_shape[self.pre[2][0][2 * pktar - 1]]
+                strtar = strtar_raw.split(":", 1)[0]
 
+                if self.pre[2][24][2 * index_pk + 1] is not None and str(self.pre[2][24][2 * index_pk + 1]).strip():
+                    target_id = strtar + str(pktar)
+                    expr = f"{target_id}_soc * {current_id}_soc_ratio"
+                    self.assign_expr_safe(pars, target_id, current_id, "soc", expr)
+
+            # Height ratio reference
             if self.pre[2][25][2 * index_pk + 1] > 0:
                 pktar = self.pre[2][25][2 * index_pk + 1]
-                strtar = self.list_shape[self.pre[2][0][2 * pktar - 1]]
-                strtar = strtar.split(":", 1)[0]
-                if (
-                    self.pre[2][26][2 * index_pk + 1] is not None
-                    and len(str(self.pre[2][26][2 * index_pk + 1])) > 0
-                ):
-                    pars[strind + str(index_pk + 1) + "_height_ratio"].expr = (
-                        strtar
-                        + str(pktar)
-                        + "_height_ratio * "
-                        + str(strind + str(index_pk + 1) + "_rel_height_ratio")
-                    )
+                strtar_raw = self.list_shape[self.pre[2][0][2 * pktar - 1]]
+                strtar = strtar_raw.split(":", 1)[0]
+
+                if self.pre[2][26][2 * index_pk + 1] is not None and str(self.pre[2][26][2 * index_pk + 1]).strip():
+                    target_id = strtar + str(pktar)
+                    expr = f"{target_id}_height_ratio * {current_id}_rel_height_ratio"
+                    self.assign_expr_safe(pars, target_id, current_id, "height_ratio", expr)
+
         return pars
 
     def peak_limits(self, pars):
