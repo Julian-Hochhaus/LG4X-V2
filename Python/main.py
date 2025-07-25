@@ -175,6 +175,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         # --- Home directory and canvas ---
         self.filePath = QtCore.QDir.homePath()
+        self.cfilePath = QtCore.QDir.homePath()
         self.figure, self.ar, self.ax, self.canvas, self.toolbar = setupCanvas(self)
 
         # --- Top row layout ---
@@ -220,6 +221,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         # --- Home directory and canvas ---
         self.filePath = QtCore.QDir.homePath()
+        self.cfilePath = QtCore.QDir.homePath()
         self.figure, self.ar, self.ax, self.canvas, self.toolbar = setupCanvas(self)
 
         # --- Top row layout ---
@@ -331,7 +333,10 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 if index > 0 and col < int(colPosition_fitp1 / 2):
                     comboBox.setCurrentIndex(index)
                 else:
-                    comboBox.setCurrentIndex(1) # init dropdowns for reference with C1
+                    if index > 0:
+                        comboBox.setCurrentIndex(1) # init dropdowns for reference with C1
+                    else:
+                        comboBox.setCurrentIndex(0) #set first column to empty to avoid self recursion
                 self.fitp1.setCellWidget(13 + 2 * i, 2 * col + 1, comboBox)
         if int(len(header_texts)) == int(len(self.list_component)):
             self.list_component = header_texts
