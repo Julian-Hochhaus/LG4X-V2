@@ -494,7 +494,7 @@ class Window_CrossSection(QtWidgets.QWidget):
             for i in range(len(temp_elements) - 1):
                 str_temp_elements += str(temp_elements[i] + ", ")
             str_temp_elements += str(temp_elements[-1] + "\n")
-            with open(dirPath + "/../CrossSections/cross_sections.csv", "a") as f:
+            with open(dirPath + "/../Databases/CrossSections/cross_sections.csv", "a") as f:
                 f.write(str_temp_elements)
             self.list_elements = self.load_elements()
             self.elements.clear()
