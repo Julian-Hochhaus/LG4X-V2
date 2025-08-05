@@ -2022,7 +2022,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         if savename is not None:
             cfilePath = savename
-            print(cfilePath)
         else:
             cfilePath, _ = QtWidgets.QFileDialog.getSaveFileName(
                 self,
@@ -2461,9 +2460,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.format_display_name(fpath): fpath for fpath in self.data_arr.keys()
                 }
                 self.comboBox_file.addItems(self.display_name_to_path.keys())
-                index = self.comboBox_file.findText(
-                    os.path.basename(self.list_vamas[0]), QtCore.Qt.MatchFixedString
-                )
+                display_name = self.format_display_name(self.list_vamas[0])
+                index = self.comboBox_file.findText(display_name, QtCore.Qt.MatchFixedString)
                 if index >= 0:
                     self.comboBox_file.setCurrentIndex(index)
                 if self.comboBox_file.currentIndex() > 1:
@@ -2500,9 +2498,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     self.format_display_name(fpath): fpath for fpath in self.data_arr.keys()
                 }
                 self.comboBox_file.addItems(self.display_name_to_path.keys())
-                index = self.comboBox_file.findText(
-                    entries[0], QtCore.Qt.MatchFixedString
-                )
+                display_name = self.format_display_name(self.cfilePath)
+                index = self.comboBox_file.findText(display_name, QtCore.Qt.MatchFixedString)
                 self.comboBox_file.blockSignals(False)
                 if index >= 0:
                     self.comboBox_file.setCurrentIndex(index)
@@ -2539,9 +2536,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         self.format_display_name(fpath): fpath for fpath in self.data_arr.keys()
                     }
                     self.comboBox_file.addItems(self.display_name_to_path.keys())
-                    index = self.comboBox_file.findText(
-                        csv_files[0], QtCore.Qt.MatchFixedString
-                    )
+                    display_name = self.format_display_name(f"{directory}/{csv_files[0]}")
+                    index = self.comboBox_file.findText(display_name, QtCore.Qt.MatchFixedString)
                     self.comboBox_file.blockSignals(False)
                     if index >= 0:
                         self.comboBox_file.setCurrentIndex(index)
@@ -2579,9 +2575,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         self.format_display_name(fpath): fpath for fpath in self.data_arr.keys()
                     }
                     self.comboBox_file.addItems(self.display_name_to_path.keys())
-                    index = self.comboBox_file.findText(
-                        txt_files[0], QtCore.Qt.MatchFixedString
-                    )
+                    display_name = self.format_display_name(f"{directory}/{txt_files[0]}")
+                    index = self.comboBox_file.findText(display_name, QtCore.Qt.MatchFixedString)
                     self.comboBox_file.blockSignals(False)
                     if index >= 0:
                         self.comboBox_file.setCurrentIndex(index)
@@ -2627,7 +2622,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
             return
 
         filePath = file_path
-        print(filePath, file_path)
         try:
             with open(filePath, "r") as f:
                 header_line = str(f.readline())
