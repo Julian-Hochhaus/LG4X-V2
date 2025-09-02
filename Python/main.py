@@ -133,6 +133,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.version = "LG4X: LMFit GUI for XPS curve fitting v{}".format(__version__)
         self.floating = ".3f"
         self.data_arr = {}
+        self.display_name_to_path = {}
         self.current_theme = "dark"
         self.initUI()
 
@@ -2021,7 +2022,6 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
         if savename is not None:
             cfilePath = savename
-            print(cfilePath)
         else:
             cfilePath, _ = QtWidgets.QFileDialog.getSaveFileName(
                 self,
@@ -2246,11 +2246,16 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
     import pandas as pd
     import os
+    def format_display_name(self, path):
+        filename = os.path.basename(path)
+        parent_folder = os.path.basename(os.path.dirname(path))
+        return f"{parent_folder}/{filename}"
 
     def imp_csv_or_txt(self, cfilePath, remember_settings=True):
         try:
-            # --- entire original function code goes here unchanged ---
-            if os.path.basename(cfilePath) in self.data_arr.keys():
+            cfilePath = os.path.abspath(cfilePath)
+            fname = os.path.basename(cfilePath)
+            if cfilePath in self.data_arr.keys():
                 print(f'The file "{cfilePath}" has already been loaded. Skipping')
                 QtWidgets.QMessageBox.information(
                     self,
@@ -2258,10 +2263,11 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     f'The file "{cfilePath}" has already been loaded. Skipping',
                 )
                 return  # Skip further processing
-            if ".txt" in cfilePath:
+
+            if ".txt" in fname:
                 df = pd.read_csv(cfilePath, comment="#")
                 num_columns = len(df.columns)
-            elif ".csv" in cfilePath:
+            elif ".csv" in fname:
                 df = pd.read_csv(cfilePath, comment="#", usecols=[0, 1])
                 num_columns = len(df.columns)
             if not num_columns == 2 and not remember_settings:
@@ -2275,7 +2281,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                         print("automatic import failed, please select correct format!")
                         self.imp_csv_or_txt(cfilePath, remember_settings=False)
                     if df is not None:
-                        self.data_arr[filename] = DataSet(
+                        self.data_arr[cfilePath] = DataSet(
                             filepath=cfilePath, df=df, pe=None
                         )
                 else:
@@ -2322,16 +2328,20 @@ class PrettyWidget(QtWidgets.QMainWindow):
                     print("automatic import failed, please select correct format")
                     self.imp_csv_or_txt(cfilePath, remember_settings=False)
                 filename = os.path.basename(cfilePath)
-                self.data_arr[filename] = DataSet(filepath=cfilePath, df=df, pe=None)
+                self.data_arr[cfilePath] = DataSet(filepath=cfilePath, df=df, pe=None)
             else:
                 filename = os.path.basename(cfilePath)
-                self.data_arr[filename] = DataSet(filepath=cfilePath, df=df, pe=None)
+                self.data_arr[cfilePath] = DataSet(filepath=cfilePath, df=df, pe=None)
 
             self.comboBox_file.clear()
             self.comboBox_file.addItems(self.list_file)
-            self.comboBox_file.addItems(self.data_arr.keys())
+            self.display_name_to_path = {
+                self.format_display_name(fpath): fpath for fpath in self.data_arr.keys()
+            }
+            self.comboBox_file.addItems(self.display_name_to_path.keys())
             if filename:
-                index = self.comboBox_file.findText(filename, QtCore.Qt.MatchFixedString)
+                display_name=self.format_display_name(cfilePath)
+                index = self.comboBox_file.findText(display_name, QtCore.Qt.MatchFixedString)
             else:
                 index = -1
             if index >= 0:
@@ -2436,20 +2446,22 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
                     if strpe[0] == "PE:" and strpe[2] == "eV":
                         pe = float(strpe[1])
-                        self.data_arr[os.path.basename(file)] = DataSet(
+                        self.data_arr[file] = DataSet(
                             filepath=file, df=df, pe=pe
                         )
                     else:
-                        self.data_arr[os.path.basename(file)] = DataSet(
+                        self.data_arr[file] = DataSet(
                             filepath=file, df=df, pe=None
                         )
 
                 self.comboBox_file.clear()
                 self.comboBox_file.addItems(self.list_file)
-                self.comboBox_file.addItems(self.data_arr.keys())
-                index = self.comboBox_file.findText(
-                    os.path.basename(self.list_vamas[0]), QtCore.Qt.MatchFixedString
-                )
+                self.display_name_to_path = {
+                    self.format_display_name(fpath): fpath for fpath in self.data_arr.keys()
+                }
+                self.comboBox_file.addItems(self.display_name_to_path.keys())
+                display_name = self.format_display_name(self.list_vamas[0])
+                index = self.comboBox_file.findText(display_name, QtCore.Qt.MatchFixedString)
                 if index >= 0:
                     self.comboBox_file.setCurrentIndex(index)
                 if self.comboBox_file.currentIndex() > 1:
@@ -2482,10 +2494,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
                 self.comboBox_file.clear()
                 self.comboBox_file.addItems(self.list_file)
-                self.comboBox_file.addItems(self.data_arr.keys())
-                index = self.comboBox_file.findText(
-                    entries[0], QtCore.Qt.MatchFixedString
-                )
+                self.display_name_to_path = {
+                    self.format_display_name(fpath): fpath for fpath in self.data_arr.keys()
+                }
+                self.comboBox_file.addItems(self.display_name_to_path.keys())
+                display_name = self.format_display_name(self.cfilePath)
+                index = self.comboBox_file.findText(display_name, QtCore.Qt.MatchFixedString)
                 self.comboBox_file.blockSignals(False)
                 if index >= 0:
                     self.comboBox_file.setCurrentIndex(index)
@@ -2518,10 +2532,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
                     self.comboBox_file.clear()
                     self.comboBox_file.addItems(self.list_file)
-                    self.comboBox_file.addItems(self.data_arr.keys())
-                    index = self.comboBox_file.findText(
-                        csv_files[0], QtCore.Qt.MatchFixedString
-                    )
+                    self.display_name_to_path = {
+                        self.format_display_name(fpath): fpath for fpath in self.data_arr.keys()
+                    }
+                    self.comboBox_file.addItems(self.display_name_to_path.keys())
+                    display_name = self.format_display_name(f"{directory}/{csv_files[0]}")
+                    index = self.comboBox_file.findText(display_name, QtCore.Qt.MatchFixedString)
                     self.comboBox_file.blockSignals(False)
                     if index >= 0:
                         self.comboBox_file.setCurrentIndex(index)
@@ -2555,10 +2571,12 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
                     self.comboBox_file.clear()
                     self.comboBox_file.addItems(self.list_file)
-                    self.comboBox_file.addItems(self.data_arr.keys())
-                    index = self.comboBox_file.findText(
-                        txt_files[0], QtCore.Qt.MatchFixedString
-                    )
+                    self.display_name_to_path = {
+                        self.format_display_name(fpath): fpath for fpath in self.data_arr.keys()
+                    }
+                    self.comboBox_file.addItems(self.display_name_to_path.keys())
+                    display_name = self.format_display_name(f"{directory}/{txt_files[0]}")
+                    index = self.comboBox_file.findText(display_name, QtCore.Qt.MatchFixedString)
                     self.comboBox_file.blockSignals(False)
                     if index >= 0:
                         self.comboBox_file.setCurrentIndex(index)
@@ -2569,6 +2587,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.comboBox_file.clear()
             self.list_file = ["File list", "Clear list"]
             self.data_arr = {}
+            self.display_name_to_path={}
             self.comboBox_file.addItems(self.list_file)
             self.comboBox_file.setCurrentIndex(0)
         elif self.comboBox_file.currentIndex() > 1:
@@ -2580,7 +2599,8 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.canvas.draw()
 
     def plot(self):
-        if not self.comboBox_file.currentText():  # If nothing selected
+        display_name = self.comboBox_file.currentText()
+        if not display_name or display_name not in self.display_name_to_path:  # If nothing selected
             self.ax.cla()
             self.ax.set_xlabel("Energy (eV)", fontsize=11)
             self.ax.set_ylabel("Intensity (arb. unit)", fontsize=11)
@@ -2590,9 +2610,9 @@ class PrettyWidget(QtWidgets.QMainWindow):
             return
 
         plottitle = self.comboBox_file.currentText().split("/")[-1]
-        fileName = self.comboBox_file.currentText()
+        file_path = self.display_name_to_path[display_name]
 
-        if fileName not in self.data_arr:
+        if file_path not in self.data_arr:
             self.ax.cla()
             self.ax.set_xlabel("Energy (eV)", fontsize=11)
             self.ax.set_ylabel("Intensity (arb. unit)", fontsize=11)
@@ -2601,7 +2621,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.repaint()
             return
 
-        filePath = self.data_arr[fileName].filepath
+        filePath = file_path
         try:
             with open(filePath, "r") as f:
                 header_line = str(f.readline())
@@ -2616,7 +2636,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         else:
             self.rows_lightened = 1
 
-        self.df = self.data_arr[fileName].df
+        self.df = self.data_arr[filePath].df
 
         try:
             x0 = self.df.iloc[:, 0].to_numpy()
@@ -2627,7 +2647,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
                 error_message="The input .csv is not in the correct format!. The following traceback may help to solve the issue:",
             )
 
-        pe = self.data_arr[fileName].pe
+        pe = self.data_arr[filePath].pe
         if pe is not None:
             print("Current Pass energy is PE= ", pe, "eV")
 
