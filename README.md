@@ -70,9 +70,11 @@ Below is a selection of publications that have made use of LG4X-V2. If you have 
 
 - P. Weinert [Structural, chemical, and magnetic investigation of a graphene/cobalt/platinum multilayer system on silicon carbide : About the formation of magnetic structures in 2D cobalt layers](https://d-nb.info/1328839591) Dissertation (2024).
 
--  J. A. Hochhaus et al. [Structural analysis of Sn on Au(111) at low coverages: Towards the Au2Sn surface alloy with alternating fcc and hcp domains](https://doi.org/10.1038/s41598-025-91733-2) Sci. Rep. **15**, 7953 (2025). 
+- J. A. Hochhaus et al. [Structural analysis of Sn on Au(111) at low coverages: Towards the Au2Sn surface alloy with alternating fcc and hcp domains](https://doi.org/10.1038/s41598-025-91733-2) Sci. Rep. **15**, 7953 (2025). 
 
 - T.R. Acharya et al. [Non-thermal plasma-mediated green synthesis of chitosan-functionalized gold nanoparticles for enhanced cancer immunogenicity](https://doi.org/10.1016/j.jiec.2025.06.029) J. Ind. Eng. Chem. **36** (2025).
+  
+- J. A. Hochhaus et al. [First evidence of a square-like Sn lattice on the Au2Sn surface alloy on Au(111)](https://doi.org/10.1016/j.apsusc.2025.164470) Appl. Surf. Sci., 164470 (2025). 
   
 ### License
 
@@ -337,6 +339,7 @@ You can find the VAMAS format data of various spectra from [Spectroscopy Hub](ht
 - [ ] rewrite the Readme to explain the features introduced in LG4X-V2
 - [ ] Export fit parameters as readable table to be able to use them in e.g. a presentation
 - [ ] Introduce 'Clear all' button for clearing all parameters/limits etc.
+
 
 
 
