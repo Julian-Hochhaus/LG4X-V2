@@ -135,6 +135,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.data_arr = {}
         self.display_name_to_path = {}
         self.current_theme = "dark"
+        self._stored_plot_view = None
         self.initUI()
 
     def initUI(self):
@@ -2583,6 +2584,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.idx_imp = 0
 
     def value_change_filelist(self):
+        self._stored_plot_view = None
         if self.comboBox_file.currentIndex() == 1:
             self.comboBox_file.clear()
             self.list_file = ["File list", "Clear list"]
@@ -2599,6 +2601,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             self.canvas.draw()
 
     def plot(self):
+        self._stored_plot_view = None
         display_name = self.comboBox_file.currentText()
         if not display_name or display_name not in self.display_name_to_path:  # If nothing selected
             self.ax.cla()
@@ -2671,6 +2674,48 @@ class PrettyWidget(QtWidgets.QMainWindow):
         self.ax.legend(loc=0)
         self.canvas.draw()
         self.repaint()
+
+    def _axis_has_artists(self, axis):
+        if axis is None:
+            return False
+        return bool(
+            axis.lines
+            or axis.collections
+            or axis.patches
+            or axis.images
+            or axis.containers
+            or axis.artists
+        )
+
+    def _store_plot_view(self):
+        if not self._axis_has_artists(self.ax):
+            self._stored_plot_view = None
+            return
+        view = {
+            "xlim": self.ax.get_xlim(),
+            "ax_ylim": self.ax.get_ylim(),
+        }
+        if self._axis_has_artists(self.ar):
+            view["ar_ylim"] = self.ar.get_ylim()
+        else:
+            view["ar_ylim"] = None
+        self._stored_plot_view = view
+
+    def _restore_plot_view(self, include_residual=True):
+        if not self._stored_plot_view:
+            return
+        xlim = self._stored_plot_view.get("xlim")
+        if xlim:
+            self.ax.set_xlim(xlim)
+            if self.ar is not None:
+                self.ar.set_xlim(xlim)
+        ylim = self._stored_plot_view.get("ax_ylim")
+        if ylim:
+            self.ax.set_ylim(ylim)
+        if include_residual:
+            residual_ylim = self._stored_plot_view.get("ar_ylim")
+            if residual_ylim and self.ar is not None and self._axis_has_artists(self.ar):
+                self.ar.set_ylim(residual_ylim)
 
     def plot_pt(self):
         # component elements from periodic table window selection
@@ -4857,6 +4902,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
 
     def ana(self, mode):
         self.savePreset()
+        self._store_plot_view()
         plottitle = self.plottitle.text()
         self.ax.cla()
         self.ar.cla()
@@ -4899,6 +4945,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
         plt.xlim(x0_corrected[0], x0_corrected[-1])
         self.ax.grid(True)
         self.ax.set_ylabel("Intensity (arb. unit)", fontsize=11)
+        self._restore_plot_view(include_residual=False)
         if len(plottitle) == 0:
             if mode == "sim":
                 # simulation mode
@@ -5308,6 +5355,7 @@ class PrettyWidget(QtWidgets.QMainWindow):
             )  # modify residual and red chi-squared [feature]
             lines = self.ax.get_lines()
             autoscale_y(self.ax)
+        self._restore_plot_view()
         self.ax.legend(loc=0)
         self.ar.legend(loc=0)
         self.canvas.draw()
