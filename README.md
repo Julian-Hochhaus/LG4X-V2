@@ -12,7 +12,7 @@ Please use a released version for the productive use of the software (i.e. the l
 
 ## Announcement:
 
-An advanced version of open-source XPS fitting software is available from [binary](https://sourceforge.net/projects/khervefitting/) and [github](https://github.com/KherveFitting/KherveFitting) developed by Gwilherm Kerherve. The software uses a very similar approach to LG4X/LG4X-V2, combining an even more user-friendly GUI with the models and optimization algorithms implemented in LMFIT/lmfitxps. Please check it out!
+An advanced version of open-source XPS fitting software, called KherveFitting is available from [binary](https://sourceforge.net/projects/khervefitting/) and [github](https://github.com/KherveFitting/KherveFitting) developed by Gwilherm Kerherve. The software uses a very similar approach to LG4X/LG4X-V2, combining an even more user-friendly GUI with the models and optimization algorithms implemented in LMFIT/lmfitxps. Please check it out! In addition, please check out the corresponding paper: [DOI](https://doi.org/10.1002/sia.70032).
 
 
 ## Introduction
@@ -339,6 +339,7 @@ You can find the VAMAS format data of various spectra from [Spectroscopy Hub](ht
 - [ ] rewrite the Readme to explain the features introduced in LG4X-V2
 - [ ] Export fit parameters as readable table to be able to use them in e.g. a presentation
 - [ ] Introduce 'Clear all' button for clearing all parameters/limits etc.
+
 
 
 
