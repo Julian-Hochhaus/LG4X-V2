@@ -74,7 +74,9 @@ Below is a selection of publications that have made use of LG4X-V2. If you have 
 
 - T.R. Acharya et al. [Non-thermal plasma-mediated green synthesis of chitosan-functionalized gold nanoparticles for enhanced cancer immunogenicity](https://doi.org/10.1016/j.jiec.2025.06.029) J. Ind. Eng. Chem. **36** (2025).
   
-- J. A. Hochhaus et al. [First evidence of a square-like Sn lattice on the Au2Sn surface alloy on Au(111)](https://doi.org/10.1016/j.apsusc.2025.164470) Appl. Surf. Sci., 164470 (2025). 
+- J. A. Hochhaus et al. [First evidence of a square-like Sn lattice on the Au2Sn surface alloy on Au(111)](https://doi.org/10.1016/j.apsusc.2025.164470) Appl. Surf. Sci., 164470 (2025).
+
+- J. A. Hochhaus et al. [Ultraflat Honeycomb Stanene Nanoribbons on Au(111)](https://doi.org/10.1002/admi.202500861) Adv. Mater. Interfaces e00861 (2025). 
   
 ### License
 
@@ -339,6 +341,7 @@ You can find the VAMAS format data of various spectra from [Spectroscopy Hub](ht
 - [ ] rewrite the Readme to explain the features introduced in LG4X-V2
 - [ ] Export fit parameters as readable table to be able to use them in e.g. a presentation
 - [ ] Introduce 'Clear all' button for clearing all parameters/limits etc.
+
 
 
 
